@@ -28,3 +28,19 @@ class TestWrap(unittest.TestCase):
         })
         
         self.assertTrue(w.df.equals(expected))
+
+    def test_summarize_count_sum(self):
+        df = create_df()
+        w = Wrap(df)
+        w.summarize(["x=count()", "z=sum(A)"], "G")
+
+        expected = pd.DataFrame({
+            "G" : ["G1", "G2"],
+            "x" : [3, 2],
+            "z" : [4.0, 6.0],
+        })
+
+        print()
+        print(w.df)
+        
+        self.assertTrue(w.df.equals(expected))

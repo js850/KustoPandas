@@ -1,31 +1,47 @@
 import pandas as pd
 import re
 
-
-class Count:
-    name = "count"
+class AggMethod:
+    name = None
     def __init__(self, arg):
-        self.arg = arg
+        self.arg = arg.strip()
+    
+    def default_name(self):
+        return self.name + "_" + self.arg
+
+class Count(AggMethod):
+    name = "count"
     
     def validate(self, df):
-        if self.arg.strip():
+        if self.arg:
             raise Exception("count can't take an arg: ", self.arg)
     
     def apply(self, grouped):
         return grouped.size()
 
+class Sum(AggMethod):
+    name = "sum"
+
+    def validate(self, df):
+        if self.arg not in df.columns:
+            raise Exception("sum argument is not a column: ", self.arg)
+    
+    def apply(self, grouped):
+        return grouped[self.arg].sum()
+
 aggregate_map = {
-    "count" : Count
+    "count" : Count,
+    "sum" : Sum,
 }
 
 class Aggregate:
     def __init__(self, text):
+        self.new_col = None
         if "=" in text:
             name, func = text.split("=")
             self.new_col = name.strip()
         else:
             func = text
-            self.new_col = "count"
 
         split_func = func.strip().replace("(", ")").split(")")
         if len(split_func) != 3 and split_func[2]:
@@ -34,6 +50,9 @@ class Aggregate:
         func_arg = split_func[1]
 
         self.aggregate_func = aggregate_map[func_name](func_arg)
+        if self.new_col is None:
+            self.new_col = self.aggregate_func.default_name()
+
 
     def validate(self, df):
         self.aggregate_func.validate(df)
