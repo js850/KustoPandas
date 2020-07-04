@@ -10,6 +10,9 @@ class Count:
     def validate(self, df):
         if self.arg.strip():
             raise Exception("count can't take an arg: ", self.arg)
+    
+    def apply(self, grouped):
+        return grouped.size()
 
 aggregate_map = {
     "count" : Count
@@ -20,14 +23,17 @@ class Aggregate:
         if "=" in text:
             name, func = text.split("=")
             self.new_col = name.strip()
+        else:
+            func = text
+            self.new_col = "count"
 
-            split_func = func.strip().replace("(", ")").split(")")
-            if len(split_func) != 3 and split_func[2]:
-                raise Exception("Could not parse aggregate function " + func)
-            func_name = split_func[0]
-            func_arg = split_func[1]
+        split_func = func.strip().replace("(", ")").split(")")
+        if len(split_func) != 3 and split_func[2]:
+            raise Exception("Could not parse aggregate function " + func)
+        func_name = split_func[0]
+        func_arg = split_func[1]
 
-            self.aggregate_func = aggregate_map[func_name](func_arg)
+        self.aggregate_func = aggregate_map[func_name](func_arg)
 
     def validate(self, df):
         self.aggregate_func.validate(df)
@@ -54,6 +60,16 @@ class Wrap:
         args = [Aggregate(a) for a in resulting_cols]
         for arg in args:
             arg.validate(self.df)
+
+        grouped = self.df.groupby(group_by_cols)
+        dfnew = pd.DataFrame()
+
+        for arg in args:
+            series = arg.aggregate_func.apply(grouped)
+            dfnew[arg.new_col] = series
+        
+        self.df = dfnew.reset_index()
+        return self
 
         
 

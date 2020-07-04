@@ -21,3 +21,10 @@ class TestWrap(unittest.TestCase):
         df = create_df()
         w = Wrap(df)
         w.summarize("x=count()", "G")
+
+        expected = pd.DataFrame({
+            "G" : ["G1", "G2"],
+            "x" : [3, 2],
+        })
+        
+        self.assertTrue(w.df.equals(expected))
