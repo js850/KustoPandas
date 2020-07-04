@@ -6,6 +6,10 @@ class Count:
     name = "count"
     def __init__(self, arg):
         self.arg = arg
+    
+    def validate(self, df):
+        if self.arg.strip():
+            raise Exception("count can't take an arg: ", self.arg)
 
 aggregate_map = {
     "count" : Count
@@ -25,6 +29,9 @@ class Aggregate:
 
             self.aggregate_func = aggregate_map[func_name](func_arg)
 
+    def validate(self, df):
+        self.aggregate_func.validate(df)
+    
 class Wrap:
     def __init__(self, df):
         self.df = df
@@ -34,5 +41,20 @@ class Wrap:
         return self
 
     def summarize(self, resulting_cols, group_by_cols):
-        pass
+        if isinstance(resulting_cols, str):
+            resulting_cols = [resulting_cols]
+
+        if isinstance(group_by_cols, str):
+            group_by_cols = [group_by_cols]
+
+        for g in group_by_cols:
+            if g not in self.df.columns:
+                raise Exception("unknown column name: " + g)
+        
+        args = [Aggregate(a) for a in resulting_cols]
+        for arg in args:
+            arg.validate(self.df)
+
+        
+
     

@@ -10,3 +10,5 @@ class TestAggregate(unittest.TestCase):
         self.assertEqual("x", a.new_col)
         self.assertEqual("count", a.aggregate_func.name)
         self.assertEqual("y", a.aggregate_func.arg)
+
+        

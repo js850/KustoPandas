@@ -2,13 +2,22 @@ import unittest
 import pandas as pd
 from kusto_pandas import Wrap
 
+def create_df():
+    df = pd.util.testing.makeMixedDataFrame()
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    return df
+
 class TestWrap(unittest.TestCase):
     def test_project(self):
-        df = pd.util.testing.makeDataFrame()
-        self.assertEqual(4, len(df.columns))
+        df = create_df()
+        self.assertGreater(len(df.columns), 2)
         print(df.columns)
         w = Wrap(df)
         w = w.project(["A", "B"])
         self.assertEqual(2, len(w.df.columns))
         self.assertListEqual(["A", "B"], list(w.df.columns))
     
+    def test_summarize(self):
+        df = create_df()
+        w = Wrap(df)
+        w.summarize("x=count()", "G")
