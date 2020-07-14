@@ -48,5 +48,32 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), "((1 * 3) != (9 / 3))")
         self.assertEqual(False, parsed.evaluate(None))
 
+    def test_parse_parentheses_lt(self):
+        x = "1 < (6 - 4) "
+        matches = find_matching_parentheses(x)
+        parsed = parse_parentheses(x, matches)
+        self.assertEqual(str(parsed), "(1 < (6 - 4))")
+        self.assertEqual(True, parsed.evaluate(None))
+    
+    def test_parse_parentheses_gt(self):
+        x = "1 > (6 - 4) "
+        matches = find_matching_parentheses(x)
+        parsed = parse_parentheses(x, matches)
+        self.assertEqual(str(parsed), "(1 > (6 - 4))")
+        self.assertEqual(False, parsed.evaluate(None))
+
+    def test_parse_parentheses_ge(self):
+        x = "1 >= (6 - 5) "
+        matches = find_matching_parentheses(x)
+        parsed = parse_parentheses(x, matches)
+        self.assertEqual(str(parsed), "(1 >= (6 - 5))")
+        self.assertEqual(True, parsed.evaluate(None))
+
+    def test_parse_parentheses_le(self):
+        x = "1 <= (6 - 4) "
+        matches = find_matching_parentheses(x)
+        parsed = parse_parentheses(x, matches)
+        self.assertEqual(str(parsed), "(1 <= (6 - 4))")
+        self.assertEqual(True, parsed.evaluate(None))
 
 

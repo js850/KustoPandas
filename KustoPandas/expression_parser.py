@@ -47,6 +47,24 @@ class NEq(Opp):
     def evaluate(self, vals):
         return self.left.evaluate(vals) != self.right.evaluate(vals)
 
+class Gt(Opp):
+    op = ">"
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) > self.right.evaluate(vals)
+
+class Lt(Opp):
+    op = "<"
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) < self.right.evaluate(vals)
+class Ge(Opp):
+    op = ">="
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) >= self.right.evaluate(vals)
+class Le(Opp):
+    op = "<="
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) <= self.right.evaluate(vals)
+
 
 class Pure:
     def __init__(self, value):
@@ -154,6 +172,7 @@ def starts_with(array, prefix):
     return True
 
 def parse_operator(operators, line):
+    operators = sorted(operators, key=lambda o: len(o.op), reverse=True)
     for i in range(len(line)):
         for operator in operators:
             if starts_with(line[i:], operator.op):
@@ -173,6 +192,10 @@ def parse_math(line):
     #print("exploded", line)
 
     p = parse_operator([Eq, NEq], line)
+    if p is not None:
+        return p
+
+    p = parse_operator([Gt, Lt, Ge, Le], line)
     if p is not None:
         return p
 
