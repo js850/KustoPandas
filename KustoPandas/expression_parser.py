@@ -80,14 +80,6 @@ class Pure:
     def __repr__(self):
         return "Pure({})".format(self.value)
 
-class Partial:
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return self.value.strip()
-    def __repr__(self):
-        return "Partial({})".format(self.value)
-
 class Int:
     def __init__(self, value):
         self.value = value.strip()
@@ -135,19 +127,6 @@ def find_matching_parentheses(line):
             matches[i] = previous - i
     return matches
 
-
-
-def explode(line):
-    # if isinstance(line, str):
-    #     return list(line)
-    output = []
-    for val in line:
-        if isinstance(val, Partial):
-            output += list(val.value)
-        else:
-            output.append(val)
-    return output
-
 match_internal = re.compile("[a-zA-Z_0-9]+")
 match_first = re.compile("[a-zA-Z_]")
 
@@ -193,10 +172,6 @@ def parse_math(line):
     if len(leftover) == 1 and isinstance(leftover[0], Expression):
         return leftover[0]
     
-    #print("line", line)
-    line = explode(line)
-    #print("exploded", line)
-
     # raise Exception("= operator needs to not match on == >= <= !=, etc")
     # p = parse_operator([Assignment], line)
     # if p is not None:
@@ -255,14 +230,14 @@ def parse_parentheses(line, matches):
     last = 0
     for i, end in parentheses:
         if i > last:
-            output.append(Partial(line[last:i]))
+            output += line[last:i]
             parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
             output.append(parsed)
             last = end + 1
     
     tail = line[last:]
     if not isempty(tail):
-        output.append(Partial(tail))
+        output += tail
     
     #print("output", output)
     return parse_math(output)

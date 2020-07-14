@@ -17,13 +17,13 @@ class TestExpressionParser(unittest.TestCase):
 
     
     def test_parse_math2(self):
-        x = [Partial(explode_line("3 + ")), parse_math(explode_line("6 / 2"))]
+        x = explode_line("3 + ") + [parse_math(explode_line("6 / 2"))]
         parsed = parse_math(x)
         #self.assertEqual(str(parsed), "(3 + (6 / 2))")
         self.assertEqual(6, parsed.evaluate(None))
     
     def test_parse_math3(self):
-        x = [Partial(explode_line("3 + ")), parse_math(explode_line("16 - 2")), Partial(explode_line("/7"))]
+        x = explode_line("3 +") + [parse_math(explode_line("16 - 2"))] + explode_line("/7")
         parsed = parse_math(x)
         #self.assertEqual(str(parsed), "(3 + ((16 - 2) / 7))")
         self.assertEqual(5, parsed.evaluate(None))
