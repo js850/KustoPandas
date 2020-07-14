@@ -65,6 +65,12 @@ class Le(Opp):
     def evaluate(self, vals):
         return self.left.evaluate(vals) <= self.right.evaluate(vals)
 
+class Assignment(Opp):
+    op = "="
+    def evaluate(self, vals):
+        return {str(self.left): self.right.evaluate(vals)}
+
+all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment]
 
 class Pure:
     def __init__(self, value):
@@ -132,8 +138,8 @@ def find_matching_parentheses(line):
 
 
 def explode(line):
-    if isinstance(line, str):
-        return list(line)
+    # if isinstance(line, str):
+    #     return list(line)
     output = []
     for val in line:
         if isinstance(val, Partial):
@@ -175,9 +181,9 @@ def parse_operator(operators, line):
     operators = sorted(operators, key=lambda o: len(o.op), reverse=True)
     for i in range(len(line)):
         for operator in operators:
-            if starts_with(line[i:], operator.op):
+            if line[i] == operator:
                 left = parse_math(line[:i])
-                right = parse_math(line[i + len(operator.op):])
+                right = parse_math(line[i + 1:])
                 return operator(left, right)
 
 def parse_math(line):
@@ -190,6 +196,11 @@ def parse_math(line):
     #print("line", line)
     line = explode(line)
     #print("exploded", line)
+
+    # raise Exception("= operator needs to not match on == >= <= !=, etc")
+    # p = parse_operator([Assignment], line)
+    # if p is not None:
+    #     return p
 
     p = parse_operator([Eq, NEq], line)
     if p is not None:
@@ -224,9 +235,16 @@ def split_one_level(matches):
             i += offset + 1
         else:
             i += 1
-    return groups
+    return groups    
+
+def isempty(line):
+    for c in line:
+        if c != " ":
+            return False
+    return True
 
 def parse_parentheses(line, matches):
+
     parentheses = split_one_level(matches)
     
     if not parentheses:
@@ -243,8 +261,30 @@ def parse_parentheses(line, matches):
             last = end + 1
     
     tail = line[last:]
-    if tail.strip():
+    if not isempty(tail):
         output.append(Partial(tail))
     
     #print("output", output)
     return parse_math(output)
+
+def explode_line(line):
+    ops = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
+    output = []
+    i = 0
+    while i < len(line):
+        matched_ops = [o for o in ops if line[i:].startswith(o.op)]
+        if matched_ops:
+            op = matched_ops[0]
+            output.append(op)
+            i += len(op.op)
+        else:
+            output.append(line[i])
+            i += 1
+    return output
+
+def parse_statement(line):
+    exploded = explode_line(line)
+    matches = find_matching_parentheses(exploded)
+    parsed = parse_parentheses(exploded, matches)
+    return parsed
+
