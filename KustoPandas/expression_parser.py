@@ -70,7 +70,17 @@ class Assignment(Opp):
     def evaluate(self, vals):
         return {str(self.left): self.right.evaluate(vals)}
 
-all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment]
+class And(Opp):
+    op = "&&"
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) and self.right.evaluate(vals)
+
+class Or(Opp):
+    op = "||"
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) or self.right.evaluate(vals)
+
+all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or]
 
 class Pure:
     def __init__(self, value):
@@ -99,7 +109,6 @@ class Float:
         return "Float({})".format(self.value)
     def evaluate(self, vals):
         return float(self.value)
-
 
 class Var:
     def __init__(self, value):
@@ -172,10 +181,17 @@ def parse_math(line):
     if len(leftover) == 1 and isinstance(leftover[0], Expression):
         return leftover[0]
     
-    # raise Exception("= operator needs to not match on == >= <= !=, etc")
-    # p = parse_operator([Assignment], line)
-    # if p is not None:
-    #     return p
+    p = parse_operator([Assignment], line)
+    if p is not None:
+        return p
+
+    p = parse_operator([Or], line)
+    if p is not None:
+        return p
+
+    p = parse_operator([And], line)
+    if p is not None:
+        return p
 
     p = parse_operator([Eq, NEq], line)
     if p is not None:
