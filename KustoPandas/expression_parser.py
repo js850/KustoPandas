@@ -1,4 +1,5 @@
 import numpy as np
+import re
 
 class Expression:
     pass
@@ -14,15 +15,28 @@ class Opp(Expression):
     def __repr__(self):
         return str(self)
 
+        
+
 class Add(Opp):
     op = "+"
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) + self.right.evaluate(vals)
 
 class Sub(Opp):
     op = "-"
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) - self.right.evaluate(vals)
+
 class Mul(Opp):
     op = "*"
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) * self.right.evaluate(vals)
+
 class Div(Opp):
     op = "/"
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) / self.right.evaluate(vals)
+
 
 class Pure:
     def __init__(self, value):
@@ -40,21 +54,36 @@ class Partial:
     def __repr__(self):
         return "Partial({})".format(self.value)
 
-class Num:
+class Int:
     def __init__(self, value):
         self.value = value.strip()
     def __str__(self):
         return self.value
     def __repr__(self):
-        return "Num({})".format(self.value)
+        return "Int({})".format(self.value)
+    def evaluate(self, vals):
+        return int(self.value)
+    
+class Float:
+    def __init__(self, value):
+        self.value = value.strip()
+    def __str__(self):
+        return self.value
+    def __repr__(self):
+        return "Float({})".format(self.value)
+    def evaluate(self, vals):
+        return float(self.value)
+
 
 class Var:
     def __init__(self, value):
-        self.value = value
+        self.value = value.strip()
     def __str__(self):
-        return self.value.strip()
+        return self.value
     def __repr__(self):
         return "Var({})".format(self.value)
+    def evaluate(self, vals):
+        return vals[self.value]
 
 
 def find_matching_parentheses(line):
@@ -84,7 +113,27 @@ def explode(line):
         else:
             output.append(val)
     return output
-        
+
+match_internal = re.compile("[a-zA-Z_0-9]+")
+match_first = re.compile("[a-zA-Z_]")
+
+def assert_var_name(var):
+    if not match_first.match(var):
+        raise Exception("variable name starts with illegal character " + var)
+    if not match_internal.match(var):
+        raise Exception("variable name has illegal characters " + var)
+
+def parse_num_or_var(val):
+    try:
+        n = int(val)
+        return Int(val)
+    except:
+        try:
+            n = float(val)
+            return Float(val)
+        except:
+            assert_var_name(val)
+            return Var(val)
 
 def parse_math(line):
     if len(line) == 0:
@@ -120,7 +169,7 @@ def parse_math(line):
     #if isinstance(line, basestr):
     if not "".join(line).strip():
         return None
-    return Pure(line)
+    return parse_num_or_var("".join(line).strip())
 
 
 def split_one_level(matches):
