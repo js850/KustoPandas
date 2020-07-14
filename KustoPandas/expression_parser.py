@@ -37,6 +37,16 @@ class Div(Opp):
     def evaluate(self, vals):
         return self.left.evaluate(vals) / self.right.evaluate(vals)
 
+class Eq(Opp):
+    op = "=="
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) == self.right.evaluate(vals)
+
+class NEq(Opp):
+    op = "!="
+    def evaluate(self, vals):
+        return self.left.evaluate(vals) != self.right.evaluate(vals)
+
 
 class Pure:
     def __init__(self, value):
@@ -135,6 +145,22 @@ def parse_num_or_var(val):
             assert_var_name(val)
             return Var(val)
 
+def starts_with(array, prefix):
+    for i in range(len(prefix)):
+        if i >= len(array):
+            return False
+        if array[i] != prefix[i]:
+            return False
+    return True
+
+def parse_operator(operators, line):
+    for i in range(len(line)):
+        for operator in operators:
+            if starts_with(line[i:], operator.op):
+                left = parse_math(line[:i])
+                right = parse_math(line[i + len(operator.op):])
+                return operator(left, right)
+
 def parse_math(line):
     if len(line) == 0:
         raise Exception("parsing math but line is length 0")
@@ -145,30 +171,22 @@ def parse_math(line):
     #print("line", line)
     line = explode(line)
     #print("exploded", line)
-    i = len(line)
-    for c in reversed(line):
-        i -= 1
-        if c == "+" or c == "-":
-            left = parse_math(line[:i])
-            right = parse_math(line[i+1:])
-            if c == "+":
-                return Add(left, right)
-            else:
-                return Sub(left, right)
-    i = len(line)
-    for c in reversed(line):
-        i -= 1
-        if c == "*" or c == "/":
-            left = parse_math(line[:i])
-            right = parse_math(line[i+1:])
-            if c == "*":
-                return Mul(left, right)
-            else:
-                return Div(left, right)
+
+    p = parse_operator([Eq, NEq], line)
+    if p is not None:
+        return p
+
+    p = parse_operator([Add, Sub], line)
+    if p is not None:
+        return p
+
+    p = parse_operator([Mul, Div], line)
+    if p is not None:
+        return p
 
     #if isinstance(line, basestr):
     if not "".join(line).strip():
-        return None
+        raise Exception("expected number or variable, got nothing")
     return parse_num_or_var("".join(line).strip())
 
 
