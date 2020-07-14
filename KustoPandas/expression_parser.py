@@ -247,9 +247,9 @@ def parse_parentheses(line, matches):
     for i, end in parentheses:
         if i > last:
             output += line[last:i]
-            parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
-            output.append(parsed)
-            last = end + 1
+        parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
+        output.append(parsed)
+        last = end + 1
     
     tail = line[last:]
     if not isempty(tail):

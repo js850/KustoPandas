@@ -94,3 +94,9 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), "(x14 = ((1 + 3) == 4))")
         result = parsed.evaluate(None)
         self.assertEqual(True, result["x14"])
+    
+    def test_parse_parens_on_left(self):
+        x = "(1 + 2) / 3"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "((1 + 2) / 3)")
+        self.assertEqual(1, parsed.evaluate(None))
