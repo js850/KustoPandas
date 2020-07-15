@@ -97,6 +97,19 @@ class Wrap:
         
         self.df = dfnew.reset_index()
         return self
+    
+    def extend(self, text):
+        parsed = ep.parse_statement(text)
+
+        if not isinstance(parsed, ep.Assignment):
+            raise Exception("exted expects an assignment: " + text)
+
+        result_map = parsed.evaluate(self.df)
+
+        for k, v in result_map.items():
+            self.df[str(k)] = v
+        
+        return self
 
         
 
