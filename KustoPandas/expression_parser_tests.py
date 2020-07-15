@@ -114,6 +114,14 @@ class TestExpressionParser(unittest.TestCase):
         def y(a, b):
             return a + b
         self.assertEqual(37, parsed.evaluate({"x_1": lambda x: (x + 1), "y": y}))
+ 
+    def test_parse_method_no_args(self):
+        x = "2 * xx()"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(2 * xx())")
+        def f():
+            return 7
+        self.assertEqual(14, parsed.evaluate({"xx": f}))
 
     def test_parse_parts_of_line(self):
         x = "1.0 + xx + yy*(a + b) + zz(3, w) + (1 >= 2)"
