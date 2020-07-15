@@ -70,11 +70,11 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), "(1 <= (6 - 4))")
         self.assertEqual(True, parsed.evaluate(None))
     
-    def test_explode_line(self):
-        x = "x =1<=2"
-        exploded = explode_line(x)
-        expected = ["x", " ", Assignment, "1", Le, "2"]
-        self.assertListEqual(expected, exploded)
+    # def test_explode_line(self):
+    #     x = "x =1<=2"
+    #     exploded = explode_line(x)
+    #     expected = ["x", " ", Assignment, "1", Le, "2"]
+    #     self.assertListEqual(expected, exploded)
 
     def test_parse_statement_Or(self):
         x = "1 > 1 || 3 > 2"

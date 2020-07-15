@@ -88,16 +88,8 @@ class Comma(Opp):
 all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
-class NumOrVar:
+class NumOrVar(Expression):
     pass
-
-class Pure:
-    def __init__(self, value):
-        self.value = "".join(value).strip()
-    def __str__(self):
-        return self.value
-    def __repr__(self):
-        return "Pure({})".format(self.value)
 
 class Int(NumOrVar):
     def __init__(self, value):
@@ -140,7 +132,7 @@ class Args:
         return [a.evaluate(vals) for a in self.args]
 
 
-class Method:
+class Method(Expression):
     def __init__(self, name, args):
         self.name = name
         self.args = args
@@ -227,9 +219,10 @@ def parse_method(line):
 def parse_math(line):
     if len(line) == 0:
         raise Exception("parsing math but line is length 0")
-    leftover = [c for c in line if c != " "]
-    if len(leftover) == 1 and isinstance(leftover[0], Expression):
-        return leftover[0]
+    if len(line) == 1:
+        if not isinstance(line[0], Expression):
+            raise Exception("expected Expression: " + str(line[0]))
+        return line[0]
     
     p = parse_operator([Assignment], line, right_to_left=True)
     if p is not None:
@@ -259,17 +252,7 @@ def parse_math(line):
     if p is not None:
         return p
 
-    if any([isinstance(c, Args) for c in line]):
-        return parse_method(line)
-
-    #if isinstance(line, basestr):
-    if len(line) > 1:
-        raise Exception("expected number or variable, got too much: " + str(line))
-    val = line[0]
-    if not isinstance(val, NumOrVar):
-        raise Exception("expected Expression: " + str(val))
-    return val
-
+    raise Exception("could not parse expression: " + str(line))
 
 def split_one_level(matches):
     groups = []
@@ -326,8 +309,10 @@ def parse_parentheses(line, matches):
         if i > last:
             output += line[last:i]
         if parentheses_are_method_arguments(line, i):
-            parsed = parse_method_args(line[i+1:end], matches[i+1:end])
-            output.append(parsed)
+            args = parse_method_args(line[i+1:end], matches[i+1:end])
+            method_name = output.pop()
+            method = Method(method_name, args)
+            output.append(method)
         else:
             parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
             output.append(parsed)
@@ -348,34 +333,11 @@ def op_matches_start(line, op):
             return False
     return True
 
-
 def get_matching_op(line):
     matched_ops = [o for o in all_operators_sorted if op_matches_start(line, o)]
     if matched_ops:
         return matched_ops[0]
     return None
-
-
-def explode_line(line):
-    ops = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
-    output = []
-    i = 0
-    while i < len(line):
-        matched_ops = [o for o in ops if line[i:].startswith(o.op)]
-        if matched_ops:
-            op = matched_ops[0]
-            output.append(op)
-            i += len(op.op)
-        else:
-            output.append(line[i])
-            i += 1
-    return output
-
-def parse_statement(line):
-    exploded = parse_parts_of_line(line)
-    matches = find_matching_parentheses(exploded)
-    parsed = parse_parentheses(exploded, matches)
-    return parsed
 
 def parse_rest(line):
     if not line:
@@ -401,8 +363,12 @@ def parse_rest(line):
     return [parse_num_or_var("".join(line))]
 
 def parse_parts_of_line(line):
-    #exploded = explode_line(line)
-
     exploded = list(line)
     parsed = parse_rest(exploded)
+    return parsed
+
+def parse_statement(line):
+    exploded = parse_parts_of_line(line)
+    matches = find_matching_parentheses(exploded)
+    parsed = parse_parentheses(exploded, matches)
     return parsed
