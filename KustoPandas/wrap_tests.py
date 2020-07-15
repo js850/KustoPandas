@@ -37,7 +37,7 @@ class TestWrap(unittest.TestCase):
     def test_summarize_count_sum(self):
         df = create_df()
         w = Wrap(df)
-        w.summarize(["x=count()", "z=sum(A)"], "G")
+        w.summarize(["x=count()", "z=sum(A)"], "G") 
 
         expected = pd.DataFrame({
             "G" : ["G1", "G2"],
@@ -49,6 +49,26 @@ class TestWrap(unittest.TestCase):
         print(w.df)
         
         self.assertTrue(w.df.equals(expected))
+    
+    def test_summarize_percentile(self):
+        df = create_df()
+        w = Wrap(df)
+        w.summarize(["percentiles(B, 50, 75)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["percentiles_50"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["percentiles_75"]))
+
+    def test_summarize_percentile2(self):
+        df = create_df()
+        w = Wrap(df)
+        w.summarize(["myperc = percentiles(B, 50, 75)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["myperc_75"]))
 
     def test_extend(self):
         df = create_df()
@@ -83,6 +103,7 @@ class TestWrap(unittest.TestCase):
         w = Wrap(df)
         w = w.where("(B == O)")
         self.assertListEqual([1, 3], list(w.df["B"]))
+    
 
 
 
