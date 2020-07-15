@@ -105,10 +105,12 @@ class TestExpressionParser(unittest.TestCase):
         x = "2 * xx(5)"
         parsed = parse_statement(x)
         self.assertEqual(str(parsed), "(2 * xx(5))")
-        self.assertEqual(1, parsed.evaluate({"xx": lambda x: (x + 1)}))
+        self.assertEqual(12, parsed.evaluate({"xx": lambda x: (x + 1)}))
     
     def test_parse_methods2(self):
-        x = "(1 + 3) * xx(5) + yy(6, 7)"
+        x = "(1 + 3) * x_1(5) + y(6, 7)"
         parsed = parse_statement(x)
-        self.assertEqual(str(parsed), "(((1 + 3) * xx(5)) + yy(6, 7))")
-        self.assertEqual(1, parsed.evaluate(None))
+        self.assertEqual(str(parsed), "(((1 + 3) * x_1(5)) + y(6, 7))")
+        def y(a, b):
+            return a + b
+        self.assertEqual(37, parsed.evaluate({"x_1": lambda x: (x + 1), "y": y}))

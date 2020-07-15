@@ -127,6 +127,9 @@ class Args:
         return "(" + ", ".join((str(a) for a in self.args)) + ")"
     def __repr__(self):
         return str(self)
+    def evaluate(self, vals):
+        return [a.evaluate(vals) for a in self.args]
+
 
 class Method:
     def __init__(self, name, args):
@@ -136,6 +139,10 @@ class Method:
         return str(self.name) + str(self.args)
     def __repr__(self):
         return str(self)
+    def evaluate(self, vals):
+        method = self.name.evaluate(vals)
+        args = self.args.evaluate(vals)
+        return method(*args)
 
 
 def find_matching_parentheses(line):
