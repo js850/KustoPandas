@@ -192,9 +192,12 @@ def starts_with(array, prefix):
             return False
     return True
 
-def parse_operator(operators, line):
-    operators = sorted(operators, key=lambda o: len(o.op), reverse=True)
-    for i in range(len(line)):
+def parse_operator(operators, line, right_to_left=False):
+    indices = range(len(line))
+    if right_to_left:
+        indices = reversed(indices)
+
+    for i in indices:
         for operator in operators:
             if line[i] == operator:
                 left = parse_math(line[:i])
@@ -225,7 +228,7 @@ def parse_math(line):
     if len(leftover) == 1 and isinstance(leftover[0], Expression):
         return leftover[0]
     
-    p = parse_operator([Assignment], line)
+    p = parse_operator([Assignment], line, right_to_left=True)
     if p is not None:
         return p
 
