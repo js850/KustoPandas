@@ -120,6 +120,23 @@ class Var:
     def evaluate(self, vals):
         return vals[self.value]
 
+class Args:
+    def __init__(self, args):
+        self.args = args
+    def __str__(self):
+        return "(" + ", ".join((str(a) for a in self.args)) + ")"
+    def __repr__(self):
+        return str(self)
+
+class Method:
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args
+    def __str__(self):
+        return str(self.name) + str(self.args)
+    def __repr__(self):
+        return str(self)
+
 
 def find_matching_parentheses(line):
     matches = np.zeros(len(line), dtype=np.int)
@@ -145,6 +162,10 @@ def assert_var_name(var):
     if not match_internal.match(var):
         raise Exception("variable name has illegal characters " + var)
 
+def parse_var(val):
+    assert_var_name(val)
+    return Var(val)
+
 def parse_num_or_var(val):
     try:
         n = int(val)
@@ -154,8 +175,7 @@ def parse_num_or_var(val):
             n = float(val)
             return Float(val)
         except:
-            assert_var_name(val)
-            return Var(val)
+            return parse_var(val)
 
 def starts_with(array, prefix):
     for i in range(len(prefix)):
@@ -173,6 +193,23 @@ def parse_operator(operators, line):
                 left = parse_math(line[:i])
                 right = parse_math(line[i + 1:])
                 return operator(left, right)
+
+def parse_method(line):
+    args_pos = [i for i, c in enumerate(line) if isinstance(c, Args)]
+    if len(args_pos) != 1:
+        raise Exception("Expected to find exactly one argument list: " + line)
+
+    i = args_pos[0]
+
+    if i == 0:
+        raise Exception("found Args with no method name: " + line)
+    name = parse_num_or_var("".join(line[:i]).strip())
+
+    if not isempty(line[i+1:]):
+        raise Exception("found trailing stuff after the Args: " + line)
+
+    return Method(name, line[i])
+
 
 def parse_math(line):
     if len(line) == 0:
@@ -209,6 +246,9 @@ def parse_math(line):
     if p is not None:
         return p
 
+    if any([isinstance(c, Args) for c in line]):
+        return parse_method(line)
+
     #if isinstance(line, basestr):
     if not "".join(line).strip():
         raise Exception("expected number or variable, got nothing")
@@ -234,6 +274,30 @@ def isempty(line):
             return False
     return True
 
+def parentheses_are_method_arguments(line, i):
+    if i == 0:
+        return False
+    # if what came before looks like a variable, then this is a method
+    # warning: whitespace between variable and ( will cause failure
+    return match_internal.match(line[i-1]) is not None
+
+def parse_method_args(line, matches):
+    args = []
+    last = 0
+    for i, c in enumerate(line):
+        if c == ",":
+            if i == last:
+                raise Exception("commas are not separated by a value in args: " + line) 
+            parsed = parse_parentheses(line[last:i], matches[last:i])
+            args.append(parsed)
+            last = i+1
+    
+    if last < len(line):
+        parsed = parse_parentheses(line[last:], matches[last:])
+        args.append(parsed)
+
+    return Args(args)
+
 def parse_parentheses(line, matches):
 
     parentheses = split_one_level(matches)
@@ -247,8 +311,12 @@ def parse_parentheses(line, matches):
     for i, end in parentheses:
         if i > last:
             output += line[last:i]
-        parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
-        output.append(parsed)
+        if parentheses_are_method_arguments(line, i):
+            parsed = parse_method_args(line[i+1:end], matches[i+1:end])
+            output.append(parsed)
+        else:
+            parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
+            output.append(parsed)
         last = end + 1
     
     tail = line[last:]

@@ -100,3 +100,15 @@ class TestExpressionParser(unittest.TestCase):
         parsed = parse_statement(x)
         self.assertEqual(str(parsed), "((1 + 2) / 3)")
         self.assertEqual(1, parsed.evaluate(None))
+    
+    def test_parse_methods(self):
+        x = "2 * xx(5)"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(2 * xx(5))")
+        self.assertEqual(1, parsed.evaluate({"xx": lambda x: (x + 1)}))
+    
+    def test_parse_methods2(self):
+        x = "(1 + 3) * xx(5) + yy(6, 7)"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(((1 + 3) * xx(5)) + yy(6, 7))")
+        self.assertEqual(1, parsed.evaluate(None))
