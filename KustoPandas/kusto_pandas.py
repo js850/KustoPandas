@@ -102,13 +102,24 @@ class Wrap:
         parsed = ep.parse_statement(text)
 
         if not isinstance(parsed, ep.Assignment):
-            raise Exception("exted expects an assignment: " + text)
+            raise Exception("extend expects an assignment: " + text)
 
         result_map = parsed.evaluate(self.df)
 
         for k, v in result_map.items():
             self.df[str(k)] = v
         
+        return self
+    
+    def where(self, condition):
+        parsed = ep.parse_statement(condition)
+        if isinstance(parsed, ep.Assignment):
+            raise Exception("where cannot have assignment: " + str(parsed))
+
+        result = parsed.evaluate(self.df)
+
+        self.df = self.df[result]
+
         return self
 
         

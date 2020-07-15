@@ -1,5 +1,7 @@
 import numpy as np
 import re
+import pandas as pd
+import inspect 
 
 class Expression:
     pass
@@ -73,12 +75,20 @@ class Assignment(Opp):
 class And(Opp):
     op = "&&"
     def evaluate(self, vals):
-        return self.left.evaluate(vals) and self.right.evaluate(vals)
+        left = self.left.evaluate(vals)
+        right = self.right.evaluate(vals)
+        if isinstance(left, pd.Series) or isinstance(right, pd.Series):
+            return left & right
+        return left and right 
 
 class Or(Opp):
     op = "||"
     def evaluate(self, vals):
-        return self.left.evaluate(vals) or self.right.evaluate(vals)
+        left = self.left.evaluate(vals)
+        right = self.right.evaluate(vals)
+        if isinstance(left, pd.Series) or isinstance(right, pd.Series):
+            return left | right
+        return left or right 
 
 class Comma(Opp):
     op = ","
@@ -362,9 +372,18 @@ def parse_rest(line):
 
     return [parse_num_or_var("".join(line))]
 
+def is_op(c):
+    return inspect.isclass(c) and issubclass(c, Opp)
+
+def assert_parts_of_line(line):
+    for c, cnext in zip(line, line[1:]):
+        if is_op(c) and is_op(cnext):
+            raise Exception("Parsing error: Found two operators in a row: " + str(line))
+
 def parse_parts_of_line(line):
     exploded = list(line)
     parsed = parse_rest(exploded)
+    assert_parts_of_line(parsed)
     return parsed
 
 def parse_statement(line):

@@ -1,5 +1,6 @@
 import unittest
 import pandas as pd
+import numpy as np
 from kusto_pandas import Wrap
 
 def create_df():
@@ -57,4 +58,33 @@ class TestWrap(unittest.TestCase):
         z = w.df["z"]
         expected = [0, 2, 4, 6, 8]
         self.assertListEqual(expected, list(z))
+    
+    def test_where(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.where("B > 2")
+        self.assertListEqual([3, 4], list(w.df["B"]))
+    
+    def test_where_and(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.where("(B > 1) && (B < 4)")
+        self.assertListEqual([2, 3], list(w.df["B"]))
+    
+    def test_where_or(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.where("(B >= 3) || (B < 1)")
+        self.assertListEqual([0, 3, 4], list(w.df["B"]))
+    
+    def test_where_equiv(self):
+        df = create_df()
+        df["O"] = [-1, 1, -1, 3, -1] 
+        w = Wrap(df)
+        w = w.where("(B == O)")
+        self.assertListEqual([1, 3], list(w.df["B"]))
+
+
+
+
 

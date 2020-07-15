@@ -128,3 +128,8 @@ class TestExpressionParser(unittest.TestCase):
         parsed = parse_parts_of_line(x)
         print(x)
         print(parsed)
+    
+    def test_two_operators_in_a_row(self):
+        x = "1 + + 2"
+        with self.assertRaisesRegex(Exception, "Parsing error: Found two operators in a row.*"):
+            parse_statement(x)
