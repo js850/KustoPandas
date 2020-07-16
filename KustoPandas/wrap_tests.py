@@ -194,6 +194,13 @@ class TestWrap(unittest.TestCase):
         w = Wrap(df)
         w = w.where("D >= \"2009-01-06\"")
         self.assertListEqual([3, 4], list(w.df["B"]))
+    
+    def test_where_contains(self):
+        df = create_df()
+        df["C"] = ["hi", "HI there", "today", "what", "this"]
+        w = Wrap(df)
+        w = w.where("C contains \"hi\"")
+        self.assertListEqual(["hi", "HI there", "this"], list(w.df["C"]))
 
 
 

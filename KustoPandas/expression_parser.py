@@ -94,7 +94,7 @@ class Contains(Opp):
         left = self.left.evaluate(vals)
         right = self.right.evaluate(vals)
         if isinstance(left, pd.Series) or isinstance(right, pd.Series):
-            return right in left
+            return left.str.contains(right, case=False)
         return right.lower() in left.lower() 
 
 class Comma(Opp):
