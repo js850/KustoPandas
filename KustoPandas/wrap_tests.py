@@ -201,6 +201,13 @@ class TestWrap(unittest.TestCase):
         w = Wrap(df)
         w = w.where("C contains \"hi\"")
         self.assertListEqual(["hi", "HI there", "this"], list(w.df["C"]))
+    
+    def test_where_notcontains(self):
+        df = create_df()
+        df["C"] = ["hi", "HI there", "today", "what", "this"]
+        w = Wrap(df)
+        w = w.where("C !contains \"hi\"")
+        self.assertListEqual(["today", "what"], list(w.df["C"]))
 
 
 

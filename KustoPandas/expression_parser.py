@@ -97,12 +97,21 @@ class Contains(Opp):
             return left.str.contains(right, case=False)
         return right.lower() in left.lower() 
 
+class NotContains(Opp):
+    op = "!contains"
+    def evaluate(self, vals):
+        left = self.left.evaluate(vals)
+        right = self.right.evaluate(vals)
+        if isinstance(left, pd.Series) or isinstance(right, pd.Series):
+            return ~left.str.contains(right, case=False)
+        return right.lower() not in left.lower()     
+
 class Comma(Opp):
     op = ","
     def evaluate(self, vals):
         return self.left.evaluate(vals) or self.right.evaluate(vals)
 
-all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma, Contains]
+all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma, Contains, NotContains]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
@@ -190,6 +199,7 @@ def find_matching_parentheses(line):
 
 match_internal = re.compile("[a-zA-Z_0-9]+")
 match_first = re.compile("[a-zA-Z_]")
+match_az = re.compile("[a-zA-Z]")
 
 def assert_var_name(var):
     if not match_first.match(var):
@@ -280,7 +290,7 @@ def parse_math(line):
         return p
 
     # I'm just guessing what priority contains should have
-    p = parse_operator([Contains], line)
+    p = parse_operator([Contains, NotContains], line)
     if p is not None:
         return p
 
@@ -365,9 +375,11 @@ def op_matches_start(line, op):
             return False
     return True
 
+re
+
 def op_is_not_special_chars(op):
     # e.g. contains, or, and
-    return match_internal.match(op.op) is not None
+    return match_az.search(op.op) is not None
 
 def is_whole_word_match(word, line, i):
     # we already know it matches.  just verify the match is on whole word

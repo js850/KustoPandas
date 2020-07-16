@@ -170,3 +170,11 @@ class TestExpressionParser(unittest.TestCase):
 
         result = parsed.evaluate({"A": "Hello there"})
         self.assertEqual(result["y"], True)
+    
+    def test_notcontains(self):
+        x = "y = A !contains \"hello\""
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(y = (A !contains \"hello\"))")
+
+        result = parsed.evaluate({"A": "hello there"})
+        self.assertEqual(result["y"], False)
