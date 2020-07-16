@@ -1,11 +1,10 @@
 import expression_parser as ep
 
 class AggMethod:
-    dname = None
+    def get_method_name(self):
+        return self.__class__.__name__.lower()
 
-
-class SimpleAgg:
-    dname = None
+class SimpleAgg(AggMethod):
     def __init__(self, name, args):
         self.args = args
         self.name = name
@@ -14,7 +13,7 @@ class SimpleAgg:
         suffix = ""
         if len(self.args) > 0:
             suffix = str(self.args[0])
-        return self.dname + "_" + suffix
+        return self.get_method_name() + "_" + suffix
 
     def get_name(self):
         if self.name:
@@ -31,39 +30,28 @@ class SimpleAgg:
         raise NotImplementedError()
 
 class NoArgAgg(SimpleAgg):
-    dname = "count"
-    
     def validate(self, df):
         if self.args:
-            raise Exception("{0} can't take an arg: {1}".format(self.dname, str(self.args)))
+            raise Exception("{0} can't take an arg: {1}".format(self.get_method_name(), str(self.args)))
 
 class AggOneArg(SimpleAgg):
-    dname = "dcount"
-
     def validate(self, df):
         if len(self.args) != 1:
-            raise Exception("{0} can only take one argument: {1}".format(self.dname, str(self.args)))
+            raise Exception("{0} can only take one argument: {1}".format(self.get_method_name(), str(self.args)))
 
 class Count(NoArgAgg):
-    dname = "count"
-    
     def apply_aggregate(self, grouped):
         return grouped.size()
 
 class DCount(AggOneArg):
-    dname = "dcount"
-
     def apply_aggregate(self, grouped):
         return self.args[0].evaluate(grouped).nunique()
 
 class Sum(AggOneArg):
-    dname = "sum"
-
     def apply_aggregate(self, grouped):
         return self.args[0].evaluate(grouped).sum()
 
 class Percentiles(SimpleAgg):
-    dname = "percentiles"
 
     def validate(self, df):
         if len(self.args) < 2:
@@ -81,7 +69,7 @@ class Percentiles(SimpleAgg):
         if self.name is not None:
             basename = self.name + "_"
         else:
-            basename = self.dname + "_"
+            basename = self.get_method_name() + "_"
         
         names = [basename + str(p) for p in percentiles]
 
@@ -95,11 +83,12 @@ class Percentiles(SimpleAgg):
         return zip(names, flattened)
 
 
-
+def get_method_name(type):
+    return type.__name__.lower()
 
 aggregate_methods = [Count, DCount, Sum, Percentiles]
 
-aggregate_map = dict([(t.dname, t) for t in aggregate_methods])
+aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
 class Aggregate:
     def __init__(self, text):
