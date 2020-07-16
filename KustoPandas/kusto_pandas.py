@@ -3,15 +3,32 @@ import re
 
 import expression_parser as ep
 from aggregates import Aggregate
+from methods import get_methods
+
+class MultiDict:
+    def __init__(self, dicts):
+        self.dicts = dicts
     
+    def __getitem__(self, key):
+        for d in self.dicts:
+            try:
+                return d[key]
+            except KeyError:
+                pass
+        
+        raise KeyError("key")
+
 class Wrap:
     def __init__(self, df):
         self.df = df
-    
+
+    def get_var_map(self):
+        return MultiDict([self.df, get_methods()])
+
     def project(self, cols):
         self.df = self.df[cols]
         return self
-
+    
     def summarize(self, resulting_cols, group_by_cols):
         if isinstance(resulting_cols, str):
             resulting_cols = [resulting_cols]
@@ -44,7 +61,7 @@ class Wrap:
         if not isinstance(parsed, ep.Assignment):
             raise Exception("extend expects an assignment: " + text)
 
-        result_map = parsed.evaluate(self.df)
+        result_map = parsed.evaluate(self.get_var_map())
 
         for k, v in result_map.items():
             self.df[str(k)] = v
@@ -56,7 +73,7 @@ class Wrap:
         if isinstance(parsed, ep.Assignment):
             raise Exception("where cannot have assignment: " + str(parsed))
 
-        result = parsed.evaluate(self.df)
+        result = parsed.evaluate(self.get_var_map())
 
         self.df = self.df[result]
 

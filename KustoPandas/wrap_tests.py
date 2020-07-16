@@ -113,6 +113,13 @@ class TestWrap(unittest.TestCase):
         w = Wrap(df)
         w = w.where("(B == O)")
         self.assertListEqual([1, 3], list(w.df["B"]))
+
+    def test_extend_iff(self):
+        df = create_df()
+        df["W"] = [-1, 1, -1, 1, -1] 
+        w = Wrap(df)
+        w = w.extend("Z = iff(W > 0, B, C)")
+        self.assertListEqual(["foo1", 1, "foo3", 3, "foo5"], list(w.df["Z"]))
     
 
 
