@@ -30,36 +30,35 @@ class SimpleAgg:
     def apply_aggregate(self, grouped):
         raise NotImplementedError()
 
-class Count(SimpleAgg):
+class NoArgAgg(SimpleAgg):
     dname = "count"
     
     def validate(self, df):
         if self.args:
-            raise Exception("count can't take an arg: " +  str(self.args))
-    
-    def apply_aggregate(self, grouped):
-        return grouped.size()
+            raise Exception("{0} can't take an arg: {1}".format(self.dname, str(self.args)))
 
-class DCount(SimpleAgg):
+class AggOneArg(SimpleAgg):
     dname = "dcount"
 
     def validate(self, df):
         if len(self.args) != 1:
             raise Exception("{0} can only take one argument: {1}".format(self.dname, str(self.args)))
+
+class Count(NoArgAgg):
+    dname = "count"
     
+    def apply_aggregate(self, grouped):
+        return grouped.size()
+
+class DCount(AggOneArg):
+    dname = "dcount"
+
     def apply_aggregate(self, grouped):
         return self.args[0].evaluate(grouped).nunique()
 
-class Sum(SimpleAgg):
+class Sum(AggOneArg):
     dname = "sum"
 
-    def validate(self, df):
-        if len(self.args) != 1:
-            raise Exception("Sum can only take one argument: " + str(self.args))
-        for arg in self.args:
-            if str(arg) not in df.columns:
-                raise Exception("sum argument is not a column: ", str(arg))
-    
     def apply_aggregate(self, grouped):
         return self.args[0].evaluate(grouped).sum()
 
