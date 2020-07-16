@@ -70,6 +70,16 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
         self.assertListEqual([2.0, 3.5], list(w.df["myperc_75"]))
 
+    def test_summarize_percentile_one_arg(self):
+        df = create_df()
+        w = Wrap(df)
+        w.summarize(["myperc = percentiles(B, 50)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
+        self.assertListEqual(["G", "myperc_50"], list(w.df.columns))
+
     def test_extend(self):
         df = create_df()
         w = Wrap(df)

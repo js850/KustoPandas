@@ -131,6 +131,16 @@ class Var(NumOrVar):
     def evaluate(self, vals):
         return vals[self.value]
 
+class StringLiteral(NumOrVar):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return "\"" + self.value + "\""
+    def __repr__(self):
+        return "StringLiteral({})".format(self.value)
+    def evaluate(self, vals):
+        return self.value
+
 class Args:
     def __init__(self, args):
         self.args = args
@@ -354,6 +364,11 @@ def parse_rest(line):
         return []
 
     for i, c in enumerate(line):
+        if c == "(" or c == ")" or isinstance(c, StringLiteral):
+            left = parse_rest(line[:i])
+            right = parse_rest(line[i+1:])
+            return left + [c] + right
+
         if c == " ":
             left = parse_rest(line[:i])
             right = parse_rest(line[i+1:])
@@ -365,11 +380,6 @@ def parse_rest(line):
             right = parse_rest(line[i+len(op.op):])
             return left + [op] + right
         
-        if c == "(" or c == ")":
-            left = parse_rest(line[:i])
-            right = parse_rest(line[i+1:])
-            return left + [c] + right
-
     return [parse_num_or_var("".join(line))]
 
 def is_op(c):
@@ -380,9 +390,27 @@ def assert_parts_of_line(line):
         if is_op(c) and is_op(cnext):
             raise Exception("Parsing error: Found two operators in a row: " + str(line))
 
+def parse_string_literals(line):
+    matching = None
+    last = 0
+    for i, c in enumerate(line):
+        if matching is None:
+            if c == "\"" or c == "'":
+                matching = c
+                last = i
+        else:
+            if c == matching:
+                left = line[:last]
+                val = StringLiteral("".join(line[last+1:i]))
+                right = parse_string_literals(line[i+1:])
+                return left + [val] + right
+    
+    return line
+
 def parse_parts_of_line(line):
     exploded = list(line)
-    parsed = parse_rest(exploded)
+    with_strings = parse_string_literals(exploded)
+    parsed = parse_rest(with_strings)
     assert_parts_of_line(parsed)
     return parsed
 

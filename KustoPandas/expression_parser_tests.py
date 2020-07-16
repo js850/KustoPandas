@@ -133,3 +133,20 @@ class TestExpressionParser(unittest.TestCase):
         x = "1 + + 2"
         with self.assertRaisesRegex(Exception, "Parsing error: Found two operators in a row.*"):
             parse_statement(x)
+    
+    def test_string_literal(self):
+        x = "y = \"hello \""
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(y = \"hello \")")
+        result = parsed.evaluate(None)
+        self.assertEqual(result["y"], "hello ")
+
+    def test_string_literal2(self):
+        x = "y = xx(\"hello there\")"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(y = xx(\"hello there\"))")
+
+        def xx(s):
+            return s + "_suffix"
+        result = parsed.evaluate({"xx": xx})
+        self.assertEqual(result["y"], "hello there_suffix")
