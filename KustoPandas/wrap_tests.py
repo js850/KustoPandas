@@ -121,6 +121,17 @@ class TestWrap(unittest.TestCase):
         w = w.extend("Z = iff(W > 0, B, C)")
         self.assertListEqual(["foo1", 1, "foo3", 3, "foo5"], list(w.df["Z"]))
     
+    def test_extend_iff_string_literal(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.extend("Z = iff(C == \"foo1\", B, C)")
+        self.assertListEqual([0, "foo2", "foo3", "foo4", "foo5"], list(w.df["Z"]))
+    
+    def test_where_datetime(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.where("D >= \"2009-01-06\"")
+        self.assertListEqual([3, 4], list(w.df["B"]))
 
 
 
