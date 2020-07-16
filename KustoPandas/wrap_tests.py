@@ -257,5 +257,18 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual([0, 1, 2, 4], list(wnew.df["B"]))
         self.assertListEqual(list(range(5)), list(w.df["B"]))
 
+    
+    def test_let(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.let(xx=2).let(yy=3).extend("Z = B + xx + yy")
+        self.assertListEqual([5, 6, 7, 8, 9], list(wnew.df["Z"]))
+
+    def test_let_method(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.let(xx=lambda x: x + 1).extend("Z = B + xx(4)")
+        self.assertListEqual([5, 6, 7, 8, 9], list(wnew.df["Z"]))
+
 
 

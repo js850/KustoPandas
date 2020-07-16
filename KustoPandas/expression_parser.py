@@ -290,7 +290,7 @@ def parse_math(line):
     if p is not None:
         return p
 
-    # I'm just guessing what priority contains should have
+    # I'm just guessing what priority these should have
     p = parse_operator([Contains, NotContains], line)
     if p is not None:
         return p

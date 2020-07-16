@@ -21,12 +21,20 @@ class MultiDict:
 class Wrap:
     def __init__(self, df):
         self.df = df
+        self.let_statements = []
     
     def create_new(self, df):
-        return Wrap(df)
+        w = Wrap(df)
+        w.let_statements = list(self.let_statements)
+        return w
 
     def get_var_map(self):
-        return MultiDict([self.df, get_methods()])
+        return MultiDict([self.df, get_methods()] + self.let_statements)
+
+    def let(self, **kwargs):
+        w = self.create_new(self.df)
+        w.let_statements.append(kwargs)
+        return w
 
     def project(self, *cols, **renamed_cols):
         dfnew = pd.DataFrame()
