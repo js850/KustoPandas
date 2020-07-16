@@ -28,9 +28,19 @@ class Wrap:
     def get_var_map(self):
         return MultiDict([self.df, get_methods()])
 
-    def project(self, cols):
-        self.df = self.df[cols]
-        return self
+    def project(self, *cols, **renamed_cols):
+        dfnew = pd.DataFrame()
+
+        for c in cols:
+            dfnew[c] = self.df[c]
+        
+        var_map = self.get_var_map()
+        for name, expr in renamed_cols.items():
+            parsed = ep.parse_statement(expr)
+            result = parsed.evaluate(var_map)
+            dfnew[name] = result
+
+        return self.create_new(dfnew)
     
     def summarize(self, resulting_cols, group_by_cols):
         if isinstance(resulting_cols, str):

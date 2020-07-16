@@ -18,10 +18,26 @@ class TestWrap(unittest.TestCase):
         self.assertGreater(len(df.columns), 2)
         print(df.columns)
         w = Wrap(df)
-        w = w.project(["A", "B"])
-        self.assertEqual(2, len(w.df.columns))
-        self.assertListEqual(["A", "B"], list(w.df.columns))
+        wnew = w.project("A", "B")
+        self.assertListEqual(["A", "B"], list(wnew.df.columns))
+        self.assertGreater(len(w.df.columns), 2)
+
+    def test_project_kwargs(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.project("A", Z="B * 2")
+        self.assertListEqual(["A", "Z"], list(wnew.df.columns))
+        self.assertListEqual([0, 2, 4, 6, 8], list(wnew.df["Z"]))
+        self.assertGreater(len(w.df.columns), 2)
     
+    def test_project_kwargs2(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.project("A", **{"Z col": "B * 2"})
+        self.assertListEqual(["A", "Z col"], list(wnew.df.columns))
+        self.assertListEqual([0, 2, 4, 6, 8], list(wnew.df["Z col"]))
+        self.assertGreater(len(w.df.columns), 2)
+
     def test_summarize(self):
         df = create_df()
         w = Wrap(df)
