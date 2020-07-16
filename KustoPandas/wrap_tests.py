@@ -25,7 +25,7 @@ class TestWrap(unittest.TestCase):
     def test_summarize(self):
         df = create_df()
         w = Wrap(df)
-        w.summarize("x=count()", "G")
+        w = w.summarize("x=count()", "G")
 
         expected = pd.DataFrame({
             "G" : ["G1", "G2"],
@@ -37,7 +37,7 @@ class TestWrap(unittest.TestCase):
     def test_summarize_count_sum(self):
         df = create_df()
         w = Wrap(df)
-        w.summarize(["x=count()", "z=sum(A)"], "G") 
+        w = w.summarize(["x=count()", "z=sum(A)"], "G") 
 
         expected = pd.DataFrame({
             "G" : ["G1", "G2"],
@@ -53,7 +53,7 @@ class TestWrap(unittest.TestCase):
     def test_summarize_percentile(self):
         df = create_df()
         w = Wrap(df)
-        w.summarize(["percentiles(B, 50, 75)"], "G")
+        w = w.summarize(["percentiles(B, 50, 75)"], "G")
 
         print(w.df)
 
@@ -63,7 +63,7 @@ class TestWrap(unittest.TestCase):
     def test_summarize_percentile2(self):
         df = create_df()
         w = Wrap(df)
-        w.summarize(["myperc = percentiles(B, 50, 75)"], "G")
+        w = w.summarize(["myperc = percentiles(B, 50, 75)"], "G")
 
         print(w.df)
 
@@ -73,7 +73,7 @@ class TestWrap(unittest.TestCase):
     def test_summarize_percentile_one_arg(self):
         df = create_df()
         w = Wrap(df)
-        w.summarize(["myperc = percentiles(B, 50)"], "G")
+        w = w.summarize(["myperc = percentiles(B, 50)"], "G")
 
         print(w.df)
 
@@ -86,7 +86,7 @@ class TestWrap(unittest.TestCase):
         df["F"] = [1, 1, 3, 4, 3]
 
         w = Wrap(df)
-        w.summarize(["dcount(F)"], "G")
+        w = w.summarize(["dcount(F)"], "G")
 
         print(w.df)
 
@@ -99,7 +99,7 @@ class TestWrap(unittest.TestCase):
         df["F"] = [1, 1, 3, 4, 3]
 
         w = Wrap(df)
-        w.summarize(["countif(F > 2)"], "G")
+        w = w.summarize(["countif(F > 2)"], "G")
 
         print(w.df)
 
@@ -112,7 +112,7 @@ class TestWrap(unittest.TestCase):
         df["F"] = [1, 1, 3, 4, 3]
 
         w = Wrap(df)
-        w.summarize(["avg(F)"], "G")
+        w = w.summarize(["avg(F)"], "G")
 
         self.assertListEqual([2, 3], list(w.df["avg_F"]))
         self.assertListEqual(["G", "avg_F"], list(w.df.columns))
@@ -123,7 +123,7 @@ class TestWrap(unittest.TestCase):
         df["F"] = [1, 1, 3, 4, 3]
 
         w = Wrap(df)
-        w.summarize(["stdev(F)"], "G")
+        w = w.summarize(["stdev(F)"], "G")
     
         print(w.df)
         np.testing.assert_almost_equal(w.df["stdev_F"], [1.732051, 0], 3)
@@ -135,7 +135,7 @@ class TestWrap(unittest.TestCase):
         df["F"] = [1, 1, 3, 4, 3]
 
         w = Wrap(df)
-        w.summarize(["variance(F)"], "G")
+        w = w.summarize(["variance(F)"], "G")
         
         print(w.df)
         
@@ -145,7 +145,7 @@ class TestWrap(unittest.TestCase):
     def test_extend(self):
         df = create_df()
         w = Wrap(df)
-        w.extend("z =B*2")
+        w = w.extend("z =B*2")
 
         z = w.df["z"]
         expected = [0, 2, 4, 6, 8]
