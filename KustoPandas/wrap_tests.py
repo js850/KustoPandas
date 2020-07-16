@@ -208,6 +208,13 @@ class TestWrap(unittest.TestCase):
         w = Wrap(df)
         w = w.where("C !contains \"hi\"")
         self.assertListEqual(["today", "what"], list(w.df["C"]))
+    
+    def test_take(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.take(2)
+        self.assertListEqual([0, 1], list(wnew.df["B"]))
+        self.assertEqual(5, len(w.df["B"]))
 
 
 

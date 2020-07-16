@@ -80,6 +80,10 @@ class Wrap:
 
         newdf = self.df[result]
         return self.create_new(newdf)
+    
+    def take(self, n):
+        newdf = self.df.head(n)
+        return self.create_new(newdf)
 
         
 
