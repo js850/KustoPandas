@@ -106,6 +106,42 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual([1, 2], list(w.df["countif_"]))
         self.assertListEqual(["G", "countif_"], list(w.df.columns))
 
+    def test_summarize_avg(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w.summarize(["avg(F)"], "G")
+
+        self.assertListEqual([2, 3], list(w.df["avg_F"]))
+        self.assertListEqual(["G", "avg_F"], list(w.df.columns))
+
+    def test_summarize_std(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w.summarize(["stdev(F)"], "G")
+    
+        print(w.df)
+        np.testing.assert_almost_equal(w.df["stdev_F"], [1.732051, 0], 3)
+        self.assertListEqual(["G", "stdev_F"], list(w.df.columns))
+
+    def test_summarize_var(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w.summarize(["variance(F)"], "G")
+        
+        print(w.df)
+        
+        np.testing.assert_almost_equal(w.df["variance_F"], [3, 0], 3)
+        self.assertListEqual(["G", "variance_F"], list(w.df.columns))
+
     def test_extend(self):
         df = create_df()
         w = Wrap(df)

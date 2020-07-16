@@ -57,6 +57,18 @@ class Sum(AggOneArg):
     def apply_aggregate(self, grouped):
         return self.args[0].evaluate(grouped).sum()
 
+class Avg(AggOneArg):
+    def apply_aggregate(self, grouped):
+        return self.args[0].evaluate(grouped).mean()
+
+class StDev(AggOneArg):
+    def apply_aggregate(self, grouped):
+        return self.args[0].evaluate(grouped).std()
+
+class Variance(AggOneArg):
+    def apply_aggregate(self, grouped):
+        return self.args[0].evaluate(grouped).var()
+
 class Percentiles(SimpleAgg):
     def validate(self, df):
         if len(self.args) < 2:
@@ -91,7 +103,7 @@ class Percentiles(SimpleAgg):
 def get_method_name(type):
     return type.__name__.lower()
 
-aggregate_methods = [Count, DCount, CountIf, Sum, Percentiles]
+aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
