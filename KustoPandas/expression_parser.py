@@ -3,6 +3,9 @@ import re
 import pandas as pd
 import inspect 
 
+def are_all_series(*args):
+    return all((isinstance(a, pd.Series) for a in args))
+
 class Expression:
     pass
 
@@ -16,54 +19,60 @@ class Opp(Expression):
         return "({0} {1} {2})".format(self.left, self.op, self.right)
     def __repr__(self):
         return str(self)
+    def evaluate(self, vals):
+        left = self.left.evaluate(vals)
+        right = self.right.evaluate(vals)
+        return self.evaluate_internal(left, right)
 
 class Add(Opp):
     op = "+"
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) + self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left + right
 
 class Sub(Opp):
     op = "-"
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) - self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left - right
 
 class Mul(Opp):
     op = "*"
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) * self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left * right
 
 class Div(Opp):
     op = "/"
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) / self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left / right
 
 class Eq(Opp):
     op = "=="
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) == self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left == right
 
 class NEq(Opp):
     op = "!="
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) != self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left != right
 
 class Gt(Opp):
     op = ">"
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) > self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left > right
 
 class Lt(Opp):
     op = "<"
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) < self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left < right
+
 class Ge(Opp):
     op = ">="
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) >= self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left >= right
+
 class Le(Opp):
     op = "<="
-    def evaluate(self, vals):
-        return self.left.evaluate(vals) <= self.right.evaluate(vals)
+    def evaluate_internal(self, left, right, **kwargs):
+        return left <= right
 
 class Assignment(Opp):
     op = "="
@@ -72,44 +81,36 @@ class Assignment(Opp):
 
 class And(Opp):
     op = "&&"
-    def evaluate(self, vals):
-        left = self.left.evaluate(vals)
-        right = self.right.evaluate(vals)
-        if isinstance(left, pd.Series) or isinstance(right, pd.Series):
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left, right):
             return left & right
         return left and right 
 
 class Or(Opp):
     op = "||"
-    def evaluate(self, vals):
-        left = self.left.evaluate(vals)
-        right = self.right.evaluate(vals)
-        if isinstance(left, pd.Series) or isinstance(right, pd.Series):
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left, right):
             return left | right
         return left or right 
 
 class Contains(Opp):
     op = "contains"
-    def evaluate(self, vals):
-        left = self.left.evaluate(vals)
-        right = self.right.evaluate(vals)
-        if isinstance(left, pd.Series) or isinstance(right, pd.Series):
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left):
             return left.str.contains(right, case=False)
         return right.lower() in left.lower() 
 
 class NotContains(Opp):
     op = "!contains"
-    def evaluate(self, vals):
-        left = self.left.evaluate(vals)
-        right = self.right.evaluate(vals)
-        if isinstance(left, pd.Series) or isinstance(right, pd.Series):
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left):
             return ~left.str.contains(right, case=False)
         return right.lower() not in left.lower()     
 
 class Comma(Opp):
     op = ","
     def evaluate(self, vals):
-        return self.left.evaluate(vals) or self.right.evaluate(vals)
+        raise NotImplementedError("Comma does not have an implementation")
 
 all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma, Contains, NotContains]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
