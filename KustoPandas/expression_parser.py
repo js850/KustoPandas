@@ -9,6 +9,22 @@ def are_all_series(*args):
 class Expression:
     pass
 
+class UnaryOpp(Expression):
+    op = ""
+    def __init__(self, right):
+        self.right = right
+    
+    def __str__(self):
+        return "({0}{1})".format(self.op, self.right)
+
+    def __repr__(self):
+        return str(self)
+
+    def evaluate(self, vals):
+        right = self.right.evaluate(vals)
+        return self.evaluate_internal(right)
+
+
 class Opp(Expression):
     op = ""
     def __init__(self, left, right):
@@ -17,8 +33,10 @@ class Opp(Expression):
     
     def __str__(self):
         return "({0} {1} {2})".format(self.left, self.op, self.right)
+
     def __repr__(self):
         return str(self)
+
     def evaluate(self, vals):
         left = self.left.evaluate(vals)
         right = self.right.evaluate(vals)
@@ -33,6 +51,14 @@ class Sub(Opp):
     op = "-"
     def evaluate_internal(self, left, right, **kwargs):
         return left - right
+
+    def unary_version():
+        return UnaryMinus
+
+class UnaryMinus(UnaryOpp):
+    op = "-"
+    def evaluate_internal(self, right, **kwargs):
+        return -right
 
 class Mul(Opp):
     op = "*"
@@ -239,6 +265,11 @@ def parse_operator(operators, line, right_to_left=False):
     for i in indices:
         for operator in operators:
             if line[i] == operator:
+                # if i == 0:
+                #     right = parse_math(line[i + 1:])
+                #     unary = operator.get_unary_version()
+                #     return unary(right)
+                # else:
                 left = parse_math(line[:i])
                 right = parse_math(line[i + 1:])
                 return operator(left, right)
@@ -297,6 +328,35 @@ def parse_math(line):
 
     raise Exception("could not parse expression: " + str(line))
 
+def is_unary_operator(line, i):
+    if line[i] == Sub:
+        cnext = line[i+1]
+        if isinstance(cnext, NumOrVar):
+            if i == 0 or is_op(line[i-1]):
+                return True
+    return False
+
+
+def parse_unary_operators(line):
+    output = []    
+    i = 0
+
+    # matches = [i for i in range(len(line)-1) if is_unary_operator(line, i)]
+    while i < len(line) - 1:
+        if is_unary_operator(line, i):
+            new_op = UnaryMinus(line[i+1])
+            output.append(new_op)
+            i += 2
+        else:
+            output.append(line[i])
+            i += 1
+    
+    if i < len(line):
+        output.append(line[i])
+
+    return parse_math(output)
+
+
 def split_one_level(matches):
     groups = []
     i = 0
@@ -344,7 +404,7 @@ def parse_parentheses(line, matches):
     
     if not parentheses:
         # fix this
-        return parse_math(line)
+        return parse_unary_operators(line)
 
     output = []
     last = 0
@@ -366,7 +426,7 @@ def parse_parentheses(line, matches):
         output += tail
     
     #print("output", output)
-    return parse_math(output)
+    return parse_unary_operators(output)
 
 def op_matches_start(line, op):
     for i in range(len(op.op)):
@@ -375,8 +435,6 @@ def op_matches_start(line, op):
         if op.op[i] != line[i]:
             return False
     return True
-
-re
 
 def op_is_not_special_chars(op):
     # e.g. contains, or, and
@@ -430,11 +488,6 @@ def parse_rest(line):
 def is_op(c):
     return inspect.isclass(c) and issubclass(c, Opp)
 
-def assert_parts_of_line(line):
-    for c, cnext in zip(line, line[1:]):
-        if is_op(c) and is_op(cnext):
-            raise Exception("Parsing error: Found two operators in a row: " + str(line))
-
 def parse_string_literals(line):
     matching = None
     last = 0
@@ -456,7 +509,6 @@ def parse_parts_of_line(line):
     exploded = list(line)
     with_strings = parse_string_literals(exploded)
     parsed = parse_rest(with_strings)
-    assert_parts_of_line(parsed)
     return parsed
 
 def parse_statement(line):
