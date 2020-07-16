@@ -79,6 +79,19 @@ class TestWrap(unittest.TestCase):
 
         self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
         self.assertListEqual(["G", "myperc_50"], list(w.df.columns))
+    
+    def test_summarize_percentile_dcount(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w.summarize(["dcount(F)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([2, 1], list(w.df["dcount_F"]))
+        self.assertListEqual(["G", "dcount_F"], list(w.df.columns))
 
     def test_extend(self):
         df = create_df()

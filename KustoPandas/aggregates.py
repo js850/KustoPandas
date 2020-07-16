@@ -14,7 +14,7 @@ class SimpleAgg:
         suffix = ""
         if len(self.args) > 0:
             suffix = str(self.args[0])
-        return self.name + "_" + suffix
+        return self.dname + "_" + suffix
 
     def get_name(self):
         if self.name:
@@ -39,6 +39,16 @@ class Count(SimpleAgg):
     
     def apply_aggregate(self, grouped):
         return grouped.size()
+
+class DCount(SimpleAgg):
+    dname = "dcount"
+
+    def validate(self, df):
+        if len(self.args) != 1:
+            raise Exception("{0} can only take one argument: {1}".format(self.dname, str(self.args)))
+    
+    def apply_aggregate(self, grouped):
+        return self.args[0].evaluate(grouped).nunique()
 
 class Sum(SimpleAgg):
     dname = "sum"
@@ -88,7 +98,7 @@ class Percentiles(SimpleAgg):
 
 
 
-aggregate_methods = [Count, Sum, Percentiles]
+aggregate_methods = [Count, DCount, Sum, Percentiles]
 
 aggregate_map = dict([(t.dname, t) for t in aggregate_methods])
 
