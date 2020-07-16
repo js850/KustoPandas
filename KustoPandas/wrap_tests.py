@@ -215,7 +215,23 @@ class TestWrap(unittest.TestCase):
         wnew = w.take(2)
         self.assertListEqual([0, 1], list(wnew.df["B"]))
         self.assertEqual(5, len(w.df["B"]))
+    
+    def test_sort(self):
+        df = create_df()
+        df["U"] = [9, 1, 7, 1, 2]
+        expected = [1, 3, 4, 2, 0]
+        w = Wrap(df)
+        wnew = w.sort(["U + 1", "B"], [False, False])
+        self.assertListEqual(expected, list(wnew.df["B"]))
+        self.assertListEqual(list(range(5)), list(w.df["B"]))
 
+    def test_sort_1(self):
+        df = create_df()
+        df["U"] = [9, 8, 7, 1, 2]
+        w = Wrap(df)
+        wnew = w.sort("U + 1")
+        self.assertListEqual([0, 1, 2, 4, 3], list(wnew.df["B"]))
+        self.assertListEqual(list(range(5)), list(w.df["B"]))
 
 
 

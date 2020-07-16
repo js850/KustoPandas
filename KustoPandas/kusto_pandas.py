@@ -83,7 +83,50 @@ class Wrap:
     
     def take(self, n):
         newdf = self.df.head(n)
-        return self.create_new(newdf)
+        return self.create_new(newdf)#
+    
+    def sort(self, by, desc=True):
+        """
+        sort by strlen(country) asc, price desc
+
+        this syntax is a bit awkward.
+
+        by can be a column name, or an expression built from columns e.g. (strlen(country))
+            or it can be a list of such expressions
+        desc (if true, sort by descending order) can be a bool
+            or list of bools.  If it's a list, it must be equal in length to the list of expressions 
+        """
+        if isinstance(by, str):
+            by = [by]
+            if not isinstance(desc, bool):
+                raise Exception("desc must be of type bool if by is not a list")
+            desc = [desc]
+        else:
+            if isinstance(desc, bool):
+                desc = [bool] * len(by)
+            if not len(desc) == len(by):
+                raise Exception("the length of lists by and desc must be equal")
+
+        df = self.df.copy(deep=False)
+
+        col_names = ["__tempcol_" + str(i) for i in range(len(by))]
+
+        var_map = self.get_var_map()
+        for col, expr in zip(col_names, by):
+            parsed = ep.parse_statement(expr)
+            series = parsed.evaluate(var_map)
+            df[col] = series
+        
+        asc = [not b for b in desc]
+        df = df.sort_values(col_names, ascending=asc)
+
+        for c in col_names:
+            del df[c]
+
+        return self.create_new(df)
+
+    def top(self, n, by, desc=True):
+        pass
 
         
 
