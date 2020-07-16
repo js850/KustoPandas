@@ -11,7 +11,7 @@ class SimpleAgg(AggMethod):
     
     def default_name(self):
         suffix = ""
-        if len(self.args) > 0:
+        if len(self.args) > 0 and isinstance(self.args[0], ep.Var):
             suffix = str(self.args[0])
         return self.get_method_name() + "_" + suffix
 
@@ -47,12 +47,17 @@ class DCount(AggOneArg):
     def apply_aggregate(self, grouped):
         return self.args[0].evaluate(grouped).nunique()
 
+class CountIf(AggOneArg):
+    def apply_aggregate(self, grouped):
+        def predicate(x):
+            return self.args[0].evaluate(x)
+        return grouped.apply(lambda x: predicate(x).sum())
+
 class Sum(AggOneArg):
     def apply_aggregate(self, grouped):
         return self.args[0].evaluate(grouped).sum()
 
 class Percentiles(SimpleAgg):
-
     def validate(self, df):
         if len(self.args) < 2:
             raise Exception("Percentiles requires at least two args: " + str(self.args))
@@ -86,7 +91,7 @@ class Percentiles(SimpleAgg):
 def get_method_name(type):
     return type.__name__.lower()
 
-aggregate_methods = [Count, DCount, Sum, Percentiles]
+aggregate_methods = [Count, DCount, CountIf, Sum, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
