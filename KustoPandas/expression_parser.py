@@ -11,13 +11,11 @@ class Opp(Expression):
     def __init__(self, left, right):
         self.left = left
         self.right = right
-        
+    
     def __str__(self):
         return "({0} {1} {2})".format(self.left, self.op, self.right)
     def __repr__(self):
         return str(self)
-
-        
 
 class Add(Opp):
     op = "+"
@@ -90,12 +88,21 @@ class Or(Opp):
             return left | right
         return left or right 
 
+class Contains(Opp):
+    op = "contains"
+    def evaluate(self, vals):
+        left = self.left.evaluate(vals)
+        right = self.right.evaluate(vals)
+        if isinstance(left, pd.Series) or isinstance(right, pd.Series):
+            return right in left
+        return right.lower() in left.lower() 
+
 class Comma(Opp):
     op = ","
     def evaluate(self, vals):
         return self.left.evaluate(vals) or self.right.evaluate(vals)
 
-all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma]
+all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma, Contains]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
@@ -272,6 +279,11 @@ def parse_math(line):
     if p is not None:
         return p
 
+    # I'm just guessing what priority contains should have
+    p = parse_operator([Contains], line)
+    if p is not None:
+        return p
+
     raise Exception("could not parse expression: " + str(line))
 
 def split_one_level(matches):
@@ -353,10 +365,29 @@ def op_matches_start(line, op):
             return False
     return True
 
-def get_matching_op(line):
-    matched_ops = [o for o in all_operators_sorted if op_matches_start(line, o)]
-    if matched_ops:
-        return matched_ops[0]
+def op_is_not_special_chars(op):
+    # e.g. contains, or, and
+    return match_internal.match(op.op) is not None
+
+def is_whole_word_match(word, line, i):
+    # we already know it matches.  just verify the match is on whole word
+    if not (i == 0 or line[i-1] == " "):
+        return False
+    end = i + len(word)
+    if not (end >= len(line) or line[end] == " "):
+        return False
+    return True
+
+def get_matching_op(line, i):
+    matched_ops = [o for o in all_operators_sorted if op_matches_start(line[i:], o)]
+    for op in matched_ops:
+        if op_is_not_special_chars(op):
+            # have to avoid matching op "and" on "rand" or "android"
+            # assert that it has to have whitespace before and after
+            if is_whole_word_match(op.op, line, i):
+                return op
+        else:
+            return op
     return None
 
 def parse_rest(line):
@@ -364,17 +395,18 @@ def parse_rest(line):
         return []
 
     for i, c in enumerate(line):
+        if c == " ":
+            left = parse_rest(line[:i])
+            right = parse_rest(line[i+1:])
+            return left + right
+
         if c == "(" or c == ")" or isinstance(c, StringLiteral):
             left = parse_rest(line[:i])
             right = parse_rest(line[i+1:])
             return left + [c] + right
 
-        if c == " ":
-            left = parse_rest(line[:i])
-            right = parse_rest(line[i+1:])
-            return left + right
-        
-        op = get_matching_op(line[i:])
+    for i, c in enumerate(line):
+        op = get_matching_op(line, i)
         if op is not None:
             left = parse_rest(line[:i])
             right = parse_rest(line[i+len(op.op):])

@@ -162,3 +162,11 @@ class TestExpressionParser(unittest.TestCase):
             return s + "_suffix"
         result = parsed.evaluate({"xx": xx})
         self.assertEqual(result["y"], "hello there_suffix")
+    
+    def test_contains_ignores_case(self):
+        x = "y = A contains \"hello\""
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(y = (A contains \"hello\"))")
+
+        result = parsed.evaluate({"A": "Hello there"})
+        self.assertEqual(result["y"], True)
