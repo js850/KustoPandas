@@ -114,6 +114,18 @@ class TestExpressionParser(unittest.TestCase):
         def y(a, b):
             return a + b
         self.assertEqual(37, parsed.evaluate({"x_1": lambda x: (x + 1), "y": y}))
+    
+    def test_parse_methods_sub_method(self):
+        x = "1 + z(a(), b(3))"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(1 + z(a(), b(3)))")
+        def z(a, b):
+            return a + b
+        def a():
+            return 3
+        def b(i):
+            return 2*i
+        self.assertEqual(10, parsed.evaluate({"z": z, "a": a, "b": b}))
  
     def test_parse_method_no_args(self):
         x = "2 * xx()"
