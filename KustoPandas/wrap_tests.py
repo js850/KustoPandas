@@ -233,6 +233,13 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual([0, 1, 2, 4, 3], list(wnew.df["B"]))
         self.assertListEqual(list(range(5)), list(w.df["B"]))
 
+    def test_top(self):
+        df = create_df()
+        df["U"] = [9, 8, 7, 1, 2]
+        w = Wrap(df)
+        wnew = w.top(4, "U + 1")
+        self.assertListEqual([0, 1, 2, 4], list(wnew.df["B"]))
+        self.assertListEqual(list(range(5)), list(w.df["B"]))
 
 
 

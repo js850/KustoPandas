@@ -126,7 +126,7 @@ class Wrap:
         return self.create_new(df)
 
     def top(self, n, by, desc=True):
-        pass
+        return self.sort(by, desc=desc).take(n)
 
         
 
