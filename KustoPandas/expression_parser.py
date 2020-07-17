@@ -223,11 +223,11 @@ class TimespanLiteral(Expression):
         self.count = count
         self.unit = unit
     def __str__(self):
-        return "{0}{1}".format(self.count, self.unit)
+        return "{0}{1}".format(str(self.count), self.unit)
     def __repr__(self):
         return str(self) #"DaysLiteral({0})".format(self.value)
     def evaluate(self, vals):
-        return pd.Timedelta(1, unit=self.unit)
+        return pd.Timedelta(self.count.evaluate(None), unit=self.unit)
 
 def find_matching_parentheses(line):
     matches = np.zeros(len(line), dtype=np.int)
@@ -254,14 +254,12 @@ def assert_var_name(var):
     if not match_internal.match(var):
         raise Exception("variable name has illegal characters " + var)
 
-timespan_literal_regex = re.compile("^([1-9][0-9]*)([dhms])$")
-
 def parse_timespan_literal(val):
-    match = timespan_literal_regex.match(val)
-    if match is not None:
-        num = int(match[1])
-        unit = match[2]
-        return TimespanLiteral(num, unit)
+    if val[-1] in ["d", "h", "m", "s"]:
+        unit = val[-1]
+        num = parse_num(val[:-1])
+        if num is not None:
+            return TimespanLiteral(num, unit)
     return None
 
 def parse_var(val):
@@ -272,16 +270,25 @@ def parse_var(val):
     assert_var_name(val)
     return Var(val)
 
-def parse_num_or_var(val):
+def parse_num(val):
     try:
         int(val)
         return Int(val)
     except:
-        try:
-            float(val)
-            return Float(val)
-        except:
-            return parse_var(val)
+        pass
+    try:
+        float(val)
+        return Float(val)
+    except:
+        pass
+    
+    return None
+    
+def parse_num_or_var(val):
+    parsed = parse_num(val)
+    if parsed is not None:
+        return parsed
+    return parse_var(val)
 
 def starts_with(array, prefix):
     for i in range(len(prefix)):
