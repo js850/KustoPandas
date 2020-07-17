@@ -20,6 +20,9 @@ class UnaryOpp(Expression):
     def __repr__(self):
         return str(self)
 
+    def evaluate_internal(self, right):
+        raise NotImplementedError()
+
     def evaluate(self, vals):
         right = self.right.evaluate(vals)
         return self.evaluate_internal(right)
@@ -37,6 +40,9 @@ class Opp(Expression):
     def __repr__(self):
         return str(self)
 
+    def evaluate_internal(self, left, right):
+        raise NotImplementedError()
+
     def evaluate(self, vals):
         left = self.left.evaluate(vals)
         right = self.right.evaluate(vals)
@@ -51,9 +57,6 @@ class Sub(Opp):
     op = "-"
     def evaluate_internal(self, left, right, **kwargs):
         return left - right
-
-    def unary_version():
-        return UnaryMinus
 
 class UnaryMinus(UnaryOpp):
     op = "-"
@@ -246,11 +249,11 @@ def parse_var(val):
 
 def parse_num_or_var(val):
     try:
-        n = int(val)
+        int(val)
         return Int(val)
     except:
         try:
-            n = float(val)
+            float(val)
             return Float(val)
         except:
             return parse_var(val)
@@ -523,7 +526,6 @@ def parse_string_literals_parts(line):
 def is_unary_operator(parts, i):
     if i >= len(parts):
         raise Exception("can't have operator at end of line: " + str(parts))
-    cnext = parts[i+1]
     if i == 0 or is_op(parts[i-1]) or parts[i-1] == "(":
         return True
     return False
