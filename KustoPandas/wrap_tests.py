@@ -285,5 +285,21 @@ class TestWrap(unittest.TestCase):
         wnew = w.summarize("Z=count()", "bin(D, 1d)")
         self.assertListEqual(list([3, 1, 1]), list(wnew.df["Z"]))
 
+    def test_join(self):
+        df = create_df()
+        df2 = create_df()
+        df2["B"] = [1, 0, -1, -1, -1]
+
+        w = Wrap(df)
+        w2 = Wrap(df2)
+
+        wnew = w.join(w2.project("B", "C"), on="B")
+
+        print(wnew.df)
+
+        self.assertListEqual([0, 1], list(wnew.df["B"]))
+        self.assertListEqual(["foo1", "foo2"], list(wnew.df["C"]))
+        self.assertListEqual(["foo2", "foo1"], list(wnew.df["C_y"]))
+
 
 

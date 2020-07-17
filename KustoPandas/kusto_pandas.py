@@ -158,6 +158,15 @@ class Wrap:
 
     def top(self, n, by, desc=True):
         return self.sort(by, desc=desc).take(n)
+    
+    def join(self, right, on=None, left_on=None, right_on=None, kind="inner"):
+        if isinstance(right, Wrap):
+            right = right.df
+
+        # fix suffixes to align with what kusto does in case of name conflict
+        dfnew = self.df.merge(right=right, how=kind, on=on, left_on=left_on, right_on=right_on, suffixes=("", "_y"))
+
+        return self.create_new(dfnew)
 
         
 
