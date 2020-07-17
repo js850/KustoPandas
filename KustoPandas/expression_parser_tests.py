@@ -202,3 +202,11 @@ class TestExpressionParser(unittest.TestCase):
         parsed2 = parse_rest_parts(parsed)
 
         print("\n" + str(parsed2))
+
+    def test_timespan_literal(self):
+        x = "y = C + 1d"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(y = (C + 1d))")
+
+        result = parsed.evaluate({"C": pd.to_datetime("2020-01-02")})
+        self.assertEqual(result["y"], pd.to_datetime("2020-01-03"))

@@ -217,6 +217,17 @@ class Method(Expression):
         args = self.args.evaluate(vals)
         return method(*args)
 
+class TimespanLiteral(Expression):
+    # e.g. 4d resolves to timespan 4 days
+    def __init__(self, count, unit):
+        self.count = count
+        self.unit = unit
+    def __str__(self):
+        return "{0}{1}".format(self.count, self.unit)
+    def __repr__(self):
+        return str(self) #"DaysLiteral({0})".format(self.value)
+    def evaluate(self, vals):
+        return pd.Timedelta(1, unit=self.unit)
 
 def find_matching_parentheses(line):
     matches = np.zeros(len(line), dtype=np.int)
@@ -243,7 +254,21 @@ def assert_var_name(var):
     if not match_internal.match(var):
         raise Exception("variable name has illegal characters " + var)
 
+timespan_literal_regex = re.compile("^([1-9][0-9]*)([dhms])$")
+
+def parse_timespan_literal(val):
+    match = timespan_literal_regex.match(val)
+    if match is not None:
+        num = int(match[1])
+        unit = match[2]
+        return TimespanLiteral(num, unit)
+    return None
+
 def parse_var(val):
+    timespan = parse_timespan_literal(val)
+    if timespan is not None:
+        return timespan
+
     assert_var_name(val)
     return Var(val)
 
