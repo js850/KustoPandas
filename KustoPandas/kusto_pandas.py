@@ -50,18 +50,18 @@ class Wrap:
 
         return self.create_new(dfnew)
     
-    def summarize(self, resulting_cols, group_by_cols):
+    def summarize(self, resulting_cols, group_by):
         if isinstance(resulting_cols, str):
             resulting_cols = [resulting_cols]
 
-        if isinstance(group_by_cols, str):
-            group_by_cols = [group_by_cols]
+        if isinstance(group_by, str):
+            group_by = [group_by]
 
         dftemp = self.df.copy(deep=False)
 
         group_by_col_names = []
         temp_col_names = []
-        for c in group_by_cols:
+        for c in group_by:
             if c in dftemp.columns:
                 group_by_col_names.append(c)
             else:
