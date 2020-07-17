@@ -138,7 +138,13 @@ class Comma(Opp):
     def evaluate(self, vals):
         raise NotImplementedError("Comma does not have an implementation")
 
-all_operators = [Add, Sub, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma, Contains, NotContains]
+class AmbiguousMinus(Opp):
+    # - can be either unary or binary op
+    op = "-"
+    unary = UnaryMinus
+    binary = Sub
+
+all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma, Contains, NotContains]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
@@ -328,22 +334,13 @@ def parse_math(line):
 
     raise Exception("could not parse expression: " + str(line))
 
-def is_unary_operator(line, i):
-    if line[i] == Sub:
-        cnext = line[i+1]
-        if isinstance(cnext, NumOrVar):
-            if i == 0 or is_op(line[i-1]):
-                return True
-    return False
-
-
 def parse_unary_operators(line):
     output = []    
     i = 0
 
     # matches = [i for i in range(len(line)-1) if is_unary_operator(line, i)]
     while i < len(line) - 1:
-        if is_unary_operator(line, i):
+        if line[i] == UnaryMinus:
             new_op = UnaryMinus(line[i+1])
             output.append(new_op)
             i += 2
@@ -523,11 +520,31 @@ def parse_string_literals_parts(line):
     
     return [line]
 
+def is_unary_operator(parts, i):
+    if i >= len(parts):
+        raise Exception("can't have operator at end of line: " + str(parts))
+    cnext = parts[i+1]
+    if i == 0 or is_op(parts[i-1]) or parts[i-1] == "(":
+        return True
+    return False
+
+def resolve_ambiguous_operators(parts):
+    indices = [i for i, c in enumerate(parts) if c == AmbiguousMinus]
+
+    for i in indices:
+        c = parts[i]
+        if is_unary_operator(parts, i):
+            parts[i] = c.unary
+        else:
+            parts[i] = c.binary
+    return parts
+
 def parse_parts_of_line(line):
     # exploded = list(line)
     with_strings = parse_string_literals_parts(line)
     parsed = parse_rest_parts(with_strings)
-    return parsed
+    resolved = resolve_ambiguous_operators(parsed)
+    return resolved
 
 def parse_statement(line):
     exploded = parse_parts_of_line(line)

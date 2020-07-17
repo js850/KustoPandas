@@ -186,6 +186,14 @@ class TestExpressionParser(unittest.TestCase):
 
         result = parsed.evaluate({"xx": -1})
         self.assertEqual(result["y"], 0)
+    
+    def test_unary_minus2(self):
+        x = "y = -1 + -(-xx)"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(y = ((-1) + (-(-xx))))")
+
+        result = parsed.evaluate({"xx": 1})
+        self.assertEqual(result["y"], 0)
 
     def test_parse_rest_parts(self):
         x = "y = -1 + \"hi\" + (-xx)"
