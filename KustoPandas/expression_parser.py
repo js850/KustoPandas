@@ -461,34 +461,52 @@ def get_matching_op(line, i):
             return op
     return None
 
-def parse_rest(line):
+def is_op(c):
+    return inspect.isclass(c) and issubclass(c, Opp)
+
+# class OpenParens:
+#     pass
+
+# class CloseParens:
+#     pass
+
+def parse_line_part(line):
     if not line:
         return []
-
     for i, c in enumerate(line):
-        if c == " ":
-            left = parse_rest(line[:i])
-            right = parse_rest(line[i+1:])
+        if c in [" "]:
+            left = parse_line_part(line[:i])
+            right = parse_line_part(line[i+1:])
             return left + right
 
-        if c == "(" or c == ")" or isinstance(c, StringLiteral):
-            left = parse_rest(line[:i])
-            right = parse_rest(line[i+1:])
+        if c == "(" or c == ")":
+            left = parse_line_part(line[:i])
+            right = parse_line_part(line[i+1:])
             return left + [c] + right
 
     for i, c in enumerate(line):
         op = get_matching_op(line, i)
         if op is not None:
-            left = parse_rest(line[:i])
-            right = parse_rest(line[i+len(op.op):])
+            left = parse_line_part(line[:i])
+            right = parse_line_part(line[i+len(op.op):])
             return left + [op] + right
         
-    return [parse_num_or_var("".join(line))]
+    return [parse_num_or_var(line)]
 
-def is_op(c):
-    return inspect.isclass(c) and issubclass(c, Opp)
 
-def parse_string_literals(line):
+def parse_rest_parts(parts):
+    if not parts:
+        return []
+
+    for i, line in enumerate(parts):
+        if isinstance(line, str):
+            left = parts[:i]
+            center = parse_line_part(line)
+            right = parse_rest_parts(parts[i+1:])
+            return left + center + right 
+    return parts
+
+def parse_string_literals_parts(line):
     matching = None
     last = 0
     for i, c in enumerate(line):
@@ -500,15 +518,15 @@ def parse_string_literals(line):
             if c == matching:
                 left = line[:last]
                 val = StringLiteral("".join(line[last+1:i]))
-                right = parse_string_literals(line[i+1:])
-                return left + [val] + right
+                right = parse_string_literals_parts(line[i+1:])
+                return [left] + [val] + right
     
-    return line
+    return [line]
 
 def parse_parts_of_line(line):
-    exploded = list(line)
-    with_strings = parse_string_literals(exploded)
-    parsed = parse_rest(with_strings)
+    # exploded = list(line)
+    with_strings = parse_string_literals_parts(line)
+    parsed = parse_rest_parts(with_strings)
     return parsed
 
 def parse_statement(line):
