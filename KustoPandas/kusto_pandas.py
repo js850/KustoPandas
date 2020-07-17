@@ -57,15 +57,26 @@ class Wrap:
         if isinstance(group_by_cols, str):
             group_by_cols = [group_by_cols]
 
-        for g in group_by_cols:
-            if g not in self.df.columns:
-                raise Exception("unknown column name: " + g)
+        dftemp = self.df.copy(deep=False)
+
+        group_by_col_names = []
+        temp_col_names = []
+        for c in group_by_cols:
+            if c in dftemp.columns:
+                group_by_col_names.append(c)
+            else:
+                parsed = ep.parse_statement(c)
+                series = parsed.evaluate(self.get_var_map())
+                temp_name = "__tempcolname_" + str(len(temp_col_names))
+                temp_col_names.append(temp_name)
+                group_by_col_names.append(temp_name)
+                dftemp[temp_name] = series
         
         args = [Aggregate(a) for a in resulting_cols]
         for arg in args:
-            arg.validate(self.df)
+            arg.validate(dftemp)
 
-        grouped = self.df.groupby(group_by_cols)
+        grouped = dftemp.groupby(group_by_col_names)
         dfnew = pd.DataFrame()
 
         for arg in args:
@@ -73,7 +84,9 @@ class Wrap:
             for col, series in result:
                 dfnew[col] = series
         
-        return self.create_new(dfnew.reset_index())
+        dfnew = dfnew.reset_index()
+
+        return self.create_new(dfnew)
     
     def extend(self, text):
         parsed = ep.parse_statement(text)

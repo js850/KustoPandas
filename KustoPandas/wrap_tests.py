@@ -269,6 +269,21 @@ class TestWrap(unittest.TestCase):
         w = Wrap(df)
         wnew = w.let(xx=lambda x: x + 1).extend("Z = B + xx(4)")
         self.assertListEqual([5, 6, 7, 8, 9], list(wnew.df["Z"]))
+    
+    def test_bin_datetime(self):
+        df = create_df()
+        df["D"] = pd.to_datetime(["2009-01-01T08:20", "2009-01-02T08:51", "2009-01-05", "2009-01-06", "2009-01-07"])    
+        expected = pd.to_datetime(["2009-01-01", "2009-01-02", "2009-01-05", "2009-01-06", "2009-01-07"])    
+        w = Wrap(df)
+        wnew = w.extend("Z = bin(D, 1d)")
+        self.assertListEqual(list(expected), list(wnew.df["Z"]))
+    
+    def test_summarize_bin(self):
+        df = create_df()
+        df["D"] = pd.to_datetime(["2009-01-01T08:20", "2009-01-02T08:51", "2009-01-01", "2009-01-06", "2009-01-01T22:00"])    
+        w = Wrap(df)
+        wnew = w.summarize("Z=count()", "bin(D, 1d)")
+        self.assertListEqual(list([3, 1, 1]), list(wnew.df["Z"]))
 
 
 
