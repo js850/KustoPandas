@@ -6,16 +6,23 @@ class SimpleAgg:
     """
     An aggregate function needs to define the following methods
 
-    columns_needed => returns list of (str, expression)
-        
+    columns_needed => returns list of expression
+    
+    apply
 
     """
     def __init__(self, name, args):
         self.args = args
         self.name = name
 
-    def columns_neded(self):
+    def columns_neded_internal(self):
         return self.args
+
+    def columns_needed(self):
+        args = self.columns_neded_internal()
+
+        self.arg_names = [str(uuid.uuid1()) for a in args]
+        return zip(self.arg_names, args)
 
     def get_method_name(self):
         return self.__class__.__name__.lower()
@@ -33,6 +40,15 @@ class SimpleAgg:
             return self.default_name()
     
     def apply(self, grouped):
+        names = self.arg_names
+        if len(names) == 1:
+            grouped = grouped[names[0]]
+        elif len(names) > 1:
+            grouped = grouped[self.aggregate_func.arg_names]
+        return self.apply1(grouped)
+
+
+    def apply1(self, grouped):
         name = self.get_name()
         series = self.apply_aggregate(grouped)
         return [(name, series)]
@@ -85,10 +101,10 @@ class Percentiles(SimpleAgg):
         if len(self.args) < 2:
             raise Exception("Percentiles requires at least two args: " + str(self.args))
 
-    def columns_neded(self):
+    def columns_neded_internal(self):
         return self.args[:1]
 
-    def apply(self, grouped):
+    def apply1(self, grouped):
         percentiles = [int(a.evaluate(None)) for a in self.args[1:]]
         for p in percentiles:
             if p > 100 or p < 0:
@@ -120,42 +136,24 @@ aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Percenti
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
-class Aggregate:
-    def __init__(self, text):
-        new_col = None
+def create_aggregate(text):
+    new_col = None
 
-        parsed = ep.parse_statement(text)
+    parsed = ep.parse_statement(text)
 
-        if isinstance(parsed, ep.Assignment):
-            new_col = str(parsed.left)
-            method = parsed.right
-        else:
-            method = parsed
+    if isinstance(parsed, ep.Assignment):
+        new_col = str(parsed.left)
+        method = parsed.right
+    else:
+        method = parsed
 
-        if not isinstance(method, ep.Method):
-            raise Exception("expected method but got: " + str(method))
+    if not isinstance(method, ep.Method):
+        raise Exception("expected method but got: " + str(method))
 
-        func_name = str(method.name)
-        # if len(method.args.args) == 0:
-        #     func_arg = ""
-        # else:
-        #     func_arg = str(method.args.args[0])
+    func_name = str(method.name)
+    # if len(method.args.args) == 0:
+    #     func_arg = ""
+    # else:
+    #     func_arg = str(method.args.args[0])
 
-        self.aggregate_func = aggregate_map[func_name](new_col, method.args.args)
-
-    def validate(self, df):
-        self.aggregate_func.validate(df)
-    
-    def apply(self, grouped):
-        names = self.arg_names
-        if len(names) == 1:
-            grouped = grouped[names[0]]
-        elif len(names) > 1:
-            grouped = grouped[self.aggregate_func.arg_names]
-        return self.aggregate_func.apply(grouped)
-    
-    def columns_needed(self):
-        args = self.aggregate_func.columns_neded()
-
-        self.arg_names = [str(uuid.uuid1()) for a in args]
-        return zip(self.arg_names, args)
+    return aggregate_map[func_name](new_col, method.args.args)

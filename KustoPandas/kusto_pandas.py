@@ -2,7 +2,7 @@ import pandas as pd
 import re
 
 import expression_parser as ep
-from aggregates import Aggregate
+from aggregates import create_aggregate
 from methods import get_methods
 
 class MultiDict:
@@ -72,7 +72,7 @@ class Wrap:
                 group_by_col_names.append(temp_name)
                 dftemp[temp_name] = series
         
-        args = [Aggregate(a) for a in resulting_cols]
+        args = [create_aggregate(a) for a in resulting_cols]
         columns_needed = set()
         for arg in args:
             arg.validate(dftemp)
