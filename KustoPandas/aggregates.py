@@ -1,20 +1,25 @@
 import expression_parser as ep
 import uuid
 
-class AggMethod:
-    args = None
-    def get_method_name(self):
-        return self.__class__.__name__.lower()
 
-    def columns_neded(self):
-        self.arg_names = [str(uuid.uuid1()) for a in self.args]
-        return zip(self.arg_names, self.args)
+class SimpleAgg:
+    """
+    An aggregate function needs to define the following methods
 
-class SimpleAgg(AggMethod):
+    columns_needed => returns list of (str, expression)
+        
+
+    """
     def __init__(self, name, args):
         self.args = args
         self.name = name
-    
+
+    def columns_neded(self):
+        return self.args
+
+    def get_method_name(self):
+        return self.__class__.__name__.lower()
+
     def default_name(self):
         suffix = ""
         if len(self.args) > 0 and isinstance(self.args[0], ep.Var):
@@ -81,8 +86,7 @@ class Percentiles(SimpleAgg):
             raise Exception("Percentiles requires at least two args: " + str(self.args))
 
     def columns_neded(self):
-        self.arg_names = [uuid.uuid1()]
-        return zip(self.arg_names, self.args[:1])
+        return self.args[:1]
 
     def apply(self, grouped):
         percentiles = [int(a.evaluate(None)) for a in self.args[1:]]
@@ -91,7 +95,6 @@ class Percentiles(SimpleAgg):
                 raise Exception("Percentile must be between 0 and 100")
         
         quantiles = [1.0*p / 100 for p in percentiles]
-
         
         if self.name is not None:
             basename = self.name + "_"
@@ -144,7 +147,7 @@ class Aggregate:
         self.aggregate_func.validate(df)
     
     def apply(self, grouped):
-        names = self.aggregate_func.arg_names
+        names = self.arg_names
         if len(names) == 1:
             grouped = grouped[names[0]]
         elif len(names) > 1:
@@ -152,4 +155,7 @@ class Aggregate:
         return self.aggregate_func.apply(grouped)
     
     def columns_needed(self):
-        return self.aggregate_func.columns_neded()
+        args = self.aggregate_func.columns_neded()
+
+        self.arg_names = [str(uuid.uuid1()) for a in args]
+        return zip(self.arg_names, args)
