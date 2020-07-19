@@ -73,8 +73,14 @@ class Wrap:
                 dftemp[temp_name] = series
         
         args = [Aggregate(a) for a in resulting_cols]
+        columns_needed = set()
         for arg in args:
             arg.validate(dftemp)
+            for col_name, col_value in arg.columns_needed():
+                columns_needed.add(col_name)
+                if col_name not in dftemp:
+                    result = col_value.evaluate(self.get_var_map())
+                    dftemp[col_name] = result
 
         grouped = dftemp.groupby(group_by_col_names)
         dfnew = pd.DataFrame()

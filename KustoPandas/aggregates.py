@@ -1,8 +1,14 @@
 import expression_parser as ep
+import uuid
 
 class AggMethod:
+    args = None
     def get_method_name(self):
         return self.__class__.__name__.lower()
+
+    def columns_neded(self):
+        self.arg_names = [str(uuid.uuid1()) for a in self.args]
+        return zip(self.arg_names, self.args)
 
 class SimpleAgg(AggMethod):
     def __init__(self, name, args):
@@ -45,34 +51,38 @@ class Count(NoArgAgg):
 
 class DCount(AggOneArg):
     def apply_aggregate(self, grouped):
-        return self.args[0].evaluate(grouped).nunique()
+        return grouped.nunique()
 
 class CountIf(AggOneArg):
     def apply_aggregate(self, grouped):
-        def predicate(x):
-            return self.args[0].evaluate(x)
-        return grouped.apply(lambda x: predicate(x).sum())
+        # the countif predicate was precomputed into a new column
+        # sum returns the number of true values in that column
+        return grouped.sum()
 
 class Sum(AggOneArg):
     def apply_aggregate(self, grouped):
-        return self.args[0].evaluate(grouped).sum()
+        return grouped.sum()
 
 class Avg(AggOneArg):
     def apply_aggregate(self, grouped):
-        return self.args[0].evaluate(grouped).mean()
+        return grouped.mean()
 
 class StDev(AggOneArg):
     def apply_aggregate(self, grouped):
-        return self.args[0].evaluate(grouped).std()
+        return grouped.std()
 
 class Variance(AggOneArg):
     def apply_aggregate(self, grouped):
-        return self.args[0].evaluate(grouped).var()
+        return grouped.var()
 
 class Percentiles(SimpleAgg):
     def validate(self, df):
         if len(self.args) < 2:
             raise Exception("Percentiles requires at least two args: " + str(self.args))
+
+    def columns_neded(self):
+        self.arg_names = [uuid.uuid1()]
+        return zip(self.arg_names, self.args[:1])
 
     def apply(self, grouped):
         percentiles = [int(a.evaluate(None)) for a in self.args[1:]]
@@ -90,9 +100,9 @@ class Percentiles(SimpleAgg):
         
         names = [basename + str(p) for p in percentiles]
 
-        series = self.args[0].evaluate(grouped)
+        # series = self.args[0].evaluate(grouped)
 
-        result = series.quantile(quantiles)
+        result = grouped.quantile(quantiles)
 
         # result is a multi-index.  we need to flatten it
         flattened = [result[:,q] for q in quantiles]
@@ -134,4 +144,12 @@ class Aggregate:
         self.aggregate_func.validate(df)
     
     def apply(self, grouped):
+        names = self.aggregate_func.arg_names
+        if len(names) == 1:
+            grouped = grouped[names[0]]
+        elif len(names) > 1:
+            grouped = grouped[self.aggregate_func.arg_names]
         return self.aggregate_func.apply(grouped)
+    
+    def columns_needed(self):
+        return self.aggregate_func.columns_neded()
