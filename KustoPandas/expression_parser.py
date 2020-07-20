@@ -15,7 +15,11 @@ class UnaryOpp(Expression):
         self.right = right
     
     def __str__(self):
-        return "({0}{1})".format(self.op, self.right)
+        if op_is_not_special_chars(self.op):
+            space = " "
+        else:
+            space = ""
+        return "({0}{1}{2})".format(self.op, space, self.right)
 
     def __repr__(self):
         return str(self)
@@ -105,7 +109,7 @@ class Le(Opp):
 
 class UnaryNot(UnaryOpp):
     # this doesn't actually exist in kusto.  but it seems useful, so why not add it?
-    op = "!"
+    op = "not"
     def evaluate_internal(self, right, **kwargs):
         if are_all_series(right):
             return ~right
@@ -480,7 +484,7 @@ def op_matches_start(line, op):
 
 def op_is_not_special_chars(op):
     # e.g. contains, or, and
-    return match_az.search(op.op) is not None
+    return match_az.search(op) is not None
 
 def is_whole_word_match(word, line, i):
     # we already know it matches.  just verify the match is on whole word
@@ -494,7 +498,7 @@ def is_whole_word_match(word, line, i):
 def get_matching_op(line, i):
     matched_ops = [o for o in all_operators_sorted if op_matches_start(line[i:], o)]
     for op in matched_ops:
-        if op_is_not_special_chars(op):
+        if op_is_not_special_chars(op.op):
             # have to avoid matching op "and" on "rand" or "android"
             # assert that it has to have whitespace before and after
             if is_whole_word_match(op.op, line, i):
