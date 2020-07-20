@@ -103,6 +103,14 @@ class Le(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return left <= right
 
+class UnaryNot(UnaryOpp):
+    # this doesn't actually exist in kusto.  but it seems useful, so why not add it?
+    op = "!"
+    def evaluate_internal(self, right, **kwargs):
+        if are_all_series(right):
+            return ~right
+        return not right
+
 class Assignment(Opp):
     op = "="
     def evaluate(self, vals):
@@ -147,7 +155,9 @@ class AmbiguousMinus(Opp):
     unary = UnaryMinus
     binary = Sub
 
-all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le, Assignment, And, Or, Comma, Contains, NotContains]
+all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
+                 UnaryNot, Assignment,
+                 And, Or, Comma, Contains, NotContains]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
@@ -375,8 +385,8 @@ def parse_unary_operators(line):
 
     # matches = [i for i in range(len(line)-1) if is_unary_operator(line, i)]
     while i < len(line) - 1:
-        if line[i] == UnaryMinus:
-            new_op = UnaryMinus(line[i+1])
+        if line[i] in (UnaryMinus, UnaryNot):
+            new_op = line[i](line[i+1])
             output.append(new_op)
             i += 2
         else:
