@@ -77,15 +77,15 @@ class TestExpressionParser(unittest.TestCase):
     #     self.assertListEqual(expected, exploded)
 
     def test_parse_statement_Or(self):
-        x = "1 > 1 || 3 > 2"
+        x = "1 > 1 or 3 > 2"
         parsed = parse_statement(x)
-        self.assertEqual(str(parsed), "((1 > 1) || (3 > 2))")
+        self.assertEqual(str(parsed), "((1 > 1) or (3 > 2))")
         self.assertEqual(True, parsed.evaluate(None))
 
     def test_parse_statement_And(self):
-        x = "1 > 1 && 3 > 2"
+        x = "1 > 1 and 3 > 2"
         parsed = parse_statement(x)
-        self.assertEqual(str(parsed), "((1 > 1) && (3 > 2))")
+        self.assertEqual(str(parsed), "((1 > 1) and (3 > 2))")
         self.assertEqual(False, parsed.evaluate(None))
     
     def test_parse_statement_Asignment(self):

@@ -121,14 +121,14 @@ class Assignment(Opp):
         return {str(self.left): self.right.evaluate(vals)}
 
 class And(Opp):
-    op = "&&"
+    op = "and"
     def evaluate_internal(self, left, right, **kwargs):
         if are_all_series(left, right):
             return left & right
         return left and right 
 
 class Or(Opp):
-    op = "||"
+    op = "or"
     def evaluate_internal(self, left, right, **kwargs):
         if are_all_series(left, right):
             return left | right

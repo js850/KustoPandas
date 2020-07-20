@@ -256,13 +256,13 @@ class TestWrap(unittest.TestCase):
     def test_where_and(self):
         df = create_df()
         w = Wrap(df)
-        w = w.where("(B > 1) && (B < 4)")
+        w = w.where("(B > 1) and (B < 4)")
         self.assertListEqual([2, 3], list(w.df["B"]))
     
     def test_where_or(self):
         df = create_df()
         w = Wrap(df)
-        w = w.where("(B >= 3) || (B < 1)")
+        w = w.where("(B >= 3) or (B < 1)")
         self.assertListEqual([0, 3, 4], list(w.df["B"]))
     
     def test_where_equiv(self):
