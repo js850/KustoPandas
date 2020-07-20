@@ -43,12 +43,29 @@ class Wrap:
         return w
 
     def project(self, *cols, **renamed_cols):
+        """
+        all of the following are acceptable
+
+        w.project("A", "B")
+
+        w.project("A", BNew = "B")
+
+        w.project("A", "Bnew=B")
+
+        w.project("A", "Bnew = B+A")
+        """
         dfnew = pd.DataFrame()
+        var_map = self.get_var_map()
 
         for c in cols:
-            dfnew[c] = self.df[c]
+            parsed = ep.parse_statement(c)
+            result = parsed.evaluate(var_map)
+            if isinstance(parsed, ep.Assignment):
+                for k, v in result.items():
+                    dfnew[k] = v
+            else:
+                dfnew[c] = result
         
-        var_map = self.get_var_map()
         for name, expr in renamed_cols.items():
             parsed = ep.parse_statement(expr)
             result = parsed.evaluate(var_map)
