@@ -5,6 +5,12 @@ import expression_parser as ep
 from aggregates import create_aggregate
 from methods import get_methods
 
+def ensure_column_name_unique(df, col):
+    while col in df.columns:
+        col = col + "_"
+    return col
+
+
 class MultiDict:
     def __init__(self, dicts):
         self.dicts = dicts
@@ -88,6 +94,7 @@ class Wrap:
         for arg in args:
             result = arg.apply(grouped)
             for col, series in result:
+                col = ensure_column_name_unique(dfnew, col)
                 dfnew[col] = series
         
         dfnew = dfnew.reset_index()
