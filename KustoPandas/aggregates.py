@@ -33,7 +33,9 @@ class SimpleAgg:
         return default
 
     def _default_name(self):
-        suffix = self._get_arg_name_or_default(0, "")
+        names = [self._get_arg_name_or_default(i, "") for i in range(len(self.args))]
+        names = [n for n in names if n != ""]
+        suffix = "_".join(names)
         return self._get_method_name() + "_" + suffix
 
     def _get_output_column_name(self):
@@ -127,7 +129,7 @@ class ArgMin(AggTwoArgs):
 class ArgMax(AggTwoArgs):
     def apply_aggregate(self, grouped):
         def argmax(g):
-            # find the index of the min of arg0
+            # find the index of the max of arg0
             idx = g[self.arg_names[0]].idxmax()
             # return the value of arg1 at that index
             return g[self.arg_names[1]].loc[idx]
