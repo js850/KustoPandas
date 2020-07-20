@@ -71,6 +71,11 @@ class AggOneArg(SimpleAgg):
         if len(self.args) != 1:
             raise Exception("{0} can only take one argument: {1}".format(self._get_method_name(), str(self.args)))
 
+class AggTwoArgs(SimpleAgg):
+    def validate(self, df):
+        if len(self.args) != 2:
+            raise Exception("{0} can only take one argument: {1}".format(self._get_method_name(), str(self.args)))
+
 class Count(NoArgAgg):
     def apply_aggregate(self, grouped):
         return grouped.size()
@@ -109,6 +114,26 @@ class Max(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.max()
 
+class ArgMin(AggTwoArgs):
+    def apply_aggregate(self, grouped):
+        def argmin(g):
+            # find the index of the min of arg0
+            idx = g[self.arg_names[0]].idxmin()
+            # return the value of arg1 at that index
+            return g[self.arg_names[1]].loc[idx]
+        series = grouped.apply(lambda g: argmin(g))
+        return series
+
+class ArgMax(AggTwoArgs):
+    def apply_aggregate(self, grouped):
+        def argmax(g):
+            # find the index of the min of arg0
+            idx = g[self.arg_names[0]].idxmax()
+            # return the value of arg1 at that index
+            return g[self.arg_names[1]].loc[idx]
+        series = grouped.apply(lambda g: argmax(g))
+        return series
+
 class Percentiles(SimpleAgg):
     def validate(self, df):
         if len(self.args) < 2:
@@ -145,7 +170,8 @@ class Percentiles(SimpleAgg):
 def get_method_name(type):
     return type.__name__.lower()
 
-aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Min, Max, Percentiles]
+aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Min, Max,
+                     ArgMin, ArgMax, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 

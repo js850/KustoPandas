@@ -184,6 +184,32 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual(list(wnew.df["max_F"]), [4, 9])
         self.assertListEqual(["G", "max_F"], list(wnew.df.columns))
 
+    def test_summarize_argmin(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["argmin(F, C)"], "G")
+        
+        print(wnew.df)
+        
+        self.assertListEqual(list(wnew.df["argmin_F"]), ["foo2", "foo5"])
+        self.assertListEqual(["G", "argmin_F"], list(wnew.df.columns))
+
+    def test_summarize_argmax(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["argmax(F, C)"], "G")
+        
+        print(wnew.df)
+        
+        self.assertListEqual(list(wnew.df["argmax_F"]), ["foo4", "foo3"])
+        self.assertListEqual(["G", "argmax_F"], list(wnew.df.columns))
+
     def test_extend(self):
         df = create_df()
         w = Wrap(df)
