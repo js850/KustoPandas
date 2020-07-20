@@ -157,6 +157,32 @@ class TestWrap(unittest.TestCase):
         
         np.testing.assert_almost_equal(w.df["variance_F"], [3, 0], 3)
         self.assertListEqual(["G", "variance_F"], list(w.df.columns))
+    
+    def test_summarize_min(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["min(F)"], "G")
+        
+        print(w.df)
+        
+        self.assertListEqual(list(wnew.df["min_F"]), [0, 8])
+        self.assertListEqual(["G", "min_F"], list(wnew.df.columns))
+    
+    def test_summarize_max(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["max(F)"], "G")
+        
+        print(w.df)
+        
+        self.assertListEqual(list(wnew.df["max_F"]), [4, 9])
+        self.assertListEqual(["G", "max_F"], list(wnew.df.columns))
 
     def test_extend(self):
         df = create_df()

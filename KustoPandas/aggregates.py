@@ -101,6 +101,14 @@ class Variance(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.var()
 
+class Min(AggOneArg):
+    def apply_aggregate(self, grouped):
+        return grouped.min()
+
+class Max(AggOneArg):
+    def apply_aggregate(self, grouped):
+        return grouped.max()
+
 class Percentiles(SimpleAgg):
     def validate(self, df):
         if len(self.args) < 2:
@@ -137,7 +145,7 @@ class Percentiles(SimpleAgg):
 def get_method_name(type):
     return type.__name__.lower()
 
-aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Percentiles]
+aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Min, Max, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
@@ -157,4 +165,10 @@ def create_aggregate(text):
 
     method_name = str(method.name)
 
-    return aggregate_map[method_name](new_col, method.args.args)
+    try:
+        agg_method = aggregate_map[method_name]
+    except KeyError:
+        raise KeyError("Unknown aggregate method: {0}".format(method_name))
+
+
+    return agg_method(new_col, method.args.args)
