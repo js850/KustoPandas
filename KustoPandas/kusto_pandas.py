@@ -32,16 +32,16 @@ class Wrap:
     def _repr_html_(self):
         return self.df._repr_html_()
 
-    def create_new(self, df):
+    def _copy(self, df):
         w = Wrap(df)
         w.let_statements = list(self.let_statements)
         return w
 
-    def get_var_map(self):
+    def __repr_html_(self):
         return MultiDict([self.df, get_methods()] + self.let_statements)
 
     def let(self, **kwargs):
-        w = self.create_new(self.df)
+        w = self._copy(self.df)
         w.let_statements.append(kwargs)
         return w
 
@@ -58,7 +58,7 @@ class Wrap:
         w.project("A", "Bnew = B+A")
         """
         dfnew = pd.DataFrame()
-        var_map = self.get_var_map()
+        var_map = self.__repr_html_()
 
         for c in cols:
             parsed = parse_statement(c)
@@ -74,7 +74,7 @@ class Wrap:
             result = parsed.evaluate(var_map)
             dfnew[name] = result
 
-        return self.create_new(dfnew)
+        return self._copy(dfnew)
     
     def summarize(self, resulting_cols, group_by):
         if isinstance(resulting_cols, str):
@@ -92,7 +92,7 @@ class Wrap:
                 group_by_col_names.append(c)
             else:
                 parsed = parse_statement(c)
-                series = parsed.evaluate(self.get_var_map())
+                series = parsed.evaluate(self.__repr_html_())
                 temp_name = "__tempcolname_" + str(len(temp_col_names))
                 temp_col_names.append(temp_name)
                 group_by_col_names.append(temp_name)
@@ -105,7 +105,7 @@ class Wrap:
             for col_name, col_value in arg.columns_needed():
                 columns_needed.add(col_name)
                 if col_name not in dftemp:
-                    result = col_value.evaluate(self.get_var_map())
+                    result = col_value.evaluate(self.__repr_html_())
                     dftemp[col_name] = result
 
         grouped = dftemp.groupby(group_by_col_names)
@@ -119,7 +119,7 @@ class Wrap:
         
         dfnew = dfnew.reset_index()
 
-        return self.create_new(dfnew)
+        return self._copy(dfnew)
     
     def extend(self, text):
         parsed = parse_statement(text)
@@ -127,27 +127,27 @@ class Wrap:
         if not isinstance(parsed, Assignment):
             raise Exception("extend expects an assignment: " + text)
 
-        result_map = parsed.evaluate(self.get_var_map())
+        result_map = parsed.evaluate(self.__repr_html_())
 
         newdf = self.df.copy(deep=False)
         for k, v in result_map.items():
             newdf[str(k)] = v
         
-        return self.create_new(newdf)
+        return self._copy(newdf)
     
     def where(self, condition):
         parsed = parse_statement(condition)
         if isinstance(parsed, Assignment):
             raise Exception("where cannot have assignment: " + str(parsed))
 
-        result = parsed.evaluate(self.get_var_map())
+        result = parsed.evaluate(self.__repr_html_())
 
         newdf = self.df[result]
-        return self.create_new(newdf)
+        return self._copy(newdf)
     
     def take(self, n):
         newdf = self.df.head(n)
-        return self.create_new(newdf)#
+        return self._copy(newdf)#
     
     def sort(self, by, desc=True):
         """
@@ -175,7 +175,7 @@ class Wrap:
 
         col_names = ["__tempcol_" + str(i) for i in range(len(by))]
 
-        var_map = self.get_var_map()
+        var_map = self.__repr_html_()
         for col, expr in zip(col_names, by):
             parsed = parse_statement(expr)
             series = parsed.evaluate(var_map)
@@ -187,7 +187,7 @@ class Wrap:
         for c in col_names:
             del df[c]
 
-        return self.create_new(df)
+        return self._copy(df)
 
     def top(self, n, by, desc=True):
         return self.sort(by, desc=desc).take(n)
@@ -199,7 +199,7 @@ class Wrap:
         # fix suffixes to align with what kusto does in case of name conflict
         dfnew = self.df.merge(right=right, how=kind, on=on, left_on=left_on, right_on=right_on, suffixes=("", "_y"))
 
-        return self.create_new(dfnew)
+        return self._copy(dfnew)
 
         
 
