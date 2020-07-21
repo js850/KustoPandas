@@ -380,6 +380,10 @@ def parse_math(line):
     p = parse_operator([Contains, NotContains], line)
     if p is not None:
         return p
+    
+    p = parse_operator([Comma], line, right_to_left=True)
+    if p is not None:
+        return p
 
     raise Exception("could not parse expression: " + str(line))
 
@@ -427,25 +431,20 @@ def parentheses_are_method_arguments(line, i):
         return False
     return isinstance(line[i-1], Var)
 
-def parse_method_args(line, matches):
-    args = []
-    last = 0
-    for i, c in enumerate(line):
-        if c == Comma:
-            if i == last:
-                raise Exception("commas are not separated by a value in args: " + line) 
-            parsed = parse_parentheses(line[last:i], matches[last:i])
-            args.append(parsed)
-            last = i+1
-    
-    if last < len(line):
-        parsed = parse_parentheses(line[last:], matches[last:])
-        args.append(parsed)
+def unroll_comma(value):
+    if isinstance(value.right, Comma):
+        return [value.left] + unroll_comma(value.right)
+    return [value.left, value.right]
 
-    return Args(args)
+def convert_to_method_args(parsed):
+    if isinstance(parsed, Comma):
+        args = unroll_comma(parsed)
+        return Args(args)
+
+    return Args([parsed])
+
 
 def parse_parentheses(line, matches):
-
     parentheses = split_one_level(matches)
     
     if not parentheses:
@@ -458,7 +457,12 @@ def parse_parentheses(line, matches):
         if i > last:
             output += line[last:i]
         if parentheses_are_method_arguments(line, i):
-            args = parse_method_args(line[i+1:end], matches[i+1:end])
+            if i+1 == end:
+                args = Args([])
+            else:
+                parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
+                #args = parse_method_args(line[i+1:end], matches[i+1:end])
+                args = convert_to_method_args(parsed)
             method_name = output.pop()
             method = Method(method_name, args)
             output.append(method)
