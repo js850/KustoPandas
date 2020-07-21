@@ -1,4 +1,4 @@
-import expression_parser as ep
+from . import expression_parser as ep
 import uuid
 
 

@@ -1,9 +1,9 @@
 import pandas as pd
 import re
 
-import expression_parser as ep
-from aggregates import create_aggregate
-from methods import get_methods
+from .expression_parser import parse_statement
+from .aggregates import create_aggregate
+from .methods import get_methods
 
 def ensure_column_name_unique(df, col):
     while col in df.columns:
@@ -29,6 +29,9 @@ class Wrap:
         self.df = df
         self.let_statements = []
     
+    def _repr_html_(self):
+        return self.df._repr_html_()
+
     def create_new(self, df):
         w = Wrap(df)
         w.let_statements = list(self.let_statements)
@@ -58,16 +61,16 @@ class Wrap:
         var_map = self.get_var_map()
 
         for c in cols:
-            parsed = ep.parse_statement(c)
+            parsed = parse_statement(c)
             result = parsed.evaluate(var_map)
-            if isinstance(parsed, ep.Assignment):
+            if isinstance(parsed, Assignment):
                 for k, v in result.items():
                     dfnew[k] = v
             else:
                 dfnew[c] = result
         
         for name, expr in renamed_cols.items():
-            parsed = ep.parse_statement(expr)
+            parsed = parse_statement(expr)
             result = parsed.evaluate(var_map)
             dfnew[name] = result
 
@@ -88,7 +91,7 @@ class Wrap:
             if c in dftemp.columns:
                 group_by_col_names.append(c)
             else:
-                parsed = ep.parse_statement(c)
+                parsed = parse_statement(c)
                 series = parsed.evaluate(self.get_var_map())
                 temp_name = "__tempcolname_" + str(len(temp_col_names))
                 temp_col_names.append(temp_name)
@@ -119,9 +122,9 @@ class Wrap:
         return self.create_new(dfnew)
     
     def extend(self, text):
-        parsed = ep.parse_statement(text)
+        parsed = parse_statement(text)
 
-        if not isinstance(parsed, ep.Assignment):
+        if not isinstance(parsed, Assignment):
             raise Exception("extend expects an assignment: " + text)
 
         result_map = parsed.evaluate(self.get_var_map())
@@ -133,8 +136,8 @@ class Wrap:
         return self.create_new(newdf)
     
     def where(self, condition):
-        parsed = ep.parse_statement(condition)
-        if isinstance(parsed, ep.Assignment):
+        parsed = parse_statement(condition)
+        if isinstance(parsed, Assignment):
             raise Exception("where cannot have assignment: " + str(parsed))
 
         result = parsed.evaluate(self.get_var_map())
@@ -174,7 +177,7 @@ class Wrap:
 
         var_map = self.get_var_map()
         for col, expr in zip(col_names, by):
-            parsed = ep.parse_statement(expr)
+            parsed = parse_statement(expr)
             series = parsed.evaluate(var_map)
             df[col] = series
         
