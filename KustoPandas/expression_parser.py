@@ -243,6 +243,16 @@ class TimespanLiteral(Expression):
     def evaluate(self, vals):
         return pd.Timedelta(self.count.evaluate(None), unit=self.unit)
 
+class ListExpression(Expression):
+    def __init__(self, items):
+        self.items = items
+    def __str__(self):
+        return "(" + ", ".join((str(a) for a in self.items)) + ")"
+    def __repr__(self):
+        return str(self)
+    def evaluate(self, vals):
+        return [a.evaluate(vals) for a in self.items]
+
 def find_matching_parentheses(line):
     matches = np.zeros(len(line), dtype=np.int)
     stack = []
@@ -381,7 +391,7 @@ def parse_math(line):
     if p is not None:
         return p
     
-    p = parse_operator([Comma], line, right_to_left=True)
+    p = parse_operator([Comma], line, right_to_left=False)
     if p is not None:
         return p
 
@@ -437,14 +447,18 @@ def unroll_comma(value):
     return [value.left, value.right]
 
 def convert_to_method_args(parsed):
+    if parsed is None:
+        return Args([])
     if isinstance(parsed, Comma):
         args = unroll_comma(parsed)
         return Args(args)
 
     return Args([parsed])
 
-
 def parse_parentheses(line, matches):
+    if len(line) == 0:
+        return None
+
     parentheses = split_one_level(matches)
     
     if not parentheses:
@@ -456,18 +470,17 @@ def parse_parentheses(line, matches):
     for i, end in parentheses:
         if i > last:
             output += line[last:i]
+        parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
         if parentheses_are_method_arguments(line, i):
-            if i+1 == end:
-                args = Args([])
-            else:
-                parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
-                #args = parse_method_args(line[i+1:end], matches[i+1:end])
-                args = convert_to_method_args(parsed)
+            args = convert_to_method_args(parsed)
             method_name = output.pop()
             method = Method(method_name, args)
             output.append(method)
+        elif isinstance(parsed, Comma):
+            list_instance = unroll_comma(parsed)
+            list_expression = ListExpression(list_instance)
+            output.append(list_expression)
         else:
-            parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
             output.append(parsed)
         last = end + 1
     
