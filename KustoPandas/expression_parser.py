@@ -358,6 +358,10 @@ def parse_math(line):
             raise Exception("expected Expression: " + str(line[0]))
         return line[0]
     
+    p = parse_operator([Comma], line, right_to_left=False)
+    if p is not None:
+        return p
+
     p = parse_operator([Assignment], line, right_to_left=True)
     if p is not None:
         return p
@@ -388,10 +392,6 @@ def parse_math(line):
 
     # I'm just guessing what priority these should have
     p = parse_operator([Contains, NotContains], line)
-    if p is not None:
-        return p
-    
-    p = parse_operator([Comma], line, right_to_left=False)
     if p is not None:
         return p
 

@@ -120,14 +120,24 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), "(2 * xx(1, 2, 3, 4))")
         self.assertEqual(20, parsed.evaluate({"xx": xx}))
     
-    def test_parse_methods2(self):
-        x = "(1 + 3) * x_1(5) + y(6, 7)"
+    def test_parse_methods3(self):
+        x = "iff(W > 0, B, C)"
         parsed = parse_statement(x)
-        self.assertEqual(str(parsed), "(((1 + 3) * x_1(5)) + y(6, 7))")
-        def y(a, b):
-            return a + b
-        self.assertEqual(37, parsed.evaluate({"x_1": lambda x: (x + 1), "y": y}))
-    
+        self.assertEqual(str(parsed), "iff((W > 0), B, C)")
+        def iff(a, b, c):
+            if a:
+                return b
+            else:
+                return c
+        self.assertEqual(2, parsed.evaluate({"W": 1, "B": 2, "C": 3, "iff": iff}))
+
+    def test_method_expression(self):
+        x = "y = (1, 2, 3)"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(y = (1, 2, 3))")
+        result = parsed.evaluate(None)
+        self.assertListEqual(list(result["y"]), [1, 2, 3])
+
     def test_parse_methods_sub_method(self):
         x = "1 + z(a(), b(3))"
         parsed = parse_statement(x)
@@ -246,3 +256,4 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), "(y = (1, 2, 3))")
         result = parsed.evaluate(None)
         self.assertListEqual(list(result["y"]), [1, 2, 3])
+
