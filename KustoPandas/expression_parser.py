@@ -381,38 +381,38 @@ def parse_math(line, method_stack):
     # if p is not None:
     #     return p
 
-    p = parse_operator([Assignment], line, right_to_left=True)
-    if p is not None:
-        return p
+    # p = parse_operator([Assignment], line, right_to_left=True)
+    # if p is not None:
+    #     return p
 
-    p = parse_operator([Or], line)
-    if p is not None:
-        return p
+    # p = parse_operator([Or], line)
+    # if p is not None:
+    #     return p
 
-    p = parse_operator([And], line)
-    if p is not None:
-        return p
+    # p = parse_operator([And], line)
+    # if p is not None:
+    #     return p
 
-    p = parse_operator([Eq, NEq], line)
-    if p is not None:
-        return p
+    # p = parse_operator([Eq, NEq], line)
+    # if p is not None:
+    #     return p
 
-    p = parse_operator([Gt, Lt, Ge, Le], line)
-    if p is not None:
-        return p
+    # p = parse_operator([Gt, Lt, Ge, Le], line)
+    # if p is not None:
+    #     return p
 
-    p = parse_operator([Add, Sub], line)
-    if p is not None:
-        return p
+    # p = parse_operator([Add, Sub], line)
+    # if p is not None:
+    #     return p
 
-    p = parse_operator([Mul, Div], line)
-    if p is not None:
-        return p
+    # p = parse_operator([Mul, Div], line)
+    # if p is not None:
+    #     return p
 
     # I'm just guessing what priority these should have
-    p = parse_operator([Contains, NotContains, In, NotIn], line)
-    if p is not None:
-        return p
+    # p = parse_operator([Contains, NotContains, In, NotIn], line)
+    # if p is not None:
+    #     return p
 
     raise Exception("could not parse expression: " + str(line))
 
@@ -506,9 +506,29 @@ def parse_parentheses(line, method_stack, matches=None):
     #print("output", output)
     return method_stack.evaluate_next_method(output)
 
+def last_method(line, method_stack):
+    if method_stack.stack:
+        raise Exception("method stack is not empty")
+    if len(line) == 0:
+        raise Exception("parsing math but line is length 0")
+    if len(line) == 1:
+        if not isinstance(line[0], Expression):
+            raise Exception("expected Expression: " + str(line[0]))
+        return line[0]
+    raise Exception("at end of last method, but line is not empty: " + str(line))
+
+
 def get_expression_tree_method_stack():
     return MethodStack([
-        parse_math,
+        last_method,
+        get_parse_operators_method([Contains, NotContains, In, NotIn]), # I'm just guessing what priority these should have
+        get_parse_operators_method([Mul, Div]),
+        get_parse_operators_method([Add, Sub]),
+        get_parse_operators_method([Gt, Lt, Ge, Le]),
+        get_parse_operators_method([Eq, NEq]),
+        get_parse_operators_method([And]),
+        get_parse_operators_method([Or]),
+        get_parse_operators_method([Assignment], right_to_left=True),
         get_parse_operators_method([Comma], right_to_left=False),
         parse_unary_operators,
         parse_parentheses,
