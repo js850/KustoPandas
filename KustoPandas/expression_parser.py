@@ -393,7 +393,7 @@ def parse_math(line):
 
     raise Exception("could not parse expression: " + str(line))
 
-def parse_unary_operators(line):
+def parse_unary_operators(line, method_stack):
     output = []    
     i = 0
 
@@ -445,22 +445,25 @@ def convert_to_method_args(parsed):
 
     return Args([parsed])
 
-def parse_parentheses(line, matches):
+def parse_parentheses(line, method_stack, matches=None):
     if len(line) == 0:
         return None
+
+    if matches is None:
+        matches = find_matching_parentheses(line)
 
     parentheses = split_one_level(matches)
     
     if not parentheses:
         # fix this
-        return parse_unary_operators(line)
+        return evaluate_next_method(line, method_stack)
 
     output = []
     last = 0
     for i, end in parentheses:
         if i > last:
             output += line[last:i]
-        parsed = parse_parentheses(line[i+1:end], matches[i+1:end])
+        parsed = parse_parentheses(line[i+1:end], method_stack, matches=matches[i+1:end])
         if parentheses_are_method_arguments(line, i):
             args = convert_to_method_args(parsed)
             method_name = output.pop()
@@ -478,11 +481,17 @@ def parse_parentheses(line, matches):
     output += tail
     
     #print("output", output)
-    return parse_unary_operators(output)
+    return evaluate_next_method(output, method_stack)
+
+def get_expression_tree_method_stack():
+    return [
+        parse_unary_operators,
+        parse_parentheses,
+    ]
 
 def build_expression_tree(parts):
-    matches = find_matching_parentheses(parts)
-    parsed = parse_parentheses(parts, matches)
+    method_stack = get_expression_tree_method_stack()
+    parsed = evaluate_next_method(parts, method_stack)
     return parsed
 
 def op_matches_start(line, op):
