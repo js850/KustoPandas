@@ -1,5 +1,10 @@
 import unittest
-from expression_parser import *
+import pandas as pd
+import numpy as np
+from context import expression_parser as ep
+
+from KustoPandas.expression_parser import (find_matching_parentheses, parse_statement,
+ parse_string_literals_parts, parse_parts_of_line, Assignment)
 
 class TestExpressionParser(unittest.TestCase):
     def test_find_matching_parens(self):
@@ -106,6 +111,14 @@ class TestExpressionParser(unittest.TestCase):
         parsed = parse_statement(x)
         self.assertEqual(str(parsed), "(2 * xx(5))")
         self.assertEqual(12, parsed.evaluate({"xx": lambda x: (x + 1)}))
+
+    def test_parse_method_multiple_args(self):
+        x = "2 * xx(1, 2, 3, 4)"
+        parsed = parse_statement(x)
+        def xx(a, b, c, d):
+            return a + b + c + d
+        self.assertEqual(str(parsed), "(2 * xx(1, 2, 3, 4))")
+        self.assertEqual(20, parsed.evaluate({"xx": xx}))
     
     def test_parse_methods2(self):
         x = "(1 + 3) * x_1(5) + y(6, 7)"
@@ -199,7 +212,7 @@ class TestExpressionParser(unittest.TestCase):
         x = "y = -1 + \"hi\" + (-xx)"
         parsed = parse_string_literals_parts(x)
         print("\n" + str(parsed))
-        parsed2 = parse_rest_parts(parsed)
+        parsed2 = ep.parse_rest_parts(parsed)
 
         print("\n" + str(parsed2))
 
@@ -226,3 +239,10 @@ class TestExpressionParser(unittest.TestCase):
         s = pd.Series([True, False])
         result = parsed.evaluate({"x": s})
         self.assertListEqual(list(result["y"]), [False, True])
+    
+    def test_list_expression(self):
+        x = "y = (1, 2, 3)"
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), "(y = (1, 2, 3))")
+        result = parsed.evaluate(None)
+        self.assertListEqual(list(result["y"]), [1, 2, 3])

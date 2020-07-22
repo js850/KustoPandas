@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 
-from .expression_parser import parse_statement
+from .expression_parser import parse_statement, Assignment
 from .aggregates import create_aggregate
 from .methods import get_methods
 
