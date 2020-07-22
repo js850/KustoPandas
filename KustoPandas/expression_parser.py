@@ -326,26 +326,6 @@ def parse_num_or_var(val):
         return parsed
     return parse_var(val)
 
-def starts_with(array, prefix):
-    for i in range(len(prefix)):
-        if i >= len(array):
-            return False
-        if array[i] != prefix[i]:
-            return False
-    return True
-
-def parse_operator(operators, line, right_to_left=False):
-    indices = range(len(line))
-    if right_to_left:
-        indices = reversed(indices)
-
-    for i in indices:
-        for operator in operators:
-            if line[i] == operator:
-                left = parse_math(line[:i], None)
-                right = parse_math(line[i + 1:], None)
-                return operator(left, right)
-
 def parse_operators_stack(operators, line, method_stack, right_to_left=False):
     indices = range(len(line))
     if right_to_left:
@@ -355,7 +335,6 @@ def parse_operators_stack(operators, line, method_stack, right_to_left=False):
         for operator in operators:
             if line[i] == operator:
                 if right_to_left:
-                    # TODO TODO
                     left = method_stack.rerun_current_method(line[:i])
                     right = method_stack.evaluate_next_method(line[i + 1:])
                 else:
@@ -368,53 +347,6 @@ def get_parse_operators_method(operators, right_to_left=False):
     def parse_op(line, method_stack):
         return parse_operators_stack(operators, line, method_stack, right_to_left=right_to_left)
     return parse_op
-
-def parse_math(line, method_stack):
-    if len(line) == 0:
-        raise Exception("parsing math but line is length 0")
-    if len(line) == 1:
-        if not isinstance(line[0], Expression):
-            raise Exception("expected Expression: " + str(line[0]))
-        return line[0]
-    
-    # p = parse_operator([Comma], line, right_to_left=False)
-    # if p is not None:
-    #     return p
-
-    # p = parse_operator([Assignment], line, right_to_left=True)
-    # if p is not None:
-    #     return p
-
-    # p = parse_operator([Or], line)
-    # if p is not None:
-    #     return p
-
-    # p = parse_operator([And], line)
-    # if p is not None:
-    #     return p
-
-    # p = parse_operator([Eq, NEq], line)
-    # if p is not None:
-    #     return p
-
-    # p = parse_operator([Gt, Lt, Ge, Le], line)
-    # if p is not None:
-    #     return p
-
-    # p = parse_operator([Add, Sub], line)
-    # if p is not None:
-    #     return p
-
-    # p = parse_operator([Mul, Div], line)
-    # if p is not None:
-    #     return p
-
-    # I'm just guessing what priority these should have
-    # p = parse_operator([Contains, NotContains, In, NotIn], line)
-    # if p is not None:
-    #     return p
-
-    raise Exception("could not parse expression: " + str(line))
 
 def parse_unary_operators(line, method_stack):
     output = []    
@@ -516,7 +448,6 @@ def last_method(line, method_stack):
             raise Exception("expected Expression: " + str(line[0]))
         return line[0]
     raise Exception("at end of last method, but line is not empty: " + str(line))
-
 
 def get_expression_tree_method_stack():
     return MethodStack([
