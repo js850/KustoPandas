@@ -356,13 +356,18 @@ def parse_operators_stack(operators, line, method_stack, right_to_left=False):
             if line[i] == operator:
                 if right_to_left:
                     # TODO TODO
-                    left = (line[:i], method_stack)
-                    right = evaluate_next_method(line[i + 1:], method_stack)
+                    left = method_stack.rerun_current_method(line[:i])
+                    right = method_stack.evaluate_next_method(line[i + 1:])
                 else:
-                    left = evaluate_next_method(line[:i], method_stack)
-                    right = parse_operators_stack(operators, line[i + 1:], method_stack, right_to_left)
+                    left = method_stack.evaluate_next_method(line[:i])
+                    right = method_stack.rerun_current_method(line[i + 1:])
                 return operator(left, right)
+    return method_stack.evaluate_next_method(line)
 
+def get_parse_operators_method(operators, right_to_left=False):
+    def parse_op(line, method_stack):
+        return parse_operators_stack(operators, line, method_stack, right_to_left=right_to_left)
+    return parse_op
 
 def parse_math(line, method_stack):
     if len(line) == 0:
@@ -372,9 +377,9 @@ def parse_math(line, method_stack):
             raise Exception("expected Expression: " + str(line[0]))
         return line[0]
     
-    p = parse_operator([Comma], line, right_to_left=False)
-    if p is not None:
-        return p
+    # p = parse_operator([Comma], line, right_to_left=False)
+    # if p is not None:
+    #     return p
 
     p = parse_operator([Assignment], line, right_to_left=True)
     if p is not None:
@@ -504,6 +509,7 @@ def parse_parentheses(line, method_stack, matches=None):
 def get_expression_tree_method_stack():
     return MethodStack([
         parse_math,
+        get_parse_operators_method([Comma], right_to_left=False),
         parse_unary_operators,
         parse_parentheses,
     ])
