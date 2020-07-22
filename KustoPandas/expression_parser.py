@@ -561,7 +561,7 @@ def parse_string_literals_parts(line, method_stack):
             if c == matching:
                 left = method_stack.evaluate_next_method(line[:last])
                 val = StringLiteral("".join(line[last+1:i]))
-                right = parse_string_literals_parts(line[i+1:], method_stack)
+                right = method_stack.rerun_current_method(line[i+1:])
                 return left + [val] + right
     
     return method_stack.evaluate_next_method(line)
@@ -590,7 +590,7 @@ def parse_characters_part(line, chars, keep_character, method_stack):
     for i, c in enumerate(line):
         if c in chars:
             left = method_stack.evaluate_next_method(line[:i])
-            right = parse_characters_part(line[i+1:], chars, keep_character, method_stack)
+            right = method_stack.rerun_current_method(line[i+1:])
             if keep_character:
                 return left + [c] + right
             else:
@@ -612,7 +612,8 @@ def identify_operators(line, method_stack):
         op = get_matching_op(line, i)
         if op is not None:
             left = method_stack.evaluate_next_method(line[:i])
-            right = identify_operators(line[i+len(op.op):], method_stack)
+            right = method_stack.rerun_current_method(line[i+len(op.op):])
+            # right = identify_operators(line[i+len(op.op):], method_stack)
             return left + [op] + right
     return method_stack.evaluate_next_method(line)
 
@@ -622,17 +623,24 @@ def parse_chars_num_or_var(line, method_stack):
     return [parse_num_or_var(line)]
 
 class MethodStack:
-    def __init__(self, stack):
+    def __init__(self, stack, current_method=None):
         self.stack = stack
+        self.current_method = current_method
 
-    def evaluate_next_method(self, line):
-        if len(line) == 0:
+    def copy(self):
+        return MethodStack(list(self.stack), current_method=self.current_method)
+
+    def evaluate_next_method(self, parts):
+        if len(parts) == 0:
             return []
         if not self.stack:
             raise Exception("method stack empty(?)")
         method = self.stack[-1]
-        new_method_stack = MethodStack(list(self.stack[:-1]))
-        return method(line, new_method_stack)
+        new_method_stack = MethodStack(list(self.stack[:-1]), current_method=method)
+        return method(parts, new_method_stack)
+    
+    def rerun_current_method(self, parts):
+        return self.current_method(parts, self.copy())
 
 def get_method_stack():
     stack = [
