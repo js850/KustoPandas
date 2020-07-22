@@ -319,6 +319,8 @@ def parse_num(val):
     return None
     
 def parse_num_or_var(val):
+    if len(val) == 0:
+        raise Exception("parsing variable or literal but is emtpy")
     parsed = parse_num(val)
     if parsed is not None:
         return parsed
@@ -520,6 +522,7 @@ def is_op(c):
 # class CloseParens:
 #     pass
 
+
 def parse_line_part(line):
     if not line:
         return []
@@ -553,6 +556,18 @@ def parse_rest_parts(parts):
             left = parts[:i]
             center = parse_line_part(line)
             right = parse_rest_parts(parts[i+1:])
+            return left + center + right 
+    return parts
+
+def parse_rest_parts_recursive(parts, method_stack):
+    if not parts:
+        return []
+
+    for i, line in enumerate(parts):
+        if isinstance(line, str):
+            left = parts[:i]
+            center = evaluate_next_method(line, method_stack)
+            right = parse_rest_parts_recursive(parts[i+1:], method_stack)
             return left + center + right 
     return parts
 
@@ -591,10 +606,67 @@ def resolve_ambiguous_operators(parts):
             parts[i] = c.binary
     return parts
 
+def evaluate_next_method(line, method_stack):
+    if len(line) == 0:
+        return []
+    if not method_stack:
+        raise Exception("method stack empty(?)")
+    method = method_stack[-1]
+    new_method_stack = list(method_stack[:-1])
+    return method(line, new_method_stack)
+
+def parse_characters_part(line, chars, keep_character, method_stack):
+    if not line:
+        return []
+    for i, c in enumerate(line):
+        if c in chars:
+            left = evaluate_next_method(line[:i], method_stack)
+            right = parse_characters_part(line[i+1:], chars, keep_character, method_stack)
+            if keep_character:
+                return left + [c] + right
+            else:
+                return left + right
+    
+    return evaluate_next_method(line, method_stack)
+
+def parse_chars_whitespace(line, method_stack):
+    return parse_characters_part(line, [" "], False, method_stack)
+
+def parse_chars_parentheses(line, method_stack):
+    return parse_characters_part(line, ["(", ")"], True, method_stack)
+
+def identify_operators(line, method_stack):
+    if not line:
+        return []
+
+    for i, c in enumerate(line):
+        op = get_matching_op(line, i)
+        if op is not None:
+            left = evaluate_next_method(line[:i], method_stack)
+            right = identify_operators(line[i+len(op.op):], method_stack)
+            return left + [op] + right
+    return evaluate_next_method(line, method_stack)
+
+def parse_chars_num_or_var(line, method_stack):
+    if method_stack:
+        raise Exception("method_stack should be empty")
+    return [parse_num_or_var(line)]
+
+def get_method_stack():
+    stack = [
+        parse_chars_num_or_var,
+        identify_operators,
+        parse_chars_parentheses,
+        parse_chars_whitespace,
+    ]
+    return stack
+
 def parse_parts_of_line(line):
     # exploded = list(line)
     with_strings = parse_string_literals_parts(line)
-    parsed = parse_rest_parts(with_strings)
+    method_stack = get_method_stack()
+    # parsed = parse_rest_parts(with_strings)
+    parsed = parse_rest_parts_recursive(with_strings, method_stack)
     resolved = resolve_ambiguous_operators(parsed)
     return resolved
 
