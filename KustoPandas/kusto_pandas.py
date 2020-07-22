@@ -37,7 +37,7 @@ class Wrap:
         w.let_statements = list(self.let_statements)
         return w
 
-    def get_var_map(self):
+    def _get_var_map(self):
         return MultiDict([self.df, get_methods()] + self.let_statements)
 
     def let(self, **kwargs):
@@ -58,7 +58,7 @@ class Wrap:
         w.project("A", "Bnew = B+A")
         """
         dfnew = pd.DataFrame()
-        var_map = self.get_var_map()
+        var_map = self._get_var_map()
 
         for c in cols:
             parsed = parse_statement(c)
@@ -92,7 +92,7 @@ class Wrap:
                 group_by_col_names.append(c)
             else:
                 parsed = parse_statement(c)
-                series = parsed.evaluate(self.get_var_map())
+                series = parsed.evaluate(self._get_var_map())
                 temp_name = "__tempcolname_" + str(len(temp_col_names))
                 temp_col_names.append(temp_name)
                 group_by_col_names.append(temp_name)
@@ -105,7 +105,7 @@ class Wrap:
             for col_name, col_value in arg.columns_needed():
                 columns_needed.add(col_name)
                 if col_name not in dftemp:
-                    result = col_value.evaluate(self.get_var_map())
+                    result = col_value.evaluate(self._get_var_map())
                     dftemp[col_name] = result
 
         grouped = dftemp.groupby(group_by_col_names)
@@ -127,7 +127,7 @@ class Wrap:
         if not isinstance(parsed, Assignment):
             raise Exception("extend expects an assignment: " + text)
 
-        result_map = parsed.evaluate(self.get_var_map())
+        result_map = parsed.evaluate(self._get_var_map())
 
         newdf = self.df.copy(deep=False)
         for k, v in result_map.items():
@@ -140,7 +140,7 @@ class Wrap:
         if isinstance(parsed, Assignment):
             raise Exception("where cannot have assignment: " + str(parsed))
 
-        result = parsed.evaluate(self.get_var_map())
+        result = parsed.evaluate(self._get_var_map())
 
         newdf = self.df[result]
         return self._copy(newdf)
@@ -175,7 +175,7 @@ class Wrap:
 
         col_names = ["__tempcol_" + str(i) for i in range(len(by))]
 
-        var_map = self.get_var_map()
+        var_map = self._get_var_map()
         for col, expr in zip(col_names, by):
             parsed = parse_statement(expr)
             series = parsed.evaluate(var_map)
