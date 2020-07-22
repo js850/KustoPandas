@@ -340,25 +340,9 @@ def parse_operator(operators, line, right_to_left=False):
     for i in indices:
         for operator in operators:
             if line[i] == operator:
-                # if i == 0:
-                #     right = parse_math(line[i + 1:])
-                #     unary = operator.get_unary_version()
-                #     return unary(right)
-                # else:
                 left = parse_math(line[:i])
                 right = parse_math(line[i + 1:])
                 return operator(left, right)
-
-def parse_method(line):
-    if len(line) != 2:
-        raise Exception("Trying to parse method but got too many items: " + str(line))
-
-    if not isinstance(line[0], Var):
-        raise Exception("parse_method: first element is not Var: " + str(line))
-    if not isinstance(line[1], Args):
-        raise Exception("parse_method: second element is not Args: " + str(line))
-
-    return Method(line[0], line[1])
 
 def parse_math(line):
     if len(line) == 0:
@@ -440,27 +424,21 @@ def split_one_level(matches):
             i += 1
     return groups    
 
-def isempty(line):
-    for c in line:
-        if c != " ":
-            return False
-    return True
-
 def parentheses_are_method_arguments(line, i):
     if i == 0:
         return False
     return isinstance(line[i-1], Var)
 
-def unroll_comma(value):
+def flatten_comma(value):
     if isinstance(value.right, Comma):
-        return [value.left] + unroll_comma(value.right)
+        return [value.left] + flatten_comma(value.right)
     return [value.left, value.right]
 
 def convert_to_method_args(parsed):
     if parsed is None:
         return Args([])
     if isinstance(parsed, Comma):
-        args = unroll_comma(parsed)
+        args = flatten_comma(parsed)
         return Args(args)
 
     return Args([parsed])
@@ -487,7 +465,7 @@ def parse_parentheses(line, matches):
             method = Method(method_name, args)
             output.append(method)
         elif isinstance(parsed, Comma):
-            list_instance = unroll_comma(parsed)
+            list_instance = flatten_comma(parsed)
             list_expression = ListExpression(list_instance)
             output.append(list_expression)
         else:
@@ -495,8 +473,7 @@ def parse_parentheses(line, matches):
         last = end + 1
     
     tail = line[last:]
-    if not isempty(tail):
-        output += tail
+    output += tail
     
     #print("output", output)
     return parse_unary_operators(output)
