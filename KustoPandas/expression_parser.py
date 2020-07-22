@@ -480,6 +480,11 @@ def parse_parentheses(line, matches):
     #print("output", output)
     return parse_unary_operators(output)
 
+def build_expression_tree(parts):
+    matches = find_matching_parentheses(parts)
+    parsed = parse_parentheses(parts, matches)
+    return parsed
+
 def op_matches_start(line, op):
     for i in range(len(op.op)):
         if i >= len(line):
@@ -614,7 +619,6 @@ def parse_parts_of_line(line):
     return resolved
 
 def parse_statement(line):
-    exploded = parse_parts_of_line(line)
-    matches = find_matching_parentheses(exploded)
-    parsed = parse_parentheses(exploded, matches)
+    parts = parse_parts_of_line(line)
+    parsed = build_expression_tree(parts)
     return parsed
