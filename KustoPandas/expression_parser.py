@@ -342,11 +342,29 @@ def parse_operator(operators, line, right_to_left=False):
     for i in indices:
         for operator in operators:
             if line[i] == operator:
-                left = parse_math(line[:i])
-                right = parse_math(line[i + 1:])
+                left = parse_math(line[:i], None)
+                right = parse_math(line[i + 1:], None)
                 return operator(left, right)
 
-def parse_math(line):
+def parse_operators_stack(operators, line, method_stack, right_to_left=False):
+    indices = range(len(line))
+    if right_to_left:
+        indices = reversed(indices)
+
+    for i in indices:
+        for operator in operators:
+            if line[i] == operator:
+                if right_to_left:
+                    # TODO TODO
+                    left = (line[:i], method_stack)
+                    right = evaluate_next_method(line[i + 1:], method_stack)
+                else:
+                    left = evaluate_next_method(line[:i], method_stack)
+                    right = parse_operators_stack(operators, line[i + 1:], method_stack, right_to_left)
+                return operator(left, right)
+
+
+def parse_math(line, method_stack):
     if len(line) == 0:
         raise Exception("parsing math but line is length 0")
     if len(line) == 1:
@@ -410,7 +428,7 @@ def parse_unary_operators(line, method_stack):
     if i < len(line):
         output.append(line[i])
 
-    return parse_math(output)
+    return method_stack.evaluate_next_method(output)
 
 
 def split_one_level(matches):
@@ -456,7 +474,7 @@ def parse_parentheses(line, method_stack, matches=None):
     
     if not parentheses:
         # fix this
-        return evaluate_next_method(line, method_stack)
+        return method_stack.evaluate_next_method(line)
 
     output = []
     last = 0
@@ -481,17 +499,18 @@ def parse_parentheses(line, method_stack, matches=None):
     output += tail
     
     #print("output", output)
-    return evaluate_next_method(output, method_stack)
+    return method_stack.evaluate_next_method(output)
 
 def get_expression_tree_method_stack():
-    return [
+    return MethodStack([
+        parse_math,
         parse_unary_operators,
         parse_parentheses,
-    ]
+    ])
 
 def build_expression_tree(parts):
     method_stack = get_expression_tree_method_stack()
-    parsed = evaluate_next_method(parts, method_stack)
+    parsed = method_stack.evaluate_next_method(parts)
     return parsed
 
 def op_matches_start(line, op):
@@ -540,12 +559,12 @@ def parse_string_literals_parts(line, method_stack):
                 last = i
         else:
             if c == matching:
-                left = evaluate_next_method(line[:last], method_stack)
+                left = method_stack.evaluate_next_method(line[:last])
                 val = StringLiteral("".join(line[last+1:i]))
                 right = parse_string_literals_parts(line[i+1:], method_stack)
                 return left + [val] + right
     
-    return evaluate_next_method(line, method_stack)
+    return method_stack.evaluate_next_method(line)
 
 def is_unary_operator(parts, i):
     if i >= len(parts):
@@ -565,28 +584,19 @@ def resolve_ambiguous_operators(parts):
             parts[i] = c.binary
     return parts
 
-def evaluate_next_method(line, method_stack):
-    if len(line) == 0:
-        return []
-    if not method_stack:
-        raise Exception("method stack empty(?)")
-    method = method_stack[-1]
-    new_method_stack = list(method_stack[:-1])
-    return method(line, new_method_stack)
-
 def parse_characters_part(line, chars, keep_character, method_stack):
     if not line:
         return []
     for i, c in enumerate(line):
         if c in chars:
-            left = evaluate_next_method(line[:i], method_stack)
+            left = method_stack.evaluate_next_method(line[:i])
             right = parse_characters_part(line[i+1:], chars, keep_character, method_stack)
             if keep_character:
                 return left + [c] + right
             else:
                 return left + right
     
-    return evaluate_next_method(line, method_stack)
+    return method_stack.evaluate_next_method(line)
 
 def parse_chars_whitespace(line, method_stack):
     return parse_characters_part(line, [" "], False, method_stack)
@@ -601,15 +611,28 @@ def identify_operators(line, method_stack):
     for i, c in enumerate(line):
         op = get_matching_op(line, i)
         if op is not None:
-            left = evaluate_next_method(line[:i], method_stack)
+            left = method_stack.evaluate_next_method(line[:i])
             right = identify_operators(line[i+len(op.op):], method_stack)
             return left + [op] + right
-    return evaluate_next_method(line, method_stack)
+    return method_stack.evaluate_next_method(line)
 
 def parse_chars_num_or_var(line, method_stack):
-    if method_stack:
+    if method_stack.stack:
         raise Exception("method_stack should be empty")
     return [parse_num_or_var(line)]
+
+class MethodStack:
+    def __init__(self, stack):
+        self.stack = stack
+
+    def evaluate_next_method(self, line):
+        if len(line) == 0:
+            return []
+        if not self.stack:
+            raise Exception("method stack empty(?)")
+        method = self.stack[-1]
+        new_method_stack = MethodStack(list(self.stack[:-1]))
+        return method(line, new_method_stack)
 
 def get_method_stack():
     stack = [
@@ -619,11 +642,11 @@ def get_method_stack():
         parse_chars_whitespace,
         parse_string_literals_parts,
     ]
-    return stack
+    return MethodStack(stack)
 
 def parse_parts_of_line(line):
     method_stack = get_method_stack()
-    parsed = evaluate_next_method(line, method_stack)
+    parsed = method_stack.evaluate_next_method(line)
     resolved = resolve_ambiguous_operators(parsed)
     return resolved
 
