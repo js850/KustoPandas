@@ -516,62 +516,7 @@ def get_matching_op(line, i):
 def is_op(c):
     return inspect.isclass(c) and issubclass(c, Opp)
 
-# class OpenParens:
-#     pass
-
-# class CloseParens:
-#     pass
-
-
-def parse_line_part(line):
-    if not line:
-        return []
-    for i, c in enumerate(line):
-        if c in [" "]:
-            left = parse_line_part(line[:i])
-            right = parse_line_part(line[i+1:])
-            return left + right
-
-        if c == "(" or c == ")":
-            left = parse_line_part(line[:i])
-            right = parse_line_part(line[i+1:])
-            return left + [c] + right
-
-    for i, c in enumerate(line):
-        op = get_matching_op(line, i)
-        if op is not None:
-            left = parse_line_part(line[:i])
-            right = parse_line_part(line[i+len(op.op):])
-            return left + [op] + right
-        
-    return [parse_num_or_var(line)]
-
-
-def parse_rest_parts(parts):
-    if not parts:
-        return []
-
-    for i, line in enumerate(parts):
-        if isinstance(line, str):
-            left = parts[:i]
-            center = parse_line_part(line)
-            right = parse_rest_parts(parts[i+1:])
-            return left + center + right 
-    return parts
-
-def parse_rest_parts_recursive(parts, method_stack):
-    if not parts:
-        return []
-
-    for i, line in enumerate(parts):
-        if isinstance(line, str):
-            left = parts[:i]
-            center = evaluate_next_method(line, method_stack)
-            right = parse_rest_parts_recursive(parts[i+1:], method_stack)
-            return left + center + right 
-    return parts
-
-def parse_string_literals_parts(line):
+def parse_string_literals_parts(line, method_stack):
     matching = None
     last = 0
     for i, c in enumerate(line):
@@ -581,12 +526,12 @@ def parse_string_literals_parts(line):
                 last = i
         else:
             if c == matching:
-                left = line[:last]
+                left = evaluate_next_method(line[:last], method_stack)
                 val = StringLiteral("".join(line[last+1:i]))
-                right = parse_string_literals_parts(line[i+1:])
-                return [left] + [val] + right
+                right = parse_string_literals_parts(line[i+1:], method_stack)
+                return left + [val] + right
     
-    return [line]
+    return evaluate_next_method(line, method_stack)
 
 def is_unary_operator(parts, i):
     if i >= len(parts):
@@ -658,15 +603,13 @@ def get_method_stack():
         identify_operators,
         parse_chars_parentheses,
         parse_chars_whitespace,
+        parse_string_literals_parts,
     ]
     return stack
 
 def parse_parts_of_line(line):
-    # exploded = list(line)
-    with_strings = parse_string_literals_parts(line)
     method_stack = get_method_stack()
-    # parsed = parse_rest_parts(with_strings)
-    parsed = parse_rest_parts_recursive(with_strings, method_stack)
+    parsed = evaluate_next_method(line, method_stack)
     resolved = resolve_ambiguous_operators(parsed)
     return resolved
 
