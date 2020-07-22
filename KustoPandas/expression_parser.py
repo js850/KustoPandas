@@ -148,6 +148,16 @@ class NotContains(Opp):
             return ~left.str.contains(right, case=False)
         return right.lower() not in left.lower()     
 
+class In(Opp):
+    op = "in"
+    def evaluate_internal(self, left, right, **kwargs):
+        return left in right 
+
+class NotIn(Opp):
+    op = "!in"
+    def evaluate_internal(self, left, right, **kwargs):
+        return left not in right 
+
 class Comma(Opp):
     op = ","
     def evaluate(self, vals):
@@ -161,7 +171,7 @@ class AmbiguousMinus(Opp):
 
 all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
                  UnaryNot, Assignment,
-                 And, Or, Comma, Contains, NotContains]
+                 And, Or, Comma, Contains, NotContains, In, NotIn]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
@@ -391,7 +401,7 @@ def parse_math(line):
         return p
 
     # I'm just guessing what priority these should have
-    p = parse_operator([Contains, NotContains], line)
+    p = parse_operator([Contains, NotContains, In, NotIn], line)
     if p is not None:
         return p
 

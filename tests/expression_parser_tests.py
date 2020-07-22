@@ -257,3 +257,30 @@ class TestExpressionParser(unittest.TestCase):
         result = parsed.evaluate(None)
         self.assertListEqual(list(result["y"]), [1, 2, 3])
 
+    def test_in(self):
+        x = '"hi" in (1, "b", "hi")'
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), '("hi" in (1, "b", "hi"))')
+        result = parsed.evaluate(None)
+        self.assertEqual(result, True)
+
+    def test_notin(self):
+        x = '"hi" !in (1, "b", "hi")'
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), '("hi" !in (1, "b", "hi"))')
+        result = parsed.evaluate(None)
+        self.assertEqual(result, False)
+
+    def test_in_passed_in_list(self):
+        x = '"hi" in A'
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), '("hi" in A)')
+        result = parsed.evaluate({"A": [1, "hi", "there"]})
+        self.assertEqual(result, True)
+
+    def test_in_case_sensitive(self):
+        x = '"hi" in (1, "b", "Hi")'
+        parsed = parse_statement(x)
+        self.assertEqual(str(parsed), '("hi" in (1, "b", "Hi"))')
+        result = parsed.evaluate(None)
+        self.assertEqual(result, False)
