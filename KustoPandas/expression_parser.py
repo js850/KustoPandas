@@ -158,24 +158,16 @@ def parentheses_parser(line, i):
         return [line[i]], 1
     return None, 0
 
-def parse_chars_whitespace(line, method_stack):
-    return parse_characters_part(line, whitespace_parser, method_stack)
+def operator_parser(line, i):
+    op = get_matching_op(line, i)
+    if op is not None:
+        return [op], len(op.op)
+    return None, 0
 
-def parse_chars_parentheses(line, method_stack):
-    return parse_characters_part(line, parentheses_parser, method_stack)
-
-def identify_operators(line, method_stack):
-    if not line:
-        return []
-
-    for i, c in enumerate(line):
-        op = get_matching_op(line, i)
-        if op is not None:
-            left = method_stack.evaluate_next_method(line[:i])
-            right = method_stack.rerun_current_method(line[i+len(op.op):])
-            # right = identify_operators(line[i+len(op.op):], method_stack)
-            return left + [op] + right
-    return method_stack.evaluate_next_method(line)
+def get_character_parsing_method(parser):
+    def character_parser(line, method_stack):
+        return parse_characters_part(line, parser, method_stack)
+    return character_parser
 
 def get_method_stack():
     stack = [
@@ -183,9 +175,9 @@ def get_method_stack():
         get_parse_unary_expression_method(try_parse_timespan_literal),
         get_parse_unary_expression_method(try_parse_float),
         get_parse_unary_expression_method(try_parse_int),
-        identify_operators,
-        parse_chars_parentheses,
-        parse_chars_whitespace,
+        get_character_parsing_method(operator_parser),
+        get_character_parsing_method(parentheses_parser),
+        get_character_parsing_method(whitespace_parser),
         parse_string_literals_parts,
     ]
     return MethodStack(stack)
