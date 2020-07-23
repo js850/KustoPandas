@@ -101,16 +101,6 @@ def get_matching_op(line, i):
 def is_op(c):
     return inspect.isclass(c) and issubclass(c, Opp)
 
-def string_literal_parser(line, i):
-    c = line[i]
-    if c == "\"" or c == "'":
-        for j in range(i+1, len(line)):
-            if line[j] == c:
-                val = StringLiteral(line[i+1:j])
-                return [val], j + 1 - i
-        raise Exception("could not find end of string literal: " + str(line))
-    return None, 0
-
 def is_unary_operator(parts, i):
     if i >= len(parts):
         raise Exception("can't have operator at end of line: " + str(parts))
@@ -140,6 +130,16 @@ def parse_characters_part(line, parser, method_stack):
             return left + parsed + right
     
     return method_stack.evaluate_next_method(line)
+
+def string_literal_parser(line, i):
+    c = line[i]
+    if c == "\"" or c == "'":
+        for j in range(i+1, len(line)):
+            if line[j] == c:
+                val = StringLiteral(line[i+1:j])
+                return [val], j + 1 - i
+        raise Exception("could not find end of string literal: " + str(line))
+    return None, 0
 
 def whitespace_parser(line, i):
     if line[i] == " ":
