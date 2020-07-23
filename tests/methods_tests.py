@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 import numpy as np
-from kusto_pandas import Wrap
+from context import Wrap
 
 def create_df():
     df = pd.DataFrame(index=range(5))
