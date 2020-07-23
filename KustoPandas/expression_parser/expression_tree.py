@@ -1,5 +1,5 @@
 
-from .expression_parser_types import *
+from KustoPandas.expression_parser.expression_parser_types import *
 
 class MethodStack:
     def __init__(self, stack, current_method=None):

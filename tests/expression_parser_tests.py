@@ -3,9 +3,8 @@ import pandas as pd
 import numpy as np
 from context import expression_parser as ep
 
-from KustoPandas.expression_parser import (parse_expression,
- parse_parts_of_line, Assignment)
-from KustoPandas.expression_tree import find_matching_parentheses
+from KustoPandas.expression_parser.expression_parser import parse_expression
+from KustoPandas.expression_parser.expression_tree import find_matching_parentheses
 
 class TestExpressionParser(unittest.TestCase):
     def test_find_matching_parens(self):
@@ -14,26 +13,6 @@ class TestExpressionParser(unittest.TestCase):
         expected = np.array([0,0,2,0,-2,0,0,0,0,0,0,9,0,0,0,0,0,2,0,-2,-9])
         self.assertListEqual(list(expected), list(matches))
 
-    # def test_parse_math(self):
-    #     x = "1 + 2*3/xx - 4"
-    #     x = explode_line(x)
-    #     parsed = parse_math(x)
-    #     #self.assertEqual(str(parsed), "((1 + ((2 * 3) / xx)) - 4)")
-    #     self.assertEqual(-1, parsed.evaluate({"xx": 3}))
-
-    
-    # def test_parse_math2(self):
-    #     x = explode_line("3 + ") + [parse_math(explode_line("6 / 2"))]
-    #     parsed = parse_math(x)
-    #     #self.assertEqual(str(parsed), "(3 + (6 / 2))")
-    #     self.assertEqual(6, parsed.evaluate(None))
-    
-    # def test_parse_math3(self):
-    #     x = explode_line("3 +") + [parse_math(explode_line("16 - 2"))] + explode_line("/7")
-    #     parsed = parse_math(x)
-    #     #self.assertEqual(str(parsed), "(3 + ((16 - 2) / 7))")
-    #     self.assertEqual(5, parsed.evaluate(None))
-    
     def test_parse_parentheses(self):
         x = "a + (y / (b - c) + q)*w + (4/2 - 1) "
         parsed = parse_expression(x)
@@ -159,9 +138,9 @@ class TestExpressionParser(unittest.TestCase):
             return 7
         self.assertEqual(14, parsed.evaluate({"xx": f}))
 
-    def test_parse_parts_of_line(self):
+    def test_parse_expression3(self):
         x = "1.0 + xx + yy*(a + b) + zz(3, w) + (1 >= 2)"
-        parsed = parse_parts_of_line(x)
+        parsed = parse_expression(x)
         print(x)
         print(parsed)
     

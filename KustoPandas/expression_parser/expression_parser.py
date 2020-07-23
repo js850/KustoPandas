@@ -3,8 +3,8 @@ import re
 import pandas as pd
 import inspect 
 
-from .expression_parser_types import *
-from .expression_tree import build_expression_tree, MethodStack
+from KustoPandas.expression_parser.expression_parser_types import *
+from KustoPandas.expression_parser.expression_tree import build_expression_tree, MethodStack
 
 match_internal = re.compile("[a-zA-Z_0-9]+")
 match_first = re.compile("[a-zA-Z_]")
