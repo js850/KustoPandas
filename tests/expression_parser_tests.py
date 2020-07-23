@@ -3,8 +3,9 @@ import pandas as pd
 import numpy as np
 from context import expression_parser as ep
 
-from KustoPandas.expression_parser import (find_matching_parentheses, parse_statement,
+from KustoPandas.expression_parser import (parse_statement,
  parse_string_literals_parts, parse_parts_of_line, Assignment)
+from KustoPandas.expression_tree import find_matching_parentheses
 
 class TestExpressionParser(unittest.TestCase):
     def test_find_matching_parens(self):
