@@ -15,47 +15,58 @@ def assert_var_name(var):
     if not match_internal.match(var):
         raise Exception("variable name has illegal characters " + var)
 
-def parse_timespan_literal(val):
+def try_parse_num(val):
+    parsed = try_parse_int(val)
+    if parsed is not None:
+        return parsed
+    parsed = try_parse_float(val)
+    if parsed is not None:
+        return parsed
+
+    return None
+
+def try_parse_timespan_literal(val):
     if val[-1] in ["d", "h", "m", "s"]:
         unit = val[-1]
-        num = parse_num(val[:-1])
+        num = try_parse_num(val[:-1])
         if num is not None:
             return TimespanLiteral(num, unit)
     return None
 
 def parse_var(val):
-    timespan = parse_timespan_literal(val)
+    timespan = try_parse_timespan_literal(val)
     if timespan is not None:
         return timespan
 
     assert_var_name(val)
     return Var(val)
 
-def parse_num(val):
+def parse_and_assert_variable(val):
+    assert_var_name(val)
+    return Var(val)
+
+def try_parse_int(val):
     try:
         int(val)
         return Int(val)
     except:
-        pass
+        return None
+
+def try_parse_float(val):
     try:
         float(val)
         return Float(val)
     except:
-        pass
+        return None
     
-    return None
-    
-def parse_num_or_var(val):
-    if len(val) == 0:
-        raise Exception("parsing variable or literal but is emtpy")
-    parsed = parse_num(val)
-    if parsed is not None:
-        return parsed
-    return parse_var(val)
-
-
-
-
+def get_parse_unary_expression_method(try_parse):
+    def parse_unary_expression(line, method_stack):
+        parsed = try_parse(line)
+        if parsed is not None:
+            return [parsed]
+        else:
+            return method_stack.evaluate_next_method(line)
+    return parse_unary_expression
 
 def op_matches_start(line, op):
     for i in range(len(op.op)):
@@ -157,15 +168,12 @@ def identify_operators(line, method_stack):
             return left + [op] + right
     return method_stack.evaluate_next_method(line)
 
-def parse_chars_num_or_var(line, method_stack):
-    if method_stack.stack:
-        raise Exception("method_stack should be empty")
-    return [parse_num_or_var(line)]
-
-
 def get_method_stack():
     stack = [
-        parse_chars_num_or_var,
+        get_parse_unary_expression_method(parse_and_assert_variable),
+        get_parse_unary_expression_method(try_parse_timespan_literal),
+        get_parse_unary_expression_method(try_parse_float),
+        get_parse_unary_expression_method(try_parse_int),
         identify_operators,
         parse_chars_parentheses,
         parse_chars_whitespace,

@@ -1,5 +1,4 @@
 
-
 from .expression_parser_types import *
 
 class MethodStack:
@@ -21,7 +20,6 @@ class MethodStack:
     
     def rerun_current_method(self, parts):
         return self.current_method(parts, self.copy())
-
 
 def last_method(line, method_stack):
     if method_stack.stack:
