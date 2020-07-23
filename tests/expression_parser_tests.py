@@ -4,7 +4,7 @@ import numpy as np
 from context import expression_parser as ep
 
 from KustoPandas.expression_parser import (parse_statement,
- parse_string_literals_parts, parse_parts_of_line, Assignment)
+ parse_parts_of_line, Assignment)
 from KustoPandas.expression_tree import find_matching_parentheses
 
 class TestExpressionParser(unittest.TestCase):
@@ -218,14 +218,6 @@ class TestExpressionParser(unittest.TestCase):
 
         result = parsed.evaluate({"xx": 1})
         self.assertEqual(result["y"], 0)
-
-    # def test_parse_rest_parts(self):
-    #     x = "y = -1 + \"hi\" + (-xx)"
-    #     parsed = parse_string_literals_parts(x)
-    #     print("\n" + str(parsed))
-    #     parsed2 = ep.parse_rest_parts(parsed)
-
-    #     print("\n" + str(parsed2))
 
     def test_timespan_literal(self):
         x = "y = C + 1d"

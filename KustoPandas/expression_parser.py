@@ -101,22 +101,15 @@ def get_matching_op(line, i):
 def is_op(c):
     return inspect.isclass(c) and issubclass(c, Opp)
 
-def parse_string_literals_parts(line, method_stack):
-    matching = None
-    last = 0
-    for i, c in enumerate(line):
-        if matching is None:
-            if c == "\"" or c == "'":
-                matching = c
-                last = i
-        else:
-            if c == matching:
-                left = method_stack.evaluate_next_method(line[:last])
-                val = StringLiteral("".join(line[last+1:i]))
-                right = method_stack.rerun_current_method(line[i+1:])
-                return left + [val] + right
-    
-    return method_stack.evaluate_next_method(line)
+def string_literal_parser(line, i):
+    c = line[i]
+    if c == "\"" or c == "'":
+        for j in range(i+1, len(line)):
+            if line[j] == c:
+                val = StringLiteral(line[i+1:j])
+                return [val], j + 1 - i
+        raise Exception("could not find end of string literal: " + str(line))
+    return None, 0
 
 def is_unary_operator(parts, i):
     if i >= len(parts):
@@ -178,7 +171,7 @@ def get_method_stack():
         get_character_parsing_method(operator_parser),
         get_character_parsing_method(parentheses_parser),
         get_character_parsing_method(whitespace_parser),
-        parse_string_literals_parts,
+        get_character_parsing_method(string_literal_parser),
     ]
     return MethodStack(stack)
 
