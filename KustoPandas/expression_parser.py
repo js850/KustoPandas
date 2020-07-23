@@ -42,6 +42,7 @@ def parse_var(val):
     return Var(val)
 
 def parse_and_assert_variable(val):
+    # throw on failure here because it is the last in the stack
     assert_var_name(val)
     return Var(val)
 
@@ -135,25 +136,33 @@ def resolve_ambiguous_operators(parts):
             parts[i] = c.binary
     return parts
 
-def parse_characters_part(line, chars, keep_character, method_stack):
+def parse_characters_part(line, parser, method_stack):
     if not line:
         return []
     for i, c in enumerate(line):
-        if c in chars:
+        parsed, skip = parser(line, i)
+        if parsed is not None:
             left = method_stack.evaluate_next_method(line[:i])
-            right = method_stack.rerun_current_method(line[i+1:])
-            if keep_character:
-                return left + [c] + right
-            else:
-                return left + right
+            right = method_stack.rerun_current_method(line[i+skip:])
+            return left + parsed + right
     
     return method_stack.evaluate_next_method(line)
 
+def whitespace_parser(line, i):
+    if line[i] == " ":
+        return [], 1
+    return None, 0
+
+def parentheses_parser(line, i):
+    if line[i] in ("(", ")"):
+        return [line[i]], 1
+    return None, 0
+
 def parse_chars_whitespace(line, method_stack):
-    return parse_characters_part(line, [" "], False, method_stack)
+    return parse_characters_part(line, whitespace_parser, method_stack)
 
 def parse_chars_parentheses(line, method_stack):
-    return parse_characters_part(line, ["(", ")"], True, method_stack)
+    return parse_characters_part(line, parentheses_parser, method_stack)
 
 def identify_operators(line, method_stack):
     if not line:
