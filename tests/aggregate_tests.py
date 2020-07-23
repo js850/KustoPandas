@@ -1,35 +1,223 @@
 import unittest
 import pandas as pd
-from kusto_pandas import Aggregate
+import numpy as np
+from context import Wrap
 
+def create_df():
+    df = pd.DataFrame(index=range(5))
+    df["A"] = [0.0, 1.0, 2.0, 3.0, 4.0]
+    df["B"] = [0, 1, 2, 3, 4]
+    df["C"] = ["foo1", "foo2", "foo3", "foo4", "foo5"]
+    df["D"] = pd.to_datetime(["2009-01-01", "2009-01-02", "2009-01-05", "2009-01-06", "2009-01-07"])    
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    return df
 
-class TestAggregate(unittest.TestCase):
-    def test_parse(self):
-        a = Aggregate("x=count()")
-        self.assertEqual("x", a.new_col)
-        self.assertEqual("count", a.aggregate_func.name)
-        self.assertEqual("", a.aggregate_func.arg)
-        a.validate(pd.DataFrame())
+class TestAggregates(unittest.TestCase):
+    def test_summarize(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.summarize("x=count()", "G")
 
-    def test_parse_default_name(self):
-        a = Aggregate("count()")
-        self.assertEqual("count_", a.new_col)
-        self.assertEqual("count", a.aggregate_func.name)
-        self.assertEqual("", a.aggregate_func.arg)
-        a.validate(pd.DataFrame())
+        expected = pd.DataFrame({
+            "G" : ["G1", "G2"],
+            "x" : [3, 2],
+        })
+        
+        self.assertTrue(w.df.equals(expected))
+
+    def test_summarize_count_sum(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.summarize(["x=count()", "z=sum(A)"], "G") 
+
+        expected = pd.DataFrame({
+            "G" : ["G1", "G2"],
+            "x" : [3, 2],
+            "z" : [4.0, 6.0],
+        })
+
+        print()
+        print(w.df)
+        
+        self.assertTrue(w.df.equals(expected))
     
-    def test_parse_sum(self):
-        a = Aggregate("x=sum(y)")
-        self.assertEqual("x", a.new_col)
-        self.assertEqual("sum", a.aggregate_func.name)
-        self.assertEqual("y", a.aggregate_func.arg)
-        a.validate(pd.DataFrame({"y": [1, 2]}))
+    def test_summarize_percentile(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.summarize(["percentiles(B, 50, 75)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["percentiles_50"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["percentiles_75"]))
+
+    def test_summarize_percentile2(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.summarize(["myperc = percentiles(B, 50, 75)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["myperc_75"]))
+
+    def test_summarize_percentile_one_arg(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.summarize(["myperc = percentiles(B, 50)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
+        self.assertListEqual(["G", "myperc_50"], list(w.df.columns))
     
-    def test_parse_sum_default_name(self):
-        a = Aggregate("sum(y)")
-        self.assertEqual("sum_y", a.new_col)
-        self.assertEqual("sum", a.aggregate_func.name)
-        self.assertEqual("y", a.aggregate_func.arg)
-        a.validate(pd.DataFrame({"y": [1, 2]}))
+    def test_summarize_dcount(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w = w.summarize(["dcount(F)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([2, 1], list(w.df["dcount_F"]))
+        self.assertListEqual(["G", "dcount_F"], list(w.df.columns))
+    
+    def test_summarize_countif(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w = w.summarize(["countif(F > 2)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([1, 2], list(w.df["countif_"]))
+        self.assertListEqual(["G", "countif_"], list(w.df.columns))
+
+    def test_summarize_avg(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w = w.summarize(["avg(F)"], "G")
+
+        self.assertListEqual([2, 3], list(w.df["avg_F"]))
+        self.assertListEqual(["G", "avg_F"], list(w.df.columns))
+
+    def test_summarize_std(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w = w.summarize(["stdev(F)"], "G")
+    
+        print(w.df)
+        np.testing.assert_almost_equal(w.df["stdev_F"], [1.732051, 0], 3)
+        self.assertListEqual(["G", "stdev_F"], list(w.df.columns))
+
+    def test_summarize_var(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 1, 3, 4, 3]
+
+        w = Wrap(df)
+        w = w.summarize(["variance(F)"], "G")
+        
+        print(w.df)
+        
+        np.testing.assert_almost_equal(w.df["variance_F"], [3, 0], 3)
+        self.assertListEqual(["G", "variance_F"], list(w.df.columns))
+    
+    def test_summarize_min(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["min(F)"], "G")
+        
+        print(w.df)
+        
+        self.assertListEqual(list(wnew.df["min_F"]), [0, 8])
+        self.assertListEqual(["G", "min_F"], list(wnew.df.columns))
+    
+    def test_summarize_max(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["max(F)"], "G")
+        
+        print(w.df)
+        
+        self.assertListEqual(list(wnew.df["max_F"]), [4, 9])
+        self.assertListEqual(["G", "max_F"], list(wnew.df.columns))
+
+    def test_summarize_argmin(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["argmin(F, C)"], "G")
+        
+        print(wnew.df)
+        
+        self.assertListEqual(list(wnew.df["argmin_F_C"]), ["foo2", "foo5"])
+        self.assertListEqual(["G", "argmin_F_C"], list(wnew.df.columns))
+
+    def test_summarize_argmax(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["argmax(F, C)"], "G")
+        
+        print(wnew.df)
+        
+        self.assertListEqual(list(wnew.df["argmax_F_C"]), ["foo4", "foo3"])
+        self.assertListEqual(["G", "argmax_F_C"], list(wnew.df.columns))
+
+    def test_summarize_argmax_math(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+        df["H"] = [1, 1, 0, 0, 1]
+
+        w = Wrap(df)
+        wnew = w.summarize(["argmax(F*H, B+1)"], "G")
+        
+        print(wnew.df)
+        
+        self.assertListEqual(list(wnew.df["argmax_"]), [1, 5])
+        self.assertListEqual(["G", "argmax_"], list(wnew.df.columns))
+
+    def test_summarize_two_outputs_same_name(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["F"] = [1, 0, 9, 4, 8]
+
+        w = Wrap(df)
+        wnew = w.summarize(["max(F+1)", "max(F+2)"], "G")
+        
+        print(w.df)
+        
+        self.assertListEqual(list(wnew.df["max_"]), [5, 10])
+        self.assertListEqual(list(wnew.df["max__"]), [6, 11])
+        self.assertListEqual(["G", "max_", "max__"], list(wnew.df.columns))
+
+    def test_summarize_bin(self):
+        df = create_df()
+        df["D"] = pd.to_datetime(["2009-01-01T08:20", "2009-01-02T08:51", "2009-01-01", "2009-01-06", "2009-01-01T22:00"])    
+        w = Wrap(df)
+        wnew = w.summarize("Z=count()", "bin(D, 1d)")
+        self.assertListEqual(list([3, 1, 1]), list(wnew.df["Z"]))
 
         
