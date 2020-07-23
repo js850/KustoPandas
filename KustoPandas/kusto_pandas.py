@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 
-from .expression_parser import parse_statement, Assignment
+from .expression_parser import parse_expression, Assignment
 from .aggregates import create_aggregate
 from .methods import get_methods
 
@@ -61,7 +61,7 @@ class Wrap:
         var_map = self._get_var_map()
 
         for c in cols:
-            parsed = parse_statement(c)
+            parsed = parse_expression(c)
             result = parsed.evaluate(var_map)
             if isinstance(parsed, Assignment):
                 for k, v in result.items():
@@ -70,7 +70,7 @@ class Wrap:
                 dfnew[c] = result
         
         for name, expr in renamed_cols.items():
-            parsed = parse_statement(expr)
+            parsed = parse_expression(expr)
             result = parsed.evaluate(var_map)
             dfnew[name] = result
 
@@ -91,7 +91,7 @@ class Wrap:
             if c in dftemp.columns:
                 group_by_col_names.append(c)
             else:
-                parsed = parse_statement(c)
+                parsed = parse_expression(c)
                 series = parsed.evaluate(self._get_var_map())
                 temp_name = "__tempcolname_" + str(len(temp_col_names))
                 temp_col_names.append(temp_name)
@@ -122,7 +122,7 @@ class Wrap:
         return self._copy(dfnew)
     
     def extend(self, text):
-        parsed = parse_statement(text)
+        parsed = parse_expression(text)
 
         if not isinstance(parsed, Assignment):
             raise Exception("extend expects an assignment: " + text)
@@ -136,7 +136,7 @@ class Wrap:
         return self._copy(newdf)
     
     def where(self, condition):
-        parsed = parse_statement(condition)
+        parsed = parse_expression(condition)
         if isinstance(parsed, Assignment):
             raise Exception("where cannot have assignment: " + str(parsed))
 
@@ -177,7 +177,7 @@ class Wrap:
 
         var_map = self._get_var_map()
         for col, expr in zip(col_names, by):
-            parsed = parse_statement(expr)
+            parsed = parse_expression(expr)
             series = parsed.evaluate(var_map)
             df[col] = series
         

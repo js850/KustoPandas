@@ -180,7 +180,7 @@ aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 def create_aggregate(text):
     new_col = None
 
-    parsed = ep.parse_statement(text)
+    parsed = ep.parse_expression(text)
 
     if isinstance(parsed, ep.Assignment):
         new_col = str(parsed.left)

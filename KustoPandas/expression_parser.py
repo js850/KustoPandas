@@ -181,7 +181,7 @@ def parse_parts_of_line(line):
     resolved = resolve_ambiguous_operators(parsed)
     return resolved
 
-def parse_statement(line):
+def parse_expression(line):
     parts = parse_parts_of_line(line)
     parsed = build_expression_tree(parts)
     return parsed
