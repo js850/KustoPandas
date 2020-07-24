@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 
-from .expression_parser import parse_expression, Assignment
+from .expression_parser import parse_expression, Assignment, Var, Method
 from .aggregates import create_aggregate
 from .methods import get_methods
 
@@ -10,6 +10,25 @@ def ensure_column_name_unique(df, col):
         col = col + "_"
     return col
 
+def _get_method_default_name(method):
+    name = str(method.name)
+    suffix = ""
+    if len(method.args.args) > 0:
+        arg1 = method.args.args[0]
+        if isinstance(arg1, Var):
+            suffix = str(arg1)
+    return "{0}_{1}".format(name, suffix)
+
+def _evaluate_and_get_name(parsed, variable_map):
+    result = parsed.evaluate(variable_map)
+    if isinstance(parsed, Assignment):
+        for name, value in result.items():
+            return name, value
+    if isinstance(parsed, Var):
+        return str(parsed), result
+    if isinstance(parsed, Method):
+        return _get_method_default_name(parsed), result
+    return "__tempcolumnname_", result
 
 class MultiDict:
     def __init__(self, dicts):
@@ -86,17 +105,15 @@ class Wrap:
         dftemp = self.df.copy(deep=False)
 
         group_by_col_names = []
-        temp_col_names = []
+        variable_map = self._get_var_map()
         for c in group_by:
             if c in dftemp.columns:
                 group_by_col_names.append(c)
             else:
                 parsed = parse_expression(c)
-                series = parsed.evaluate(self._get_var_map())
-                temp_name = "__tempcolname_" + str(len(temp_col_names))
-                temp_col_names.append(temp_name)
-                group_by_col_names.append(temp_name)
-                dftemp[temp_name] = series
+                col_name, series = _evaluate_and_get_name(parsed, variable_map)
+                group_by_col_names.append(col_name)
+                dftemp[col_name] = series
         
         args = [create_aggregate(a) for a in resulting_cols]
         columns_needed = set()

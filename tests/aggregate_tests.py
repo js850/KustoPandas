@@ -219,5 +219,6 @@ class TestAggregates(unittest.TestCase):
         w = Wrap(df)
         wnew = w.summarize("Z=count()", "bin(D, 1d)")
         self.assertListEqual(list([3, 1, 1]), list(wnew.df["Z"]))
+        self.assertListEqual(["bin_D", "Z"], list(wnew.df.columns))
 
         
