@@ -256,3 +256,16 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), '("hi" in (1, "b", "Hi"))')
         result = parsed.evaluate(None)
         self.assertEqual(result, False)
+    
+    def test_by(self):
+        x = "A, count(B) by bin(C, 1h), D"
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "((A , count(B)) by (bin(C, 1h) , D))")
+
+    def test_comma_evaluate(self):
+        x = "1, 2, 3, A"
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "(1, 2, 3, A)")
+
+        result = parsed.evaluate({"A": 4})
+        self.assertListEqual([1, 2, 3, 4], result)

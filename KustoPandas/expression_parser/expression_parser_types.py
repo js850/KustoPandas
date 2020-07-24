@@ -164,10 +164,23 @@ class NotIn(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return left not in right 
 
+class By(Opp):
+    op = "by"
+    def evaluate_internal(self, left, right, **kwargs):
+        raise NotImplementedError("By does not have an implementation")
+
 class Comma(Opp):
     op = ","
-    def evaluate(self, vals):
-        raise NotImplementedError("Comma does not have an implementation")
+    def evaluate_internal(self, left, right, **kwargs):
+        if isinstance(self.right, Comma):
+            return [left] + right
+        return [left, right]
+    def __str__(self):
+        return "(" + self._str_internal() + ")"
+    def _str_internal(self):
+        if isinstance(self.right, Comma):
+            return str(self.left) + ", " + self.right._str_internal()
+        return str(self.left) + ", " + str(self.right)
 
 class AmbiguousMinus(Opp):
     # - can be either unary or binary op
@@ -177,7 +190,7 @@ class AmbiguousMinus(Opp):
 
 all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
                  UnaryNot, Assignment,
-                 And, Or, Comma, Contains, NotContains, In, NotIn]
+                 And, Or, Comma, Contains, NotContains, In, NotIn, By]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):

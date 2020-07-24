@@ -95,7 +95,10 @@ class Wrap:
 
         return self._copy(dfnew)
     
-    def summarize(self, resulting_cols, group_by):
+    def summarize(self, resulting_cols, group_by=None):
+        # if group_by is None:
+        #     parsed 
+
         if isinstance(resulting_cols, str):
             resulting_cols = [resulting_cols]
 

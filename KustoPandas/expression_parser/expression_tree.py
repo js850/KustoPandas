@@ -170,6 +170,7 @@ def get_expression_tree_method_stack():
         get_parse_operators_method([Or]),
         get_parse_operators_method([Assignment], right_to_left=True),
         get_parse_operators_method([Comma], right_to_left=False),
+        get_parse_operators_method([By]),
         parse_unary_operators,
         parse_parentheses,
     ])
