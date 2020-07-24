@@ -234,4 +234,12 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual(list([0, 2, 4]), list(wnew.df["max_B"]))
         self.assertListEqual(["G", "H", "count_", "max_B"], list(wnew.df.columns))
 
-        
+    def test_summarize_any(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+
+        w = Wrap(df)
+        wnew = w.summarize("any(B) by G")
+        self.assertListEqual(list(["G1", "G2"]), list(wnew.df["G"]))
+        self.assertListEqual(list([0, 2]), list(wnew.df["any_B"]))
+        self.assertEqual(2, len(wnew.df.columns))

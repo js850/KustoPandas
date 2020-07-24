@@ -136,6 +136,10 @@ class ArgMax(AggTwoArgs):
         series = grouped.apply(lambda g: argmax(g))
         return series
 
+class Any(AggOneArg):
+    def apply_aggregate(self, grouped):
+        return grouped.first()
+
 class Percentiles(SimpleAgg):
     def validate(self, df):
         if len(self.args) < 2:
@@ -173,7 +177,7 @@ def get_method_name(type):
     return type.__name__.lower()
 
 aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Min, Max,
-                     ArgMin, ArgMax, Percentiles]
+                     ArgMin, ArgMax, Any, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
