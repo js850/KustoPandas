@@ -95,21 +95,21 @@ class Wrap:
 
         return self._copy(dfnew)
     
-    def summarize(self, resulting_cols, group_by=None):
-        # if group_by is None:
+    def summarize(self, aggregates, by=None):
+        # if by is None:
         #     parsed 
 
-        if isinstance(resulting_cols, str):
-            resulting_cols = [resulting_cols]
+        if isinstance(aggregates, str):
+            aggregates = [aggregates]
 
-        if isinstance(group_by, str):
-            group_by = [group_by]
+        if isinstance(by, str):
+            by = [by]
 
         dftemp = self.df.copy(deep=False)
 
         group_by_col_names = []
         variable_map = self._get_var_map()
-        for c in group_by:
+        for c in by:
             if c in dftemp.columns:
                 group_by_col_names.append(c)
             else:
@@ -118,7 +118,7 @@ class Wrap:
                 group_by_col_names.append(col_name)
                 dftemp[col_name] = series
         
-        args = [create_aggregate(a) for a in resulting_cols]
+        args = [create_aggregate(a) for a in aggregates]
         columns_needed = set()
         for arg in args:
             arg.validate(dftemp)

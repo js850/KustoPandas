@@ -260,7 +260,7 @@ class TestExpressionParser(unittest.TestCase):
     def test_by(self):
         x = "A, count(B) by bin(C, 1h), D"
         parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "((A , count(B)) by (bin(C, 1h) , D))")
+        self.assertEqual(str(parsed), "((A, count(B)) by (bin(C, 1h), D))")
 
     def test_comma_evaluate(self):
         x = "1, 2, 3, A"
