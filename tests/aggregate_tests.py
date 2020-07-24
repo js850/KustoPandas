@@ -220,5 +220,18 @@ class TestAggregates(unittest.TestCase):
         wnew = w.summarize("Z=count()", "bin(D, 1d)")
         self.assertListEqual(list([3, 1, 1]), list(wnew.df["Z"]))
         self.assertListEqual(["bin_D", "Z"], list(wnew.df.columns))
+    
+    def test_summarize_full_expression(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G1", "G2", "G2"]
+        df["H"] = ["H1", "H2", "H2", "H3", "H3"]
+
+        w = Wrap(df)
+        wnew = w.summarize("count(), max(B) by G, H")
+        self.assertListEqual(list(["G1", "G1", "G2"]), list(wnew.df["G"]))
+        self.assertListEqual(list(["H1", "H2", "H3"]), list(wnew.df["H"]))
+        self.assertListEqual(list([1, 2, 2]), list(wnew.df["count_"]))
+        self.assertListEqual(list([0, 2, 4]), list(wnew.df["max_B"]))
+        self.assertListEqual(["G", "H", "count_", "max_B"], list(wnew.df.columns))
 
         

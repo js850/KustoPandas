@@ -177,10 +177,8 @@ aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Min, Max
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
-def create_aggregate(text):
+def create_aggregate(parsed):
     new_col = None
-
-    parsed = ep.parse_expression(text)
 
     if isinstance(parsed, ep.Assignment):
         new_col = str(parsed.left)

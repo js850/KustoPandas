@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 
-from .expression_parser import parse_expression, Assignment, Var, Method
+from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma
 from .aggregates import create_aggregate
 from .methods import get_methods
 
@@ -29,6 +29,17 @@ def _evaluate_and_get_name(parsed, variable_map):
     if isinstance(parsed, Method):
         return _get_method_default_name(parsed), result
     return "__tempcolumnname_", result
+
+def _split_if_comma(parsed):
+    if isinstance(parsed, Comma):
+        return flatten_comma(parsed)
+    else:
+        return [parsed]
+
+def _split_by_operator(parsed):
+    left = _split_if_comma(parsed.left)
+    right = _split_if_comma(parsed.right)
+    return left, right
 
 class MultiDict:
     def __init__(self, dicts):
@@ -96,24 +107,37 @@ class Wrap:
         return self._copy(dfnew)
     
     def summarize(self, aggregates, by=None):
-        # if by is None:
-        #     parsed 
-
         if isinstance(aggregates, str):
-            aggregates = [aggregates]
+            parsed = parse_expression(aggregates)
+            if isinstance(parsed, By):
+                aggs, group_by = _split_by_operator(parsed)
+                return self._summarize(aggs, group_by)
+            aggregates_parsed = _split_if_comma(parsed)
+        else:
+            aggregates_parsed = [parse_expression(a) for a in aggregates]
 
         if isinstance(by, str):
-            by = [by]
+            parsed = parse_expression(by)
+            by_parsed = _split_if_comma(parsed)
+        else:
+            by_parsed = [parse_expression(c) for c in by]
+        
+        return self._summarize(aggregates_parsed, by_parsed)
+
+    def _summarize(self, aggregates, by):
+        # if by is None:
+        #     parsed 
 
         dftemp = self.df.copy(deep=False)
 
         group_by_col_names = []
         variable_map = self._get_var_map()
         for c in by:
-            if c in dftemp.columns:
-                group_by_col_names.append(c)
+            cstr = str(c)
+            if cstr in dftemp.columns:
+                group_by_col_names.append(cstr)
             else:
-                parsed = parse_expression(c)
+                parsed = c
                 col_name, series = _evaluate_and_get_name(parsed, variable_map)
                 group_by_col_names.append(col_name)
                 dftemp[col_name] = series
