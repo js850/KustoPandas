@@ -4,6 +4,7 @@ import re
 from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma
 from .aggregates import create_aggregate
 from .methods import get_methods
+from ._render import render
 
 def ensure_column_name_unique(df, col):
     while col in df.columns:
@@ -244,7 +245,9 @@ class Wrap:
         dfnew = self.df.merge(right=right, how=kind, on=on, left_on=left_on, right_on=right_on, suffixes=("", "_y"))
 
         return self._copy(dfnew)
-
+    
+    def render(self, visualization):
+        return render(self, visualization) 
         
 
     
