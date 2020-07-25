@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+from functools import reduce
 
 from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma
 from .aggregates import create_aggregate
@@ -31,6 +32,9 @@ class SimpleExpression:
 
     def evaluate(self, variable_map):
         return self.expression.evaluate(variable_map)
+    
+    def set_name(self, name):
+        self.assignment_name = name
 
 def ensure_column_name_unique(df, col):
     while col in df.columns:
@@ -81,6 +85,19 @@ def _parse_input_expression_or_list_of_expressions(input):
         return [SimpleExpression(e) for e in _split_if_comma(parsed)]
     return [SimpleExpression(parse_expression(input)) for i in input]
 
+def _parse_input_expression_args(args):
+    lists = [_parse_input_expression_or_list_of_expressions(a) for a in args]
+    return reduce(lambda a, b: a + b, lists) 
+
+def _parse_input_expression_kwargs(kwargs):
+    output = []
+    for name, text in kwargs.items():
+        parsed = parse_expression(text)
+        expression = SimpleExpression(parsed)
+        expression.set_name(name)
+        output.append(expression)
+    return output
+
 class MultiDict:
     def __init__(self, dicts):
         self.dicts = dicts
@@ -127,23 +144,17 @@ class Wrap:
 
         w.project("A", "Bnew = B+A")
         """
+        parsed_args = _parse_input_expression_args(cols)
+        parsed_kwargs = _parse_input_expression_kwargs(renamed_cols)
+        parsed_inputs = parsed_args + parsed_kwargs
+
         dfnew = pd.DataFrame()
         var_map = self._get_var_map()
 
-        for c in cols:
-            parsed = parse_expression(c)
+        for parsed in parsed_inputs:
             result = parsed.evaluate(var_map)
-            if isinstance(parsed, Assignment):
-                for k, v in result.items():
-                    dfnew[k] = v
-            else:
-                dfnew[c] = result
+            dfnew[parsed.get_name()] = result
         
-        for name, expr in renamed_cols.items():
-            parsed = parse_expression(expr)
-            result = parsed.evaluate(var_map)
-            dfnew[name] = result
-
         return self._copy(dfnew)
 
     def project_rename(self, text):
