@@ -6,6 +6,32 @@ from .aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
 
+class SimpleExpression:
+    def __init__(self, parsed):
+        """ parsed can be an assignment or a simple expression
+        A = B
+        A = method(B)
+        A = B + C
+        method(B) => default name method_B
+        B + C => default name 
+        """
+        self.parsed = parsed
+
+        self.assignment_name = None
+        if isinstance(parsed, Assignment):
+            self.assignment_name = str(parsed.left)
+            self.expression = parsed.right
+        else:
+            self.expression = parsed
+    
+    def get_name(self):
+        if self.assignment_name is not None:
+            return self.assignment_name
+        return _get_default_name(self.parsed)
+
+    def evaluate(self, variable_map):
+        return self.expression.evaluate(variable_map)
+
 def ensure_column_name_unique(df, col):
     while col in df.columns:
         col = col + "_"
@@ -19,6 +45,13 @@ def _get_method_default_name(method):
         if isinstance(arg1, Var):
             suffix = str(arg1)
     return "{0}_{1}".format(name, suffix)
+
+def _get_default_name(parsed):
+    if isinstance(parsed, Var):
+        return str(parsed)
+    if isinstance(parsed, Method):
+        return _get_method_default_name(parsed)
+    return "__tempcolumnname_"
 
 def _evaluate_and_get_name(parsed, variable_map):
     result = parsed.evaluate(variable_map)
@@ -41,6 +74,12 @@ def _split_by_operator(parsed):
     left = _split_if_comma(parsed.left)
     right = _split_if_comma(parsed.right)
     return left, right
+
+def _parse_input_expression_or_list_of_expressions(input):
+    if isinstance(input, str):
+        parsed = parse_expression(input)
+        return [SimpleExpression(e) for e in _split_if_comma(parsed)]
+    return [SimpleExpression(parse_expression(input)) for i in input]
 
 class MultiDict:
     def __init__(self, dicts):
@@ -171,18 +210,16 @@ class Wrap:
         return self._copy(dfnew)
     
     def extend(self, text):
-        parsed = parse_expression(text)
+        parsed_inputs = _parse_input_expression_or_list_of_expressions(text)
 
-        if not isinstance(parsed, Assignment):
-            raise Exception("extend expects an assignment: " + text)
+        dfnew = self.df.copy(deep=False)
+        var_map = self._get_var_map()
+        for parsed in parsed_inputs:
+            name = parsed.get_name()
+            result = parsed.evaluate(var_map)
+            dfnew[name] = result
 
-        result_map = parsed.evaluate(self._get_var_map())
-
-        newdf = self.df.copy(deep=False)
-        for k, v in result_map.items():
-            newdf[str(k)] = v
-        
-        return self._copy(newdf)
+        return self._copy(dfnew)
     
     def where(self, condition):
         parsed = parse_expression(condition)
