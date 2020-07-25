@@ -98,6 +98,9 @@ def _parse_input_expression_kwargs(kwargs):
         output.append(expression)
     return output
 
+def _parse_input_expression_args_kwargs(args, kwargs):
+    return _parse_input_expression_args(args) + _parse_input_expression_kwargs(kwargs)
+
 class MultiDict:
     def __init__(self, dicts):
         self.dicts = dicts
@@ -137,16 +140,18 @@ class Wrap:
         all of the following are acceptable
 
         w.project("A", "B")
+        
+        w.project(["A", "B"])
 
-        w.project("A", BNew = "B")
+        w.project("A", BNew="B")
 
         w.project("A", "Bnew=B")
 
         w.project("A", "Bnew = B+A")
+        
+        w.project("A, Bnew = B+A")
         """
-        parsed_args = _parse_input_expression_args(cols)
-        parsed_kwargs = _parse_input_expression_kwargs(renamed_cols)
-        parsed_inputs = parsed_args + parsed_kwargs
+        parsed_inputs = _parse_input_expression_args_kwargs(cols, renamed_cols)
 
         dfnew = pd.DataFrame()
         var_map = self._get_var_map()
@@ -157,9 +162,9 @@ class Wrap:
         
         return self._copy(dfnew)
 
-    def project_rename(self, text):
+    def project_rename(self, *args, **kwargs):
         # improve this implementation
-        return self.extend(text)
+        return self.extend(*args, **kwargs)
     
     def summarize(self, aggregates, by=None):
         if isinstance(aggregates, str):
@@ -220,8 +225,8 @@ class Wrap:
 
         return self._copy(dfnew)
     
-    def extend(self, text):
-        parsed_inputs = _parse_input_expression_or_list_of_expressions(text)
+    def extend(self, *args, **kwargs):
+        parsed_inputs = _parse_input_expression_args_kwargs(args, kwargs)
 
         dfnew = self.df.copy(deep=False)
         var_map = self._get_var_map()
