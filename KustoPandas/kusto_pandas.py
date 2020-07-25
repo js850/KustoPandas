@@ -112,7 +112,7 @@ class MultiDict:
             except KeyError:
                 pass
         
-        raise KeyError("key")
+        raise KeyError(key)
 
 class Wrap:
     def __init__(self, df):
@@ -160,6 +160,14 @@ class Wrap:
             result = parsed.evaluate(var_map)
             dfnew[parsed.get_name()] = result
         
+        return self._copy(dfnew)
+
+    def project_away(self, *cols):
+        parsed_inputs = _parse_input_expression_args(cols)
+        dfnew = self.df.copy()
+        for parsed in parsed_inputs:
+            del dfnew[parsed.get_name()]
+
         return self._copy(dfnew)
 
     def project_rename(self, *args, **kwargs):
@@ -295,8 +303,8 @@ class Wrap:
 
         return self._copy(dfnew)
     
-    def render(self, visualization):
-        return render(self, visualization) 
+    def render(self, visualization=None, **kwargs):
+        return render(self, visualization=visualization, **kwargs) 
         
 
     

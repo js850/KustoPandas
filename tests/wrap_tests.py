@@ -176,4 +176,12 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual(["foo2", "foo1"], list(wnew.df["C_y"]))
 
 
+    def test_project_away(self):
+        df = create_df()
+        df = df[["A", "B", "C"]]
+
+        w = Wrap(df)
+        wnew = w.project_away("B")
+        self.assertListEqual(["A", "C"], list(wnew.df.columns))
+        self.assertListEqual(["A", "B", "C"], list(w.df.columns))
 
