@@ -1,4 +1,6 @@
 import pandas as pd
+from pandas.api.types import is_datetime64_any_dtype
+
 import numpy as np
 
 class RenderArgs:
@@ -25,7 +27,7 @@ def render(w, visualization, **kwargs):
     
 
 def render_timechart(w, args):
-    df = w.df.copy()
-    # df[xcolumn] = pd.to_datetime(df[xcolumn])
-    return df.plot(x=args.xcolumn, y=args.ycolumns)
+    if not pd.api.types.is_datetime64_any_dtype(w.df[args.xcolumn]):
+        w = w.project_rename("{0}=datetime({0})".format(args.xcolumn))
+    return w.df.plot(x=args.xcolumn, y=args.ycolumns)
 

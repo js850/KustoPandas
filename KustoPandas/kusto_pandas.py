@@ -106,6 +106,10 @@ class Wrap:
             dfnew[name] = result
 
         return self._copy(dfnew)
+
+    def project_rename(self, text):
+        # improve this implementation
+        return self.extend(text)
     
     def summarize(self, aggregates, by=None):
         if isinstance(aggregates, str):
