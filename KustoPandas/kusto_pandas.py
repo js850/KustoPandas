@@ -83,7 +83,7 @@ def _parse_input_expression_or_list_of_expressions(input):
     if isinstance(input, str):
         parsed = parse_expression(input)
         return [SimpleExpression(e) for e in _split_if_comma(parsed)]
-    return [SimpleExpression(parse_expression(input)) for i in input]
+    return [SimpleExpression(parse_expression(i)) for i in input]
 
 def _parse_input_expression_args(args):
     lists = [_parse_input_expression_or_list_of_expressions(a) for a in args]
@@ -255,41 +255,33 @@ class Wrap:
         """
         sort by strlen(country) asc, price desc
 
-        this syntax is a bit awkward.
-
         by can be a column name, or an expression built from columns e.g. (strlen(country))
             or it can be a list of such expressions
         desc (if true, sort by descending order) can be a bool
             or list of bools.  If it's a list, it must be equal in length to the list of expressions 
         """
-        if isinstance(by, str):
-            by = [by]
-            if not isinstance(desc, bool):
-                raise Exception("desc must be of type bool if by is not a list")
-            desc = [desc]
-        else:
-            if isinstance(desc, bool):
-                desc = [bool] * len(by)
-            if not len(desc) == len(by):
-                raise Exception("the length of lists by and desc must be equal")
+        parsed_inputs = _parse_input_expression_or_list_of_expressions(by)
+        if isinstance(desc, bool):
+            desc = [desc] * len(parsed_inputs)
+        elif len(parsed_inputs) != len(desc):
+            raise Exception("the length of lists by and desc must be equal")
 
-        df = self.df.copy(deep=False)
+        dfnew = self.df.copy(deep=False)
 
-        col_names = ["__tempcol_" + str(i) for i in range(len(by))]
+        col_names = ["__tempcol_" + str(i) for i in range(len(parsed_inputs))]
 
         var_map = self._get_var_map()
-        for col, expr in zip(col_names, by):
-            parsed = parse_expression(expr)
-            series = parsed.evaluate(var_map)
-            df[col] = series
+        for col, expr in zip(col_names, parsed_inputs):
+            series = expr.evaluate(var_map)
+            dfnew[col] = series
         
         asc = [not b for b in desc]
-        df = df.sort_values(col_names, ascending=asc)
+        dfnew = dfnew.sort_values(col_names, ascending=asc)
 
         for c in col_names:
-            del df[c]
+            del dfnew[c]
 
-        return self._copy(df)
+        return self._copy(dfnew)
 
     def top(self, n, by, desc=True):
         return self.sort(by, desc=desc).take(n)
