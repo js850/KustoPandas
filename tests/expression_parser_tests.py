@@ -179,9 +179,57 @@ class TestExpressionParser(unittest.TestCase):
         parsed = parse_expression(x)
         self.assertEqual(str(parsed), "(y = (A !contains \"hello\"))")
 
-        result = parsed.evaluate({"A": "hello there"})
+        result = parsed.evaluate({"A": "Hello there"})
         self.assertEqual(result["y"], False)
+
+    def test_contains_cs(self):
+        x = "y = A contains \"hello\""
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "(y = (A contains \"hello\"))")
+
+        result = parsed.evaluate({"A": "Hello there"})
+        self.assertEqual(result["y"], True)
     
+    def test_notcontains_cs(self):
+        x = "y = A !contains \"hello\""
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "(y = (A !contains \"hello\"))")
+
+        result = parsed.evaluate({"A": "Hello there"})
+        self.assertEqual(result["y"], False)
+
+    def test_startswith(self):
+        x = 'A startswith "he"'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(A startswith "he")')
+
+        result = parsed.evaluate({"A": "Hello there"})
+        self.assertEqual(result, True)
+
+    def test_not_startswith(self):
+        x = 'A !startswith "he"'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(A !startswith "he")')
+
+        result = parsed.evaluate({"A": "Hello there"})
+        self.assertEqual(result, False)
+
+    def test_startswith_cs(self):
+        x = 'A startswith_cs "he"'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(A startswith_cs "he")')
+
+        result = parsed.evaluate({"A": "Hello there"})
+        self.assertEqual(result, False)
+
+    def test_not_startswith_cs(self):
+        x = 'A !startswith_cs "he"'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(A !startswith_cs "he")')
+
+        result = parsed.evaluate({"A": "Hello there"})
+        self.assertEqual(result, True)
+
     def test_unary_minus(self):
         x = "y = -1 + (-xx)"
         parsed = parse_expression(x)

@@ -159,14 +159,44 @@ class ContainsCs(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         if are_all_series(left):
             return left.str.contains(right, case=True)
-        return right.lower() in left.lower() 
+        return right in left 
 
 class NotContainsCs(Opp):
     op = "!contains_cs"
     def evaluate_internal(self, left, right, **kwargs):
         if are_all_series(left):
             return ~left.str.contains(right, case=True)
-        return right.lower() not in left.lower()   
+        return right not in left 
+
+class StartsWith(Opp):
+    op = "startswith"
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left):
+            # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
+            return left.str.lower().str.startswith(right.lower())
+        return left.lower().startswith(right.lower()) 
+
+class NotStartsWith(Opp):
+    op = "!startswith"
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left):
+            # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
+            return ~left.str.lower().str.startswith(right.lower())
+        return right.lower() not in left.lower()     
+
+class StartsWithCs(Opp):
+    op = "startswith_cs"
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left):
+            return left.str.startswith(right)
+        return left.startswith(right) 
+
+class NotStartsWithCs(Opp):
+    op = "!startswith_cs"
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left):
+            return ~left.str.startswith(right)
+        return not left.startswith(right) 
 
 class In(Opp):
     op = "in"
@@ -204,7 +234,10 @@ class AmbiguousMinus(Opp):
 
 all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
                  UnaryNot, Assignment,
-                 And, Or, Comma, Contains, NotContains, ContainsCs, NotContainsCs, In, NotIn, By]
+                 And, Or, Comma,
+                 Contains, NotContains, ContainsCs, NotContainsCs,
+                 StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
+                 In, NotIn, By]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):

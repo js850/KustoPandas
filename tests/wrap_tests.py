@@ -119,6 +119,36 @@ class TestWrap(unittest.TestCase):
         w = Wrap(df)
         w = w.where("C !contains_cs \"hi\"")
         self.assertListEqual(["HI there", "today", "what"], list(w.df["C"]))
+
+
+    def test_where_startswith(self):
+        df = create_df()
+        df["C"] = ["hi", "HI there", "today", "what", "this"]
+        w = Wrap(df)
+        w = w.where("C startswith \"hi\"")
+        self.assertListEqual(["hi", "HI there"], list(w.df["C"]))
+    
+    def test_where_notstartswith(self):
+        df = create_df()
+        df["C"] = ["hi", "HI there", "today", "what", "this"]
+        w = Wrap(df)
+        w = w.where("C !startswith \"hi\"")
+        self.assertListEqual(["today", "what", "this"], list(w.df["C"]))
+
+    def test_where_startswith_cs(self):
+        df = create_df()
+        df["C"] = ["hi", "HI there", "today", "what", "this"]
+        w = Wrap(df)
+        w = w.where("C startswith_cs \"hi\"")
+        self.assertListEqual(["hi"], list(w.df["C"]))
+    
+    def test_where_notstartswith_cs(self):
+        df = create_df()
+        df["C"] = ["hi", "HI there", "today", "what", "this"]
+        w = Wrap(df)
+        w = w.where("C !startswith_cs \"hi\"")
+        self.assertListEqual(["HI there", "today", "what", "this"], list(w.df["C"]))
+
     
     def test_take(self):
         df = create_df()

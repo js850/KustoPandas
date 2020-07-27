@@ -166,7 +166,10 @@ def parse_parentheses(line, method_stack, matches=None):
 def get_expression_tree_method_stack():
     return MethodStack([
         last_method,
-        get_parse_operators_method([Contains, NotContains, ContainsCs, NotContainsCs, In, NotIn]), # I'm just guessing what priority these should have
+        get_parse_operators_method([
+            Contains, NotContains, ContainsCs, NotContainsCs,
+            StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
+            In, NotIn]), # I'm just guessing what priority these should have
         get_parse_operators_method([Mul, Div]),
         get_parse_operators_method([Add, Sub]),
         get_parse_operators_method([Gt, Lt, Ge, Le]),
