@@ -101,44 +101,45 @@ def get_matching_op(line, i):
 def is_op(c):
     return inspect.isclass(c) and issubclass(c, Opp)
 
-def is_unary_operator(parts, i):
-    if i >= len(parts):
-        raise Exception("can't have operator at end of line: " + str(parts))
-    if i == 0 or is_op(parts[i-1]) or parts[i-1] == "(":
+def is_unary_operator(tokens, i):
+    if i >= len(tokens):
+        raise Exception("can't have operator at end of line: " + str(tokens))
+    if i == 0 or is_op(tokens[i-1]) or tokens[i-1] == "(":
         return True
     return False
 
-def resolve_ambiguous_operators(parts):
-    indices = [i for i, c in enumerate(parts) if c == AmbiguousMinus]
+def resolve_ambiguous_operators(tokens):
+    indices = [i for i, c in enumerate(tokens) if c == AmbiguousMinus]
 
     for i in indices:
-        c = parts[i]
-        if is_unary_operator(parts, i):
-            parts[i] = c.unary
+        c = tokens[i]
+        if is_unary_operator(tokens, i):
+            tokens[i] = c.unary
         else:
-            parts[i] = c.binary
-    return parts
+            tokens[i] = c.binary
+    return tokens
 
-def parse_characters_part(line, parser, method_stack):
+def tokenize_line_recursively(line, parser, method_stack):
     if not line:
         return []
-    for i, c in enumerate(line):
-        parsed, skip = parser(line, i)
-        if parsed is not None:
+    for i in range(len(line)):
+        tokens, skip = parser(line, i)
+        if tokens is not None:
             left = method_stack.evaluate_next_method(line[:i])
             right = method_stack.rerun_current_method(line[i+skip:])
-            return left + parsed + right
+            return left + tokens + right
     
     return method_stack.evaluate_next_method(line)
 
 def string_literal_parser(line, i):
     c = line[i]
     if c == "\"" or c == "'":
-        for j in range(i+1, len(line)):
-            if line[j] == c:
-                val = StringLiteral(line[i+1:j])
-                return [val], j + 1 - i
-        raise Exception("could not find end of string literal: " + str(line))
+        j = line.find(c, i+1)
+        if j >= 0:
+            val = StringLiteral(line[i+1:j])
+            return [val], j + 1 - i
+        else:
+            raise Exception("could not find end of string literal: " + str(line))
     return None, 0
 
 def whitespace_parser(line, i):
@@ -157,31 +158,31 @@ def operator_parser(line, i):
         return [op], len(op.op)
     return None, 0
 
-def get_character_parsing_method(parser):
-    def character_parser(line, method_stack):
-        return parse_characters_part(line, parser, method_stack)
-    return character_parser
+def get_line_tokenizer(parser):
+    def line_tokenizer(line, method_stack):
+        return tokenize_line_recursively(line, parser, method_stack)
+    return line_tokenizer
 
-def get_method_stack():
+def get_tokenization_method_stack():
     stack = [
         get_parse_unary_expression_method(parse_and_assert_variable),
         get_parse_unary_expression_method(try_parse_timespan_literal),
         get_parse_unary_expression_method(try_parse_float),
         get_parse_unary_expression_method(try_parse_int),
-        get_character_parsing_method(operator_parser),
-        get_character_parsing_method(parentheses_parser),
-        get_character_parsing_method(whitespace_parser),
-        get_character_parsing_method(string_literal_parser),
+        get_line_tokenizer(operator_parser),
+        get_line_tokenizer(parentheses_parser),
+        get_line_tokenizer(whitespace_parser),
+        get_line_tokenizer(string_literal_parser),
     ]
     return MethodStack(stack)
 
-def parse_parts_of_line(line):
-    method_stack = get_method_stack()
+def tokenize_line(line):
+    method_stack = get_tokenization_method_stack()
     parsed = method_stack.evaluate_next_method(line)
     resolved = resolve_ambiguous_operators(parsed)
     return resolved
 
 def parse_expression(line):
-    parts = parse_parts_of_line(line)
-    parsed = build_expression_tree(parts)
+    tokens = tokenize_line(line)
+    parsed = build_expression_tree(tokens)
     return parsed
