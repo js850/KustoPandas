@@ -8,14 +8,19 @@ class MethodStack:
 
     def copy(self):
         return MethodStack(list(self.stack), current_method=self.current_method)
+    
+    def pop(self):
+        method = self.stack.pop()
+        self.current_method = method
+        return method
 
     def evaluate_next_method(self, parts):
         if len(parts) == 0:
             return []
         if not self.stack:
             raise Exception("method stack empty(?)")
-        method = self.stack[-1]
-        new_method_stack = MethodStack(list(self.stack[:-1]), current_method=method)
+        new_method_stack = self.copy()
+        method = new_method_stack.pop()
         return method(parts, new_method_stack)
     
     def rerun_current_method(self, parts):
