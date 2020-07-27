@@ -15,59 +15,59 @@ def assert_var_name(var):
     if not match_internal.match(var):
         raise Exception("variable name has illegal characters " + var)
 
-def try_parse_num(val):
-    parsed = try_parse_int(val)
+def try_tokenize_num(val):
+    parsed = try_tokenize_int(val)
     if parsed is not None:
         return parsed
-    parsed = try_parse_float(val)
+    parsed = try_tokenize_float(val)
     if parsed is not None:
         return parsed
 
     return None
 
-def try_parse_timespan_literal(val):
+def try_tokenize_timespan_literal(val):
     if val[-1] in ["d", "h", "m", "s"]:
         unit = val[-1]
-        num = try_parse_num(val[:-1])
+        num = try_tokenize_num(val[:-1])
         if num is not None:
             return TimespanLiteral(num, unit)
     return None
 
 def parse_var(val):
-    timespan = try_parse_timespan_literal(val)
+    timespan = try_tokenize_timespan_literal(val)
     if timespan is not None:
         return timespan
 
     assert_var_name(val)
     return Var(val)
 
-def parse_and_assert_variable(val):
+def tokenize_and_assert_variable(val):
     # throw on failure here because it is the last in the stack
     assert_var_name(val)
     return Var(val)
 
-def try_parse_int(val):
+def try_tokenize_int(val):
     try:
         int(val)
         return Int(val)
     except:
         return None
 
-def try_parse_float(val):
+def try_tokenize_float(val):
     try:
         float(val)
         return Float(val)
     except:
         return None
     
-def get_parse_unary_expression_method(try_parse):
-    def parse_unary_expression(line, method_stack):
+def get_word_tokenizer(try_parse):
+    def parse_whole_word(line, method_stack):
         parsed = try_parse(line)
         if parsed is not None:
             return [parsed]
         else:
             return method_stack.evaluate_next_method(line)
-    return parse_unary_expression
+    return parse_whole_word
 
 def op_matches_start(line, op):
     for i in range(len(op.op)):
@@ -131,7 +131,7 @@ def tokenize_line_recursively(line, parser, method_stack):
     
     return method_stack.evaluate_next_method(line)
 
-def string_literal_parser(line, i):
+def string_literal_tokenizer(line, i):
     c = line[i]
     if c == "\"" or c == "'":
         j = line.find(c, i+1)
@@ -142,17 +142,17 @@ def string_literal_parser(line, i):
             raise Exception("could not find end of string literal: " + str(line))
     return None, 0
 
-def whitespace_parser(line, i):
+def whitespace_tokenizer(line, i):
     if line[i] == " ":
         return [], 1
     return None, 0
 
-def parentheses_parser(line, i):
+def parentheses_tokenizer(line, i):
     if line[i] in ("(", ")"):
         return [line[i]], 1
     return None, 0
 
-def operator_parser(line, i):
+def operator_tokenizer(line, i):
     op = get_matching_op(line, i)
     if op is not None:
         return [op], len(op.op)
@@ -165,14 +165,14 @@ def get_line_tokenizer(parser):
 
 def get_tokenization_method_stack():
     stack = [
-        get_parse_unary_expression_method(parse_and_assert_variable),
-        get_parse_unary_expression_method(try_parse_timespan_literal),
-        get_parse_unary_expression_method(try_parse_float),
-        get_parse_unary_expression_method(try_parse_int),
-        get_line_tokenizer(operator_parser),
-        get_line_tokenizer(parentheses_parser),
-        get_line_tokenizer(whitespace_parser),
-        get_line_tokenizer(string_literal_parser),
+        get_word_tokenizer(tokenize_and_assert_variable),
+        get_word_tokenizer(try_tokenize_timespan_literal),
+        get_word_tokenizer(try_tokenize_float),
+        get_word_tokenizer(try_tokenize_int),
+        get_line_tokenizer(operator_tokenizer),
+        get_line_tokenizer(parentheses_tokenizer),
+        get_line_tokenizer(whitespace_tokenizer),
+        get_line_tokenizer(string_literal_tokenizer),
     ]
     return MethodStack(stack)
 
