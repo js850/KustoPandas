@@ -154,6 +154,20 @@ class NotContains(Opp):
             return ~left.str.contains(right, case=False)
         return right.lower() not in left.lower()     
 
+class ContainsCs(Opp):
+    op = "contains_cs"
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left):
+            return left.str.contains(right, case=True)
+        return right.lower() in left.lower() 
+
+class NotContainsCs(Opp):
+    op = "!contains_cs"
+    def evaluate_internal(self, left, right, **kwargs):
+        if are_all_series(left):
+            return ~left.str.contains(right, case=True)
+        return right.lower() not in left.lower()   
+
 class In(Opp):
     op = "in"
     def evaluate_internal(self, left, right, **kwargs):
@@ -190,7 +204,7 @@ class AmbiguousMinus(Opp):
 
 all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
                  UnaryNot, Assignment,
-                 And, Or, Comma, Contains, NotContains, In, NotIn, By]
+                 And, Or, Comma, Contains, NotContains, ContainsCs, NotContainsCs, In, NotIn, By]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
