@@ -25,5 +25,23 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual(["D", "DT1"], list(wnew.df.columns))
         self.assertListEqual(list(wnew.df["D"]), list(wnew.df["DT1"]))
 
+    def test_extract(self):
+        df = pd.DataFrame()
+        df["A"] = ["Duration = 1;A, Duration=2;B", "Duration=3;C"]
+
+        w = Wrap(df)
+        wnew = w.project("D=extract('uration *= *([0-9]+);([^,]*)', 1, A)")
+        self.assertListEqual(["D"], list(wnew.df.columns))
+        self.assertListEqual(list(wnew.df["D"]), ["1", "3"])
+
+    def test_extract2(self):
+        df = pd.DataFrame()
+        df["A"] = ["Duration = 1;A, Duration=2;B", "Duration=3;C"]
+
+        w = Wrap(df)
+        wnew = w.project("D=extract('uration *= *([0-9]+);([^,]*)', 2, A)")
+        self.assertListEqual(["D"], list(wnew.df.columns))
+        self.assertListEqual(list(wnew.df["D"]), ["A", "C"])
+
 
 
