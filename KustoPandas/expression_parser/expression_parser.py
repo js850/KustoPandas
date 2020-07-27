@@ -16,12 +16,12 @@ def assert_var_name(var):
         raise Exception("variable name has illegal characters " + var)
 
 def try_tokenize_num(val):
-    parsed = try_tokenize_int(val)
-    if parsed is not None:
-        return parsed
-    parsed = try_tokenize_float(val)
-    if parsed is not None:
-        return parsed
+    token = try_tokenize_int(val)
+    if token is not None:
+        return token
+    token = try_tokenize_float(val)
+    if token is not None:
+        return token
 
     return None
 
@@ -32,14 +32,6 @@ def try_tokenize_timespan_literal(val):
         if num is not None:
             return TimespanLiteral(num, unit)
     return None
-
-def parse_var(val):
-    timespan = try_tokenize_timespan_literal(val)
-    if timespan is not None:
-        return timespan
-
-    assert_var_name(val)
-    return Var(val)
 
 def tokenize_and_assert_variable(val):
     # throw on failure here because it is the last in the stack
@@ -60,14 +52,14 @@ def try_tokenize_float(val):
     except:
         return None
     
-def get_word_tokenizer(try_parse):
-    def parse_whole_word(line, method_stack):
-        parsed = try_parse(line)
-        if parsed is not None:
-            return [parsed]
+def get_word_tokenizer(try_tokenize):
+    def tokenize_whole_word(line, method_stack):
+        token = try_tokenize(line)
+        if token is not None:
+            return [token]
         else:
             return method_stack.evaluate_next_method(line)
-    return parse_whole_word
+    return tokenize_whole_word
 
 def op_matches_start(line, op):
     for i in range(len(op.op)):
@@ -119,11 +111,11 @@ def resolve_ambiguous_operators(tokens):
             tokens[i] = c.binary
     return tokens
 
-def tokenize_line_recursively(line, parser, method_stack):
+def tokenize_line_recursively(line, tokenizer, method_stack):
     if not line:
         return []
     for i in range(len(line)):
-        tokens, skip = parser(line, i)
+        tokens, skip = tokenizer(line, i)
         if tokens is not None:
             left = method_stack.evaluate_next_method(line[:i])
             right = method_stack.rerun_current_method(line[i+skip:])
@@ -158,9 +150,9 @@ def operator_tokenizer(line, i):
         return [op], len(op.op)
     return None, 0
 
-def get_line_tokenizer(parser):
+def get_line_tokenizer(tokenizer):
     def line_tokenizer(line, method_stack):
-        return tokenize_line_recursively(line, parser, method_stack)
+        return tokenize_line_recursively(line, tokenizer, method_stack)
     return line_tokenizer
 
 def get_tokenization_method_stack():
@@ -178,8 +170,8 @@ def get_tokenization_method_stack():
 
 def tokenize_line(line):
     method_stack = get_tokenization_method_stack()
-    parsed = method_stack.evaluate_next_method(line)
-    resolved = resolve_ambiguous_operators(parsed)
+    tokens = method_stack.evaluate_next_method(line)
+    resolved = resolve_ambiguous_operators(tokens)
     return resolved
 
 def parse_expression(line):
