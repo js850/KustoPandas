@@ -169,7 +169,7 @@ def get_expression_tree_method_stack():
         get_parse_operators_method([
             Contains, NotContains, ContainsCs, NotContainsCs,
             StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
-            In, NotIn]), # I'm just guessing what priority these should have
+            In, NotIn, InCis, NotInCis]), # I'm just guessing what priority these should have
         get_parse_operators_method([Mul, Div]),
         get_parse_operators_method([Add, Sub]),
         get_parse_operators_method([Gt, Lt, Ge, Le]),

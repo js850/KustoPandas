@@ -299,11 +299,11 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(result, True)
 
     def test_in_series_left(self):
-        x = 'A in ("1", "2", "33")'
+        x = 'A in ("1", "2", "33", "a")'
         parsed = parse_expression(x)
-        self.assertEqual(str(parsed), '(A in ("1", "2", "33"))')
-        result = parsed.evaluate({"A": pd.Series(["1", "2", "3", "22"])})
-        self.assertListEqual(list(result), [True, True, False, False])
+        self.assertEqual(str(parsed), '(A in ("1", "2", "33", "a"))')
+        result = parsed.evaluate({"A": pd.Series(["1", "2", "3", "22", "A"])})
+        self.assertListEqual(list(result), [True, True, False, False, False])
 
     def test_in_case_sensitive(self):
         x = '"hi" in (1, "b", "Hi")'
@@ -311,7 +311,42 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), '("hi" in (1, "b", "Hi"))')
         result = parsed.evaluate(None)
         self.assertEqual(result, False)
+
+    def test_in_cis(self):
+        x = '"hi" in~ ("1", "b", "HI")'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '("hi" in~ ("1", "b", "HI"))')
+        result = parsed.evaluate(None)
+        self.assertEqual(result, True)
+
+    def test_in_cis_false(self):
+        x = '"hi" in~ ("1", "b")'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '("hi" in~ ("1", "b"))')
+        result = parsed.evaluate(None)
+        self.assertEqual(result, False)
     
+    def test_notin_cis(self):
+        x = '"hi" !in~ ("1", "b", "HI")'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '("hi" !in~ ("1", "b", "HI"))')
+        result = parsed.evaluate(None)
+        self.assertEqual(result, False)
+
+    def test_in_notcis_false(self):
+        x = '"hi" !in~ ("1", "b")'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '("hi" !in~ ("1", "b"))')
+        result = parsed.evaluate(None)
+        self.assertEqual(result, True)
+
+    def test_in_cis_left_series(self):
+        x = 'A in~ ("1", "2", "33", "a")'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(A in~ ("1", "2", "33", "a"))')
+        result = parsed.evaluate({"A": pd.Series(["1", "2", "3", "22", "A"])})
+        self.assertListEqual(list(result), [True, True, False, False, True])
+
     def test_by(self):
         x = "A, count(B) by bin(C, 1h), D"
         parsed = parse_expression(x)

@@ -198,11 +198,14 @@ class NotStartsWithCs(Opp):
 
 def _in(left, right):
     if are_all_series(left):
-        result = left == right[0]
-        for r in right[1:]:
-            result = result | (left == r)
-        return result
+        return left.isin(right)
     return left in right 
+
+def _in_cis(left, right):
+    right = [r.lower() for r in right]
+    if are_all_series(left):
+        return left.str.lower().isin(right)
+    return left.lower() in right
 
 class In(Opp):
     op = "in"
@@ -213,6 +216,16 @@ class NotIn(Opp):
     op = "!in"
     def evaluate_internal(self, left, right, **kwargs):
         return _not(_in(left, right))
+
+class InCis(Opp):
+    op = "in~"
+    def evaluate_internal(self, left, right, **kwargs):
+        return _in_cis(left, right)
+
+class NotInCis(Opp):
+    op = "!in~"
+    def evaluate_internal(self, left, right, **kwargs):
+        return _not(_in_cis(left, right))
 
 class By(Opp):
     op = "by"
@@ -243,7 +256,7 @@ all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
                  And, Or, Comma,
                  Contains, NotContains, ContainsCs, NotContainsCs,
                  StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
-                 In, NotIn, By]
+                 In, NotIn, InCis, NotInCis, By]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
