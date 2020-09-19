@@ -305,6 +305,13 @@ class TestExpressionParser(unittest.TestCase):
         result = parsed.evaluate({"A": pd.Series(["1", "2", "3", "22", "A"])})
         self.assertListEqual(list(result), [True, True, False, False, False])
 
+    def test_in_left_series_numbers(self):
+        x = 'A in (1, 2)'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(A in (1, 2))')
+        result = parsed.evaluate({"A": pd.Series([1, 2, 3])})
+        self.assertListEqual(list(result), [True, True, False])
+
     def test_in_case_sensitive(self):
         x = '"hi" in (1, "b", "Hi")'
         parsed = parse_expression(x)
