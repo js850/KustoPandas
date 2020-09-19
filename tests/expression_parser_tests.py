@@ -301,7 +301,7 @@ class TestExpressionParser(unittest.TestCase):
     def test_in_series_left(self):
         x = 'A in ("1", "2", "33")'
         parsed = parse_expression(x)
-        self.assertEqual(str(parsed), '(A in ("1", "2"))')
+        self.assertEqual(str(parsed), '(A in ("1", "2", "33"))')
         result = parsed.evaluate({"A": pd.Series(["1", "2", "3", "22"])})
         self.assertListEqual(list(result), [True, True, False, False])
 

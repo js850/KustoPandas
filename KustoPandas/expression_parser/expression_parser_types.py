@@ -117,9 +117,7 @@ class UnaryNot(UnaryOpp):
     # this doesn't actually exist in kusto.  but it seems useful, so why not add it?
     op = "not"
     def evaluate_internal(self, right, **kwargs):
-        if are_all_series(right):
-            return ~right
-        return not right
+        return _not(right)
 
 class Assignment(Opp):
     op = "="
@@ -140,63 +138,63 @@ class Or(Opp):
             return left | right
         return left or right 
 
+def _contains(left, right, case_sensitive):
+    if are_all_series(left):
+        return left.str.contains(right, case=case_sensitive)
+    return right.lower() in left.lower() 
+
 class Contains(Opp):
     op = "contains"
     def evaluate_internal(self, left, right, **kwargs):
-        if are_all_series(left):
-            return left.str.contains(right, case=False)
-        return right.lower() in left.lower() 
+        return _contains(left, right, False)
 
 class NotContains(Opp):
     op = "!contains"
     def evaluate_internal(self, left, right, **kwargs):
-        if are_all_series(left):
-            return ~left.str.contains(right, case=False)
-        return right.lower() not in left.lower()     
+        return _not(_contains(left, right, False))   
 
 class ContainsCs(Opp):
     op = "contains_cs"
     def evaluate_internal(self, left, right, **kwargs):
-        if are_all_series(left):
-            return left.str.contains(right, case=True)
-        return right in left 
+        return _contains(left, right, True)
 
 class NotContainsCs(Opp):
     op = "!contains_cs"
     def evaluate_internal(self, left, right, **kwargs):
-        if are_all_series(left):
-            return ~left.str.contains(right, case=True)
-        return right not in left 
+        return _not(_contains(left, right, True))   
+
+def _starts_with(left, right, case_sensitive):
+    # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
+    if are_all_series(left):
+        # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
+        if not case_sensitive:
+            left = left.str.lower()
+            right = right.lower()
+        return left.str.startswith(right)
+    if not case_sensitive:
+        left = left.lower()
+        right = right.lower()
+    return left.startswith(right) 
 
 class StartsWith(Opp):
     op = "startswith"
     def evaluate_internal(self, left, right, **kwargs):
-        if are_all_series(left):
-            # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
-            return left.str.lower().str.startswith(right.lower())
-        return left.lower().startswith(right.lower()) 
+        return _starts_with(left, right, False)
 
 class NotStartsWith(Opp):
     op = "!startswith"
     def evaluate_internal(self, left, right, **kwargs):
-        if are_all_series(left):
-            # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
-            return ~left.str.lower().str.startswith(right.lower())
-        return right.lower() not in left.lower()     
+        return _not(_starts_with(left, right, False))
 
 class StartsWithCs(Opp):
     op = "startswith_cs"
     def evaluate_internal(self, left, right, **kwargs):
-        if are_all_series(left):
-            return left.str.startswith(right)
-        return left.startswith(right) 
+        return _starts_with(left, right, True)
 
 class NotStartsWithCs(Opp):
     op = "!startswith_cs"
     def evaluate_internal(self, left, right, **kwargs):
-        if are_all_series(left):
-            return ~left.str.startswith(right)
-        return not left.startswith(right) 
+        return _not(_starts_with(left, right, True))
 
 def _in(left, right):
     if are_all_series(left):
