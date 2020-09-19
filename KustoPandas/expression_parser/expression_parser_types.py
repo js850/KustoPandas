@@ -198,15 +198,23 @@ class NotStartsWithCs(Opp):
             return ~left.str.startswith(right)
         return not left.startswith(right) 
 
+def _in(left, right):
+    if are_all_series(left):
+        result = left == right[0]
+        for r in right[1:]:
+            result = result | (left == r)
+        return result
+    return left in right 
+
 class In(Opp):
     op = "in"
     def evaluate_internal(self, left, right, **kwargs):
-        return left in right 
+        return _in(left, right)
 
 class NotIn(Opp):
     op = "!in"
     def evaluate_internal(self, left, right, **kwargs):
-        return left not in right 
+        return _not(_in(left, right))
 
 class By(Opp):
     op = "by"
@@ -328,3 +336,8 @@ class ListExpression(Expression):
         return str(self)
     def evaluate(self, vals):
         return [a.evaluate(vals) for a in self.items]
+
+def _not(input):
+    if are_all_series(input):
+        return ~input
+    return not input
