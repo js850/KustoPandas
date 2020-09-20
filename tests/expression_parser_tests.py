@@ -166,38 +166,6 @@ class TestExpressionParser(unittest.TestCase):
         result = parsed.evaluate({"xx": xx})
         self.assertEqual(result["y"], "hello there_suffix")
     
-    def test_contains_ignores_case(self):
-        x = "y = A contains \"hello\""
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (A contains \"hello\"))")
-
-        result = parsed.evaluate({"A": "Hello there"})
-        self.assertEqual(result["y"], True)
-    
-    def test_notcontains(self):
-        x = "y = A !contains \"hello\""
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (A !contains \"hello\"))")
-
-        result = parsed.evaluate({"A": "Hello there"})
-        self.assertEqual(result["y"], False)
-
-    def test_contains_cs(self):
-        x = "y = A contains \"hello\""
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (A contains \"hello\"))")
-
-        result = parsed.evaluate({"A": "Hello there"})
-        self.assertEqual(result["y"], True)
-    
-    def test_notcontains_cs(self):
-        x = "y = A !contains \"hello\""
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (A !contains \"hello\"))")
-
-        result = parsed.evaluate({"A": "Hello there"})
-        self.assertEqual(result["y"], False)
-
     def test_unary_minus(self):
         x = "y = -1 + (-xx)"
         parsed = parse_expression(x)
