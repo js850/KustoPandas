@@ -5,6 +5,8 @@ from context import expression_parser as ep
 
 from KustoPandas.expression_parser.expression_parser import parse_expression
 from KustoPandas.expression_parser.expression_tree import find_matching_parentheses
+from KustoPandas.methods import method_map
+from KustoPandas.kusto_pandas import MultiDict
 
 class TestBetweenOperator(unittest.TestCase):
     def test_between(self):
@@ -48,6 +50,19 @@ class TestBetweenOperator(unittest.TestCase):
         self.assertEqual(str(parsed), '(A between (1 .. 3))')
         result = parsed.evaluate({"A": pd.Series([0, 1, 2, 3, 4])})
         self.assertListEqual(list(result), [False, True, True, True, False])
+
+    def test_between_series_datetime(self):
+        x = 'A between (datetime("2020-01-01") .. datetime("2020-02-01"))'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(A between (datetime("2020-01-01") .. datetime("2020-02-01")))')
+        vars = MultiDict([method_map, {
+            "A": pd.Series([
+                pd.to_datetime("2019-01-10"),
+                pd.to_datetime("2020-01-10"),
+                pd.to_datetime("2020-02-10")
+                ])}])
+        result = parsed.evaluate(vars)
+        self.assertListEqual(list(result), [False, True, False])
     
     def test_between_no_DotDot(self):
         x = '1 between 2'
