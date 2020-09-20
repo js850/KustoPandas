@@ -48,3 +48,9 @@ class TestBetweenOperator(unittest.TestCase):
         self.assertEqual(str(parsed), '(A between (1 .. 3))')
         result = parsed.evaluate({"A": pd.Series([0, 1, 2, 3, 4])})
         self.assertListEqual(list(result), [False, True, True, True, False])
+    
+    def test_between_no_DotDot(self):
+        x = '1 between 2'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(1 between 2)')
+        self.assertRaises(Exception, parsed.evaluate(None)):
