@@ -37,7 +37,6 @@ class UnaryOpp(Expression):
         right = self.right.evaluate(vals)
         return self.evaluate_internal(right)
 
-
 class Opp(Expression):
     op = ""
     def __init__(self, left, right):
@@ -227,6 +226,35 @@ class NotInCis(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return _not(_in_cis(left, right))
 
+def _has(left, right, case_sensitive):
+    pattern = "\\b" + right + "\\b"
+    if are_all_series(left):
+        return left.str.contains(pattern, case=case_sensitive)
+    flags = 0
+    if not case_sensitive:
+        flags = re.IGNORECASE
+    return re.search(pattern, left, flags=flags) is not None
+
+class Has(Opp):
+    op = "has"
+    def evaluate_internal(self, left, right, **kwargs):
+        return _has(left, right, False)
+
+class NotHas(Opp):
+    op = "!has"
+    def evaluate_internal(self, left, right, **kwargs):
+        return _not(_has(left, right, False))
+
+class HasCs(Opp):
+    op = "has_cs"
+    def evaluate_internal(self, left, right, **kwargs):
+        return _has(left, right, True)
+
+class NotHasCs(Opp):
+    op = "!has_cs"
+    def evaluate_internal(self, left, right, **kwargs):
+        return _not(_has(left, right, True))
+
 class By(Opp):
     op = "by"
     def evaluate_internal(self, left, right, **kwargs):
@@ -256,7 +284,9 @@ all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
                  And, Or, Comma,
                  Contains, NotContains, ContainsCs, NotContainsCs,
                  StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
-                 In, NotIn, InCis, NotInCis, By]
+                 In, NotIn, InCis, NotInCis, 
+                 Has, NotHas, HasCs, NotHasCs,
+                 By]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
