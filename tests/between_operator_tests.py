@@ -53,4 +53,5 @@ class TestBetweenOperator(unittest.TestCase):
         x = '1 between 2'
         parsed = parse_expression(x)
         self.assertEqual(str(parsed), '(1 between 2)')
-        self.assertRaises(Exception, parsed.evaluate(None)):
+        with self.assertRaises(Exception) as context:
+            parsed.evaluate(None)
