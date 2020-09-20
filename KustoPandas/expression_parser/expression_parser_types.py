@@ -273,6 +273,24 @@ class Comma(Opp):
             return str(self.left) + ", " + self.right._str_internal()
         return str(self.left) + ", " + str(self.right)
 
+class DotDot(Opp):
+    op = ".."
+    def evaluate_internal(self, left, right, **kwargs):
+        raise NotImplementedError("DotDot does not have an implementation")
+
+class Between(Opp):
+    op = "between"
+    def evaluate(self, vals):
+        if not isinstance(self.right, DotDot):
+            raise Exception("Between operator must act on DotDot")
+        left = self.left.evaluate(vals)
+        lower = self.right.left.evaluate(vals)
+        upper = self.right.right.evaluate(vals)
+
+        if are_all_series(left):
+            return (lower <= left) & (left <= upper)
+        return lower <= left and left <= upper
+
 class AmbiguousMinus(Opp):
     # - can be either unary or binary op
     op = "-"
@@ -286,7 +304,7 @@ all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
                  StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
                  In, NotIn, InCis, NotInCis, 
                  Has, NotHas, HasCs, NotHasCs,
-                 By]
+                 By, Between, DotDot]
 all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
 
 class NumOrVar(Expression):
