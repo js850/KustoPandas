@@ -305,6 +305,17 @@ class Wrap:
     
     def render(self, visualization=None, **kwargs):
         return render(self, visualization=visualization, **kwargs) 
+
+    def to_clipboard(self, name=None):
+        df = self.df.copy()
+        if isinstance(df, pd.DataFrame):
+            df.to_clipboard(index_label=df.columns.name)
+        else:
+            if name is not None:
+                df.name = name
+            df.to_clipboard(header=True)
+                
+        return self
         
 
     
