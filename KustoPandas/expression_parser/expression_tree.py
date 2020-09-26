@@ -183,8 +183,12 @@ def parse_square_brackets(line, method_stack, matches=None):
             output += line[last:i]
         parsed = parse_square_brackets(line[i+1:end], method_stack, matches=matches[i+1:end])
 
-        arg_name = output.pop()
-        brackets = SquareBrackets(arg_name, parsed)
+        variable = output.pop()
+
+        if not isinstance(variable, Var):
+            raise Exception("square brackets must be applied to a variable: " + str(line))
+
+        brackets = SquareBrackets(variable, parsed)
         output.append(brackets)
 
         last = end + 1
