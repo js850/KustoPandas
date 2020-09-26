@@ -307,6 +307,7 @@ class Wrap:
         return render(self, visualization=visualization, **kwargs) 
 
     def to_clipboard(self, name=None):
+        # this is not part of Kusto, but I find it very useful
         df = self.df.copy()
         if isinstance(df, pd.DataFrame):
             df.to_clipboard(index_label=df.columns.name)

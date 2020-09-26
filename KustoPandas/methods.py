@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from KustoPandas import dynamic_methods
+
 def iff(condition, a, b):
     return np.where(condition, a, b)
 
@@ -26,7 +28,7 @@ def extract(regex, capture_group, text):
     else:
         raise Exception("capture_group must be a non-negative integer: " + str(capture_group))
 
-all_methods = [iff, datetime, bin, floor, extract]
+all_methods = [iff, datetime, bin, floor, extract] + dynamic_methods._all_methods
 
 method_map = dict(((m.__name__, m) for m in all_methods))
 
