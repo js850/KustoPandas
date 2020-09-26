@@ -43,12 +43,12 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual(["D"], list(wnew.df.columns))
         self.assertListEqual(list(wnew.df["D"]), ["A", "C"])
 
-    def test_dynamic(self):
+    def test_todynamic(self):
         df = pd.DataFrame()
         df["A"] = ['{"k1":"v1"}', '{"k1" : "v2"}']
 
         w = Wrap(df)
-        w = w.extend("D = dynamic(A)")
+        w = w.extend("D = todynamic(A)")
 
         self.assertEqual("v1", w.df["D"][0]["k1"])
 

@@ -2,7 +2,7 @@ import pandas as pd
 import json
 
 
-def dynamic(s):
+def todynamic(s):
     return s.apply(json.loads)
 
-_all_methods = [dynamic]
+_all_methods = [todynamic]

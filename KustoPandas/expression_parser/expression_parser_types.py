@@ -373,6 +373,20 @@ class Method(Expression):
         args = self.args.evaluate(vals)
         return method(*args)
 
+def _square_brackets_apply(v, k):
+    try:
+        return v[k]
+    except KeyError:
+        return None
+
+def _square_brackets_two_series(variables, keys):
+    def eval_row(row):
+        # this operates on the dataframe one row at a time
+        return _square_brackets_apply(row["v"], row["k"])
+    
+    df = pd.DataFrame({"k" : keys, "v" : variables})
+    return df.apply(eval_row, axis=1)
+
 class SquareBrackets(Expression):
     def __init__(self, variable, value):
         self.variable = variable
@@ -382,7 +396,14 @@ class SquareBrackets(Expression):
     def __repr__(self):
         return str(self)
     def evaluate(self, vals):
-        raise NotImplementedError()
+        variable = self.variable.evaluate(vals)
+        value = self.value.evaluate(vals)
+
+        if are_all_series(variable):
+            if are_all_series(value):
+                return _square_brackets_two_series(variable, value)
+            return variable.apply(lambda v: _square_brackets_apply(v, value))
+        return _square_brackets_apply(variable, value)
 
 class TimespanLiteral(Expression):
     # e.g. 4d resolves to timespan 4 days
