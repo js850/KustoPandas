@@ -140,7 +140,7 @@ def whitespace_tokenizer(line, i):
     return None, 0
 
 def parentheses_tokenizer(line, i):
-    if line[i] in ("(", ")"):
+    if line[i] in ("(", ")", "[", "]"):
         return [line[i]], 1
     return None, 0
 

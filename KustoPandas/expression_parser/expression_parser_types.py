@@ -360,7 +360,6 @@ class Args:
     def evaluate(self, vals):
         return [a.evaluate(vals) for a in self.args]
 
-
 class Method(Expression):
     def __init__(self, name, args):
         self.name = name
@@ -373,6 +372,17 @@ class Method(Expression):
         method = self.name.evaluate(vals)
         args = self.args.evaluate(vals)
         return method(*args)
+
+class SquareBrackets(Expression):
+    def __init__(self, variable, value):
+        self.variable = variable
+        self.value = value
+    def __str__(self):
+        return str(self.variable)  + "[" + str(self.value) + "]"
+    def __repr__(self):
+        return str(self)
+    def evaluate(self, vals):
+        raise NotImplementedError()
 
 class TimespanLiteral(Expression):
     # e.g. 4d resolves to timespan 4 days

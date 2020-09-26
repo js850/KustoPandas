@@ -110,16 +110,16 @@ def convert_to_method_args(parsed):
 
     return Args([parsed])
 
-def find_matching_parentheses(line):
+def find_matching_parentheses(line, left="(", right=")"):
     matches = np.zeros(len(line), dtype=np.int)
     stack = []
     for i, c in enumerate(line):
         #print(c)
-        if c == "(":
+        if c == left:
             stack.append(i)
-        elif c == ")":
+        elif c == right:
             if len(stack) == 0:
-                raise Exception("found unmatched closing parenthesis at column ", i)
+                raise Exception("found unmatched closing " + right + " at column " + i)
             previous = stack.pop()
             matches[previous] = i - previous
             matches[i] = previous - i
@@ -163,6 +163,38 @@ def parse_parentheses(line, method_stack, matches=None):
     #print("output", output)
     return method_stack.evaluate_next_method(output)
 
+def parse_square_brackets(line, method_stack, matches=None):
+    if len(line) == 0:
+        return None
+
+    if matches is None:
+        matches = find_matching_parentheses(line, left="[", right="]")
+
+    parentheses = split_one_level(matches)
+    
+    if not parentheses:
+        # fix this
+        return method_stack.evaluate_next_method(line)
+
+    output = []
+    last = 0
+    for i, end in parentheses:
+        if i > last:
+            output += line[last:i]
+        parsed = parse_square_brackets(line[i+1:end], method_stack, matches=matches[i+1:end])
+
+        arg_name = output.pop()
+        brackets = SquareBrackets(arg_name, parsed)
+        output.append(brackets)
+
+        last = end + 1
+    
+    tail = line[last:]
+    output += tail
+    
+    #print("output", output)
+    return method_stack.evaluate_next_method(output)
+
 def get_expression_tree_method_stack():
     return MethodStack([
         last_method,
@@ -183,6 +215,7 @@ def get_expression_tree_method_stack():
         get_parse_operators_method([DotDot]),
         get_parse_operators_method([By]),
         parse_unary_operators,
+        parse_square_brackets,
         parse_parentheses,
     ])
 

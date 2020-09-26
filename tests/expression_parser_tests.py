@@ -61,6 +61,25 @@ class TestExpressionParser(unittest.TestCase):
     #     expected = ["x", " ", Assignment, "1", Le, "2"]
     #     self.assertListEqual(expected, exploded)
 
+    def test_parse_square_brackets(self):
+        x = "x[4 ]"
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "x[4]")
+        #self.assertEqual(True, parsed.evaluate(None))
+
+    def test_parse_square_brackets_assignment(self):
+        x = "a = x[4 ]"
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "(a = x[4])")
+        #self.assertEqual(True, parsed.evaluate(None))
+
+    def test_parse_square_brackets_with_parentheses(self):
+        x = "a = (x[y(2) + (4 - 1)] - 1)"
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "(a = (x[(y(2) + (4 - 1))] - 1))")
+        #self.assertEqual(True, parsed.evaluate(None))
+        
+
     def test_parse_expression_Or(self):
         x = "1 > 1 or 3 > 2"
         parsed = parse_expression(x)
