@@ -38,3 +38,13 @@ class TestContainsOperator(unittest.TestCase):
 
         result = parsed.evaluate({"A": "Hello there"})
         self.assertEqual(result["y"], False)
+
+
+    def test_contains_ignores_nan(self):
+        x = "A contains \"h\""
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "(A contains \"h\")")
+
+        A = pd.Series(["hi", np.nan, "b", "", "H"])
+        result = parsed.evaluate({"A": A})
+        self.assertListEqual(list(result), [True, False, False, False, True])
