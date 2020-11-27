@@ -9,6 +9,21 @@ def iff(condition, a, b):
 def datetime(val):
     return pd.to_datetime(val)
 
+def toint(val):
+    return val.astype(int)
+
+def todouble(val):
+    return pd.to_numeric(val)
+
+def toreal(val):
+    return todouble(val)
+
+def double(val):
+    return todouble(val)
+
+def real(val):
+    return todouble(val)
+
 def bin(value, round_to):
     # todo implement for other data types
     return value.dt.floor(round_to)
@@ -28,7 +43,8 @@ def extract(regex, capture_group, text):
     else:
         raise Exception("capture_group must be a non-negative integer: " + str(capture_group))
 
-all_methods = [iff, datetime, bin, floor, extract] + dynamic_methods._all_methods
+all_methods = [iff, datetime, bin, floor, extract, toint, 
+               todouble, toreal, double, real] + dynamic_methods._all_methods
 
 method_map = dict(((m.__name__, m) for m in all_methods))
 

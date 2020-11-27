@@ -52,6 +52,31 @@ class TestWrap(unittest.TestCase):
 
         self.assertEqual("v1", w.df["D"][0]["k1"])
 
+    def test_toint(self):
+        df = create_df()
+        df["A"] = [1.2, "1", 2.0, 4, 5]
+
+        w = Wrap(df)
+        w = w.extend("D = toint(A)")
+
+        self.assertListEqual([1, 1, 2, 4, 5], list(w.df["D"]))
+
+    def test_todouble(self):
+        df = create_df()
+        df["A"] = [1.2, "1", "2.7", 4, 5]
+
+        w = Wrap(df)
+        w = w.extend("D = todouble(A), D1 = toreal(A), D2 = double(A), D3 = real(A)")
+
+        expected = [float(x) for x in df["A"]]
+        self.assertListEqual(expected, list(w.df["D"]))
+        self.assertListEqual(expected, list(w.df["D1"]))
+        self.assertListEqual(expected, list(w.df["D2"]))
+        self.assertListEqual(expected, list(w.df["D3"]))
+
+
+
+
 
 
 
