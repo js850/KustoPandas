@@ -263,6 +263,18 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual(list(wnew.df["argmin_F_C"]), ["foo2", "foo5"])
         self.assertListEqual(["G", "argmin_F_C"], list(wnew.df.columns))
 
+    def test_summarize_argmin_noby(self):
+        df = create_df()
+        df["F"] = [8, 1, 2, 3, 3]
+        w = Wrap(df)
+        c = w.summarize("argmin(F, C)") 
+
+        print()
+        print(c.df)
+
+        self.assertListEqual(["argmin_F_C"], list(c.df.columns))
+        self.assertListEqual(["foo2"], list(c.df["argmin_F_C"]))
+
     def test_summarize_argmax(self):
         df = create_df()
         df["G"] = ["G1", "G1", "G2", "G1", "G2"]
@@ -275,6 +287,18 @@ class TestAggregates(unittest.TestCase):
         
         self.assertListEqual(list(wnew.df["argmax_F_C"]), ["foo4", "foo3"])
         self.assertListEqual(["G", "argmax_F_C"], list(wnew.df.columns))
+
+    def test_summarize_argmax_noby(self):
+        df = create_df()
+        df["F"] = [8, 1, 2, 3, 3]
+        w = Wrap(df)
+        c = w.summarize("argmax(F, C)") 
+
+        print()
+        print(c.df)
+
+        self.assertListEqual(["argmax_F_C"], list(c.df.columns))
+        self.assertListEqual(["foo1"], list(c.df["argmax_F_C"]))
 
     def test_summarize_argmax_math(self):
         df = create_df()

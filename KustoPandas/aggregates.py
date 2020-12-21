@@ -92,7 +92,7 @@ class AggOneArg(SimpleAgg):
 class AggTwoArgs(SimpleAgg):
     def validate(self, df):
         if len(self.args) != 2:
-            raise Exception("{0} can only take one argument: {1}".format(self._get_method_name(), str(self.args)))
+            raise Exception("{0} must have two arguments: {1}".format(self._get_method_name(), str(self.args)))
 
 class Count(NoArgAgg):
     def apply_aggregate(self, grouped):
@@ -138,23 +138,25 @@ class Max(AggOneArg):
 
 class ArgMin(AggTwoArgs):
     def apply_aggregate(self, grouped):
-        def argmin(g):
-            # find the index of the min of arg0
-            idx = g[self.arg_names[0]].idxmin()
-            # return the value of arg1 at that index
-            return g[self.arg_names[1]].loc[idx]
-        series = grouped.apply(lambda g: argmin(g))
+        series = grouped.apply(self.apply_aggregate_series)
         return series
+    
+    def apply_aggregate_series(self, series):
+        # find the index of the min of arg0
+        idx = series[self.arg_names[0]].idxmin()
+        # return the value of arg1 at that index
+        return series[self.arg_names[1]].loc[idx]
 
 class ArgMax(AggTwoArgs):
     def apply_aggregate(self, grouped):
-        def argmax(g):
-            # find the index of the max of arg0
-            idx = g[self.arg_names[0]].idxmax()
-            # return the value of arg1 at that index
-            return g[self.arg_names[1]].loc[idx]
-        series = grouped.apply(lambda g: argmax(g))
+        series = grouped.apply(self.apply_aggregate_series)
         return series
+    
+    def apply_aggregate_series(self, series):
+        # find the index of the max of arg0
+        idx = series[self.arg_names[0]].idxmax()
+        # return the value of arg1 at that index
+        return series[self.arg_names[1]].loc[idx]
 
 class Any(AggOneArg):
     def apply_aggregate(self, grouped):
