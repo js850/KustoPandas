@@ -62,11 +62,22 @@ class SimpleAgg:
     def apply1(self, grouped):
         output_column_name = self._get_output_column_name()
         
-        series = self.apply_aggregate(grouped)
+        if _is_groupby(grouped):
+            series = self.apply_aggregate(grouped)
+        else:
+            result = self.apply_aggregate_series(grouped)
+            series = pd.Series([result])
+
         return [(output_column_name, series)]
     
     def apply_aggregate(self, grouped):
         raise NotImplementedError()
+
+    def apply_aggregate_series(self, series):
+        # often the same method will work on both a series and a groupby e.g.
+        # grouped.max() returns a series with one max value per group
+        # series.max() just returns a single value
+        return self.apply_aggregate(series)
 
 class NoArgAgg(SimpleAgg):
     def validate(self, df):
@@ -85,10 +96,11 @@ class AggTwoArgs(SimpleAgg):
 
 class Count(NoArgAgg):
     def apply_aggregate(self, grouped):
-        if _is_groupby(grouped):
-            return grouped.size()
-        else: 
-            return pd.Series([grouped.shape[0]])
+        return grouped.size()
+
+    def apply_aggregate_series(self, series):
+        # this is actually a dataframe
+        return series.shape[0]
     
 class DCount(AggOneArg):
     def apply_aggregate(self, grouped):

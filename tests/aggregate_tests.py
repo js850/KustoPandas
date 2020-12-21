@@ -53,6 +53,29 @@ class TestAggregates(unittest.TestCase):
 
         self.assertListEqual([5], list(c.df["count_"]))
     
+    def test_summarize_max_noby(self):
+        df = create_df()
+        w = Wrap(df)
+        c = w.summarize("max(B)") 
+
+        print()
+        print(c.df)
+
+        self.assertListEqual(["max_B"], list(c.df.columns))
+        self.assertListEqual([4], list(c.df["max_B"]))
+
+    def test_summarize_max_count_noby(self):
+        df = create_df()
+        w = Wrap(df)
+        c = w.summarize("M=max(B), C=count()") 
+
+        print()
+        print(c.df)
+
+        self.assertListEqual(["M", "C"], list(c.df.columns))
+        self.assertListEqual([4], list(c.df["M"]))
+        self.assertListEqual([5], list(c.df["C"]))
+
     def test_summarize_percentile(self):
         df = create_df()
         w = Wrap(df)
@@ -95,6 +118,17 @@ class TestAggregates(unittest.TestCase):
 
         self.assertListEqual([2, 1], list(w.df["dcount_F"]))
         self.assertListEqual(["G", "dcount_F"], list(w.df.columns))
+
+    def test_summarize_dcount_noby(self):
+        df = create_df()
+        w = Wrap(df)
+        c = w.summarize("dcount(G)") 
+
+        print()
+        print(c.df)
+
+        self.assertListEqual(["dcount_G"], list(c.df.columns))
+        self.assertListEqual([2], list(c.df["dcount_G"]))
     
     def test_summarize_countif(self):
         df = create_df()
@@ -109,6 +143,15 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual([1, 2], list(w.df["countif_"]))
         self.assertListEqual(["G", "countif_"], list(w.df.columns))
 
+    def test_summarize_countif_noby(self):
+        df = create_df()
+        df["F"] = [1, 1, 2, 4, 3]
+        w = Wrap(df)
+        c = w.summarize("C=countif(F > 2)") 
+
+        self.assertListEqual(["C"], list(c.df.columns))
+        self.assertListEqual([2], list(c.df["C"]))
+
     def test_summarize_avg(self):
         df = create_df()
         df["G"] = ["G1", "G1", "G2", "G1", "G2"]
@@ -119,6 +162,15 @@ class TestAggregates(unittest.TestCase):
 
         self.assertListEqual([2, 3], list(w.df["avg_F"]))
         self.assertListEqual(["G", "avg_F"], list(w.df.columns))
+
+    def test_summarize_avg_noby(self):
+        df = create_df()
+        df["F"] = [1, 1, 2, 3, 3]
+        w = Wrap(df)
+        c = w.summarize("avg(F)") 
+
+        self.assertListEqual(["avg_F"], list(c.df.columns))
+        self.assertListEqual([2], list(c.df["avg_F"]))
 
     def test_summarize_std(self):
         df = create_df()
@@ -132,6 +184,15 @@ class TestAggregates(unittest.TestCase):
         np.testing.assert_almost_equal(w.df["stdev_F"], [1.732051, 0], 3)
         self.assertListEqual(["G", "stdev_F"], list(w.df.columns))
 
+    def test_summarize_std_noby(self):
+        df = create_df()
+        df["F"] = [1, 1, 2, 3, 3]
+        w = Wrap(df)
+        c = w.summarize("stdev(F)") 
+
+        self.assertListEqual(["stdev_F"], list(c.df.columns))
+        self.assertListEqual([1], list(c.df["stdev_F"]))
+
     def test_summarize_var(self):
         df = create_df()
         df["G"] = ["G1", "G1", "G2", "G1", "G2"]
@@ -144,6 +205,15 @@ class TestAggregates(unittest.TestCase):
         
         np.testing.assert_almost_equal(w.df["variance_F"], [3, 0], 3)
         self.assertListEqual(["G", "variance_F"], list(w.df.columns))
+
+    def test_summarize_var_noby(self):
+        df = create_df()
+        df["F"] = [1, 1, 2, 3, 3]
+        w = Wrap(df)
+        c = w.summarize("variance(F)") 
+
+        self.assertListEqual(["variance_F"], list(c.df.columns))
+        self.assertListEqual([1], list(c.df["variance_F"]))
     
     def test_summarize_min(self):
         df = create_df()
@@ -157,7 +227,16 @@ class TestAggregates(unittest.TestCase):
         
         self.assertListEqual(list(wnew.df["min_F"]), [0, 8])
         self.assertListEqual(["G", "min_F"], list(wnew.df.columns))
-    
+
+    def test_summarize_min_noby(self):
+        df = create_df()
+        df["F"] = [1, 8, 2, 3, 3]
+        w = Wrap(df)
+        c = w.summarize("min(F)") 
+
+        self.assertListEqual(["min_F"], list(c.df.columns))
+        self.assertListEqual([1], list(c.df["min_F"]))
+
     def test_summarize_max(self):
         df = create_df()
         df["G"] = ["G1", "G1", "G2", "G1", "G2"]
