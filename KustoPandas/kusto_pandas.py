@@ -187,6 +187,8 @@ class Wrap:
         if isinstance(by, str):
             parsed = parse_expression(by)
             by_parsed = _split_if_comma(parsed)
+        elif by is None:
+            by_parsed = []
         else:
             by_parsed = [parse_expression(c) for c in by]
         
@@ -220,7 +222,12 @@ class Wrap:
                     result = col_value.evaluate(self._get_var_map())
                     dftemp[col_name] = result
 
-        grouped = dftemp.groupby(group_by_col_names)
+        if len(group_by_col_names) > 0:
+            grouped = dftemp.groupby(group_by_col_names)
+        else:
+            # it's allowed to pass nothing as group by.  In which case the aggregate will 
+            # operate on the entire series
+            grouped = dftemp
         dfnew = pd.DataFrame()
 
         for arg in args:
@@ -229,7 +236,8 @@ class Wrap:
                 col = ensure_column_name_unique(dfnew, col)
                 dfnew[col] = series
         
-        dfnew = dfnew.reset_index()
+        if len(group_by_col_names) > 0:
+            dfnew = dfnew.reset_index()
 
         return self._copy(dfnew)
     

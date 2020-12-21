@@ -1,6 +1,10 @@
-from . import expression_parser as ep
 import uuid
+import pandas as pd
 
+from . import expression_parser as ep
+
+def _is_groupby(g):
+    return isinstance(g, pd.core.groupby.SeriesGroupBy) or isinstance(g, pd.core.groupby.DataFrameGroupBy )
 
 class SimpleAgg:
     """
@@ -52,11 +56,12 @@ class SimpleAgg:
         elif len(names) > 1:
             # operate on a DataFrameGroupBy
             grouped = grouped[self.arg_names]
+        
         return self.apply1(grouped)
-
 
     def apply1(self, grouped):
         output_column_name = self._get_output_column_name()
+        
         series = self.apply_aggregate(grouped)
         return [(output_column_name, series)]
     
@@ -80,8 +85,11 @@ class AggTwoArgs(SimpleAgg):
 
 class Count(NoArgAgg):
     def apply_aggregate(self, grouped):
-        return grouped.size()
-
+        if _is_groupby(grouped):
+            return grouped.size()
+        else: 
+            return pd.Series([grouped.shape[0]])
+    
 class DCount(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.nunique()

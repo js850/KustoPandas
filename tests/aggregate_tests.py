@@ -40,6 +40,18 @@ class TestAggregates(unittest.TestCase):
         print(w.df)
         
         self.assertTrue(w.df.equals(expected))
+
+    def test_summarize_count_noby(self):
+        df = create_df()
+        w = Wrap(df)
+        c = w.summarize("count()") 
+
+        print()
+        print(c.df)
+
+        self.assertListEqual(["count_"], list(c.df.columns))
+
+        self.assertListEqual([5], list(c.df["count_"]))
     
     def test_summarize_percentile(self):
         df = create_df()
@@ -243,3 +255,4 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual(list(["G1", "G2"]), list(wnew.df["G"]))
         self.assertListEqual(list([0, 2]), list(wnew.df["any_B"]))
         self.assertEqual(2, len(wnew.df.columns))
+    
