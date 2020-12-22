@@ -49,9 +49,8 @@ class TestAggregates(unittest.TestCase):
         print()
         print(c.df)
 
-        self.assertListEqual(["count_"], list(c.df.columns))
-
-        self.assertListEqual([5], list(c.df["count_"]))
+        assert ["count_"] == list(c.df.columns)
+        assert [5] == list(c.df["count_"])
     
     def test_summarize_max_noby(self):
         df = create_df()
@@ -391,6 +390,6 @@ class TestAggregates(unittest.TestCase):
         print()
         print(c.df)
 
-        self.assertListEqual(["any_F"], list(c.df.columns))
-        self.assertListEqual([8], list(c.df["any_F"]))
+        assert ["any_F"] == list(c.df.columns)
+        assert [8] == list(c.df["any_F"])
     
