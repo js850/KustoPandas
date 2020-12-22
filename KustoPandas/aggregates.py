@@ -162,6 +162,9 @@ class Any(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.first()
 
+    def apply_aggregate_series(self, series):
+        return series[0]
+
 class Percentiles(SimpleAgg):
     def validate(self, df):
         if len(self.args) < 2:

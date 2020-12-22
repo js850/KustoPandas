@@ -358,4 +358,16 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual(list(["G1", "G2"]), list(wnew.df["G"]))
         self.assertListEqual(list([0, 2]), list(wnew.df["any_B"]))
         self.assertEqual(2, len(wnew.df.columns))
+
+    def test_summarize_any_noby(self):
+        df = create_df()
+        df["F"] = [8, 1, 2, 3, 3]
+        w = Wrap(df)
+        c = w.summarize("any(F)") 
+
+        print()
+        print(c.df)
+
+        self.assertListEqual(["any_F"], list(c.df.columns))
+        self.assertListEqual([8], list(c.df["any_F"]))
     
