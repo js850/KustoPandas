@@ -105,6 +105,29 @@ class TestAggregates(unittest.TestCase):
 
         self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
         self.assertListEqual(["G", "myperc_50"], list(w.df.columns))
+
+    def test_summarize_percentile_noby(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.summarize(["percentiles(B, 50, 75)"])
+
+        print()
+        print(w.df)
+
+        self.assertListEqual(["percentiles_50", "percentiles_75"], list(w.df.columns))
+        self.assertListEqual([2.0], list(w.df["percentiles_50"]))
+        self.assertListEqual([3.0], list(w.df["percentiles_75"]))
+
+    def test_summarize_percentile_singlepercentile_noby(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.summarize(["percentiles(B, 50)"])
+
+        print()
+        print(w.df)
+
+        self.assertListEqual(["percentiles_50"], list(w.df.columns))
+        self.assertListEqual([2.0], list(w.df["percentiles_50"]))
     
     def test_summarize_dcount(self):
         df = create_df()

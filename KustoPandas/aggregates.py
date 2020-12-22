@@ -188,12 +188,17 @@ class Percentiles(SimpleAgg):
         
         names = [basename + str(p) for p in percentiles]
 
-        # series = self.args[0].evaluate(grouped)
-
         result = grouped.quantile(quantiles)
 
-        # result is a multi-index.  we need to flatten it
-        flattened = [result[:,q] for q in quantiles]
+        if _is_groupby(grouped):
+            # result is a multi-index.  we need to flatten it
+            flattened = [result[:,q] for q in quantiles]
+        elif isinstance(result, pd.DataFrame):
+            # not a multi-index so we need to access the results in a different way
+            flattened = [result.loc[q] for q in quantiles]
+        else: # Series
+            # need to convert the result to a Series
+            flattened = [pd.Series(result.loc[q]) for q in quantiles]
 
         return zip(names, flattened)
 
