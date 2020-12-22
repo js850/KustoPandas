@@ -127,7 +127,33 @@ class TestMethods(unittest.TestCase):
         w = w.extend("D = isnotempty(A)")
 
         self.assertListEqual([True, True, False, False, False], list(w.df["D"]))
+    
+    def test_tolower(self):
+        df = create_df()
+        df["A"] = ["hi", "HI", " Hi", "", None]
 
+        w = Wrap(df)
+        w = w.extend("D = tolower(A)")
+
+        self.assertListEqual(["hi", "hi", " hi", "", None], list(w.df["D"]))
+    
+    def test_toupper(self):
+        df = create_df()
+        df["A"] = ["hi", "HI", " Hi", "", None]
+
+        w = Wrap(df)
+        w = w.extend("D = toupper(A)")
+
+        self.assertListEqual(["HI", "HI", " HI", "", None], list(w.df["D"]))
+    
+    def test_tostring(self):
+        df = create_df()
+        df["A"] = [1, "HI", np.nan, "", None]
+
+        w = Wrap(df)
+        w = w.extend("D = tostring(A)")
+
+        self.assertListEqual(["1", "HI", "", "", ""], list(w.df["D"]))
 
 
 

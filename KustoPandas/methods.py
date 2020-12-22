@@ -49,6 +49,15 @@ def isempty(series):
 def isnotempty(series):
     return ~isempty(series)
 
+def tolower(series):
+    return series.str.lower()
+
+def toupper(series):
+    return series.str.upper()
+
+def tostring(series):
+    return iff(isempty(series), "", series.astype(str))
+
 def extract(regex, capture_group, text):
     if capture_group == 0:
         raise Exception("capture_group 0 not implemented yet because I can't figure out how to do it in Pandas.  Try using capture_group 1 but enclosing the whole regex in parentheses")
@@ -65,6 +74,7 @@ all_methods = [iff, datetime, bin, floor, extract, toint,
                todouble, toreal, double, real,
                isnull, isnan, isempty,
                isnotnull, isnotnan, isnotempty,
+               tolower, toupper, tostring
                ] + dynamic_methods._all_methods
 
 method_map = dict(((m.__name__, m) for m in all_methods))
