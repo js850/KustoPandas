@@ -31,6 +31,24 @@ def bin(value, round_to):
 def floor(value, round_to):
     return bin(value, round_to)
 
+def isnull(series):
+    return series.isnull()
+
+def isnotnull(series):
+    return ~isnull(series)
+
+def isnan(series):
+    return isnull(series)
+
+def isnotnan(series):
+    return ~isnan(series)
+
+def isempty(series):
+    return isnull(series) | (series == "")
+
+def isnotempty(series):
+    return ~isempty(series)
+
 def extract(regex, capture_group, text):
     if capture_group == 0:
         raise Exception("capture_group 0 not implemented yet because I can't figure out how to do it in Pandas.  Try using capture_group 1 but enclosing the whole regex in parentheses")
@@ -44,7 +62,10 @@ def extract(regex, capture_group, text):
         raise Exception("capture_group must be a non-negative integer: " + str(capture_group))
 
 all_methods = [iff, datetime, bin, floor, extract, toint, 
-               todouble, toreal, double, real] + dynamic_methods._all_methods
+               todouble, toreal, double, real,
+               isnull, isnan, isempty,
+               isnotnull, isnotnan, isnotempty,
+               ] + dynamic_methods._all_methods
 
 method_map = dict(((m.__name__, m) for m in all_methods))
 

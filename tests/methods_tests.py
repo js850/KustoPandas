@@ -12,7 +12,7 @@ def create_df():
     df["G"] = ["G1", "G1", "G2", "G1", "G2"]
     return df
 
-class TestWrap(unittest.TestCase):
+class TestMethods(unittest.TestCase):
     def test_datetime_column(self):
         df = create_df()
         df["D"] = pd.to_datetime(["2009-01-01", "2009-01-02", "2009-01-05", "2009-01-06", "2009-01-07"])    
@@ -74,6 +74,59 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual(expected, list(w.df["D2"]))
         self.assertListEqual(expected, list(w.df["D3"]))
 
+    def test_isnull(self):
+        df = create_df()
+        df["A"] = [1, "hi", None, np.nan, ""]
+
+        w = Wrap(df)
+        w = w.extend("D = isnull(A)")
+
+        self.assertListEqual([False, False, True, True, False], list(w.df["D"]))
+
+    def test_isnotnull(self):
+        df = create_df()
+        df["A"] = [1, "hi", None, np.nan, ""]
+
+        w = Wrap(df)
+        w = w.extend("D = isnotnull(A)")
+
+        self.assertListEqual([True, True, False, False, True], list(w.df["D"]))
+
+    def test_isnan(self):
+        df = create_df()
+        df["A"] = [1, "hi", None, np.nan, ""]
+
+        w = Wrap(df)
+        w = w.extend("D = isnan(A)")
+
+        self.assertListEqual([False, False, True, True, False], list(w.df["D"]))
+
+    def test_isnotnan(self):
+        df = create_df()
+        df["A"] = [1, "hi", None, np.nan, ""]
+
+        w = Wrap(df)
+        w = w.extend("D = isnotnan(A)")
+
+        self.assertListEqual([True, True, False, False, True], list(w.df["D"]))
+
+    def test_isempty(self):
+        df = create_df()
+        df["A"] = [1, "hi", None, np.nan, ""]
+
+        w = Wrap(df)
+        w = w.extend("D = isempty(A)")
+
+        self.assertListEqual([False, False, True, True, True], list(w.df["D"]))
+
+    def test_isnotempty(self):
+        df = create_df()
+        df["A"] = [1, "hi", None, np.nan, ""]
+
+        w = Wrap(df)
+        w = w.extend("D = isnotempty(A)")
+
+        self.assertListEqual([True, True, False, False, False], list(w.df["D"]))
 
 
 
