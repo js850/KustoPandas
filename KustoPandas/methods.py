@@ -12,6 +12,9 @@ def iff(condition, a, b):
 def datetime(val):
     return pd.to_datetime(val)
 
+def todatetime(val):
+    return datetime(val)
+
 def toint(val):
     return val.astype(int)
 
@@ -20,6 +23,9 @@ def todouble(val):
 
 def toreal(val):
     return todouble(val)
+
+def tobool(series):
+    raise NotImplementedError("tobool is not implemented because series.astype(bool) converts all strings to bools.  Doing it properly will take some effort")
 
 def double(val):
     return todouble(val)
@@ -101,8 +107,8 @@ def extract(regex, capture_group, text):
     else:
         raise Exception("capture_group must be a non-negative integer: " + str(capture_group))
 
-all_methods = [iff, datetime, bin, floor, ceiling, extract, toint, 
-               todouble, toreal, double, real,
+all_methods = [iff, datetime, todatetime, bin, floor, ceiling, extract, toint, 
+               todouble, toreal, double, real, tobool,
                isnull, isnan, isempty,
                isnotnull, isnotnan, isnotempty,
                isfinite, isinf,
