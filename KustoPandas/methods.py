@@ -3,6 +3,9 @@ import pandas as pd
 
 from KustoPandas import dynamic_methods
 
+def _is_datetime(series):
+    return pd.api.types.is_datetime64_any_dtype(series)
+
 def iff(condition, a, b):
     return np.where(condition, a, b)
 
@@ -24,12 +27,19 @@ def double(val):
 def real(val):
     return todouble(val)
 
-def bin(value, round_to):
-    # todo implement for other data types
-    return value.dt.floor(round_to)
+def bin(series, round_to):
+    if _is_datetime(series):
+        return series.dt.floor(round_to)
+    else:
+        if round_to != 1:
+            raise NotImplementedError("bin so far only supports rounding to nearest integer.  round_to = " + str(round_to))
+        return pd.Series(np.floor(series))
 
-def floor(value, round_to):
-    return bin(value, round_to)
+def floor(series, round_to):
+    return bin(series, round_to)
+
+def ceiling(series):
+    return pd.Series(np.ceil(series))
 
 def isnull(series):
     return series.isnull()
@@ -70,7 +80,7 @@ def extract(regex, capture_group, text):
     else:
         raise Exception("capture_group must be a non-negative integer: " + str(capture_group))
 
-all_methods = [iff, datetime, bin, floor, extract, toint, 
+all_methods = [iff, datetime, bin, floor, ceiling, extract, toint, 
                todouble, toreal, double, real,
                isnull, isnan, isempty,
                isnotnull, isnotnan, isnotempty,

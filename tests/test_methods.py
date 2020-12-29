@@ -153,9 +153,49 @@ class TestMethods(unittest.TestCase):
         w = Wrap(df)
         w = w.extend("D = tostring(A)")
 
-        self.assertListEqual(["1", "HI", "", "", ""], list(w.df["D"]))
+        assert ["1", "HI", "", "", ""] == list(w.df["D"])
 
 
+def test_bin():
+    df = create_df()
+    df["D"] = pd.to_datetime(["2009-01-01T10", "2009-01-02", "2009-01-05T01", "2009-01-06", "2009-01-07T03"])
 
+    w = Wrap(df)
+    c = w.extend("F = bin(D, 1d)")
 
+    expected = pd.to_datetime(["2009-01-01", "2009-01-02", "2009-01-05", "2009-01-06", "2009-01-07"])
+
+    assert list(expected) == list(c.df["F"])
+
+def test_floor():
+    df = create_df()
+    df["D"] = pd.to_datetime(["2009-01-01T10", "2009-01-02", "2009-01-05T01", "2009-01-06", "2009-01-07T03"])
+
+    w = Wrap(df)
+    c = w.extend("F = floor(D, 1d)")
+
+    expected = pd.to_datetime(["2009-01-01", "2009-01-02", "2009-01-05", "2009-01-06", "2009-01-07"])
+
+    assert list(expected) == list(c.df["F"])
+
+def test_floor_number():
+    df = create_df()
+    df["D"] = [1.0, 1.1, 2.2, 3.0, 4.4]
+
+    w = Wrap(df)
+    c = w.extend("F = floor(D, 1)")
+
+    expected = [1.0, 1.0, 2.0, 3.0, 4.0]
+
+    assert list(expected) == list(c.df["F"])
+
+def test_ceiling():
+    df = create_df()
+    df["D"] = [1.0, 1.1, 2.2, 3.0, 4.4]
+
+    w = Wrap(df)
+    c = w.extend("F = ceiling(D)")
+
+    expected = [1, 2, 3, 3, 5]
+    assert list(expected) == list(c.df["F"])
 
