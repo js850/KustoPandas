@@ -199,3 +199,64 @@ def test_ceiling():
     expected = [1, 2, 3, 3, 5]
     assert list(expected) == list(c.df["F"])
 
+def test_isfinite():
+    df = create_df()
+    df["D"] = [1.0, -np.inf, np.inf, None, np.nan]
+
+    w = Wrap(df)
+    c = w.extend("F = isfinite(D)")
+
+    assert list([True, False, False, False, False]) == list(c.df["F"])
+
+def test_isinf():
+    df = create_df()
+    df["D"] = [1.0, -np.inf, np.inf, None, np.nan]
+
+    w = Wrap(df)
+    c = w.extend("F = isinf(D)")
+
+    assert list([False, True, True, False, False]) == list(c.df["F"])
+
+def test_log():
+    df = create_df()
+
+    w = Wrap(df)
+    c = w.extend("F = log(A)")
+
+    assert list(np.log([0, 1, 2, 3, 4])) == list(c.df["F"])
+
+def test_log10():
+    df = create_df()
+
+    w = Wrap(df)
+    c = w.extend("F = log10(A)")
+    
+    assert list(np.log10([0, 1, 2, 3, 4])) == list(c.df["F"])
+
+def test_log2():
+    df = create_df()
+
+    w = Wrap(df)
+    c = w.extend("F = log2(A)")
+    
+    assert list(np.log2([0, 1, 2, 3, 4])) == list(c.df["F"])
+
+def test_sqrt():
+    df = create_df()
+
+    w = Wrap(df)
+    c = w.extend("F = sqrt(A)")
+    
+    assert list(np.sqrt([0, 1, 2, 3, 4])) == list(c.df["F"])
+
+def test_strlen():
+    df = create_df()
+    df["A"] = ["hi", "", None, " ", "hi "]
+
+    w = Wrap(df)
+    c = w.extend("F = strlen(A)")
+    
+    # comparing is annoying because np.nan == np.nan evaluates to false
+    result = np.where(np.isnan(c.df["F"]), -1, c.df["F"])
+
+    assert list([2.0, 0.0, -1, 1.0, 3.0]) == list(result)

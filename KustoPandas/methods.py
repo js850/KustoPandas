@@ -59,6 +59,12 @@ def isempty(series):
 def isnotempty(series):
     return ~isempty(series)
 
+def isfinite(series):
+    return pd.Series(np.isfinite(series))
+
+def isinf(series):
+    return pd.Series(np.isinf(series))
+
 def tolower(series):
     return series.str.lower()
 
@@ -67,6 +73,21 @@ def toupper(series):
 
 def tostring(series):
     return iff(isempty(series), "", series.astype(str))
+
+def log(series):
+    return pd.Series(np.log(series))
+
+def log10(series):
+    return pd.Series(np.log10(series))
+
+def log2(series):
+    return pd.Series(np.log2(series))
+
+def sqrt(series):
+    return pd.Series(np.sqrt(series))
+
+def strlen(series):
+    return series.str.len()
 
 def extract(regex, capture_group, text):
     if capture_group == 0:
@@ -84,7 +105,10 @@ all_methods = [iff, datetime, bin, floor, ceiling, extract, toint,
                todouble, toreal, double, real,
                isnull, isnan, isempty,
                isnotnull, isnotnan, isnotempty,
-               tolower, toupper, tostring
+               isfinite, isinf,
+               tolower, toupper, tostring,
+               log, log10, log2, sqrt,
+               strlen
                ] + dynamic_methods._all_methods
 
 method_map = dict(((m.__name__, m) for m in all_methods))
