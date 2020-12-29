@@ -1,5 +1,6 @@
 import uuid
 import pandas as pd
+import numpy as np
 
 from . import expression_parser as ep
 
@@ -158,12 +159,77 @@ class ArgMax(AggTwoArgs):
         # return the value of arg1 at that index
         return series[self.arg_names[1]].loc[idx]
 
-class Any(AggOneArg):
+def _all_non_null_if_possible_mask(s, mask):
+    if mask is None:
+        mask = np.ones(len(s), dtype=bool)
+    
+    old_mask = mask
+    mask = mask & (~s.isnull())
+    
+    if np.any(mask):
+        return mask
+    
+    return old_mask
+
+def _all_non_null_if_possible(df):
+    mask = None
+    for c in df.columns:
+        mask = _all_non_null_if_possible_mask(df[c], mask)
+    return mask
+
+def _any(df, return_df):
+    if isinstance(df, pd.DataFrame):
+        mask = _all_non_null_if_possible(df)
+        df = df[mask]
+        if return_df:
+            # return a dataframe object with only one row
+            return df.iloc[0:1]
+        else:
+            # return a series object where the index is the columns of df
+            return df.iloc[0]
+    else:
+        raise Exception("not needed")
+        mask = _all_non_null_if_possible_mask(df, None)
+        series = df[mask]
+        return series[0:1]
+
+class Any(SimpleAgg):
+    def validate(self, df):
+        pass
+
+    def apply(self, df):
+
+        
+        df = df[self.arg_names]
+
+        if _is_groupby(df):
+            def _any2(x):
+                return _any(x, False)
+            df_nonull = df.apply(_any2)
+        else:
+            df_nonull = _any(df, True)
+
+        if len(self.arg_names) == 0:
+            output_col_names = [self._get_output_column_name()]
+        else:
+            output_col_names = []
+            prefix = self._get_method_name()
+            for i in range(len(self.arg_names)):
+                suffix = self._get_arg_name_or_default(i, "")
+                col_name = prefix + "_" + suffix
+                output_col_names.append(col_name)
+        
+        result = []
+        for output_col_name, c in zip(output_col_names, self.arg_names):
+            result.append((output_col_name, df_nonull[c]))
+        return result
+
+
     def apply_aggregate(self, grouped):
         return grouped.first()
 
     def apply_aggregate_series(self, series):
-        return series[0]
+        return _any(series)
 
 class Percentiles(SimpleAgg):
     def validate(self, df):

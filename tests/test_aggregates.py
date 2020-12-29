@@ -377,6 +377,10 @@ class TestAggregates(unittest.TestCase):
 
         w = Wrap(df)
         wnew = w.summarize("any(B) by G")
+
+        print()
+        print(wnew.df)
+
         self.assertListEqual(list(["G1", "G2"]), list(wnew.df["G"]))
         self.assertListEqual(list([0, 2]), list(wnew.df["any_B"]))
         self.assertEqual(2, len(wnew.df.columns))
@@ -392,4 +396,57 @@ class TestAggregates(unittest.TestCase):
 
         assert ["any_F"] == list(c.df.columns)
         assert [8] == list(c.df["any_F"])
+
+    def test_summarize_any_noby_2args(self):
+        df = create_df()
+        df["F"] = [8, None, 2, 3, 4]
+        df["C"] = [None, 11, np.nan, 1, None]
+        w = Wrap(df)
+        c = w.summarize("any(F, C)") 
+
+        print()
+        print(c.df)
+
+        assert ["any_F", "any_C"] == list(c.df.columns)
+        assert [3] == list(c.df["any_F"])
+        assert [1] == list(c.df["any_C"])
+
+    def test_summarize_any_noby_2args_allNone(self):
+        df = create_df()
+        df["F"] = [80, None, 20, 30, 40]
+        df["C"] = [None, None, np.nan, None, None]
+        df["D"] = [None, 2, 3, 4, 5]
+        w = Wrap(df)
+        c = w.summarize("any(F, C, D)") 
+
+        print()
+        print(c.df)
+
+        assert ["any_F", "any_C", "any_D"] == list(c.df.columns)
+        assert [20] == list(c.df["any_F"])
+        assert [3] == list(c.df["any_D"])
+
+    def test_summarize_any_nonull(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["B"] = [None, 1, 2, 3, 4]
+
+        w = Wrap(df)
+        wnew = w.summarize("any(B) by G")
+        self.assertListEqual(list(["G1", "G2"]), list(wnew.df["G"]))
+        self.assertListEqual(list([1, 2]), list(wnew.df["any_B"]))
+        self.assertEqual(2, len(wnew.df.columns))
+    
+    def test_summarize_any_2args(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["B"] = [None, 10, 20, 30, 40]
+        df["C"] = [0, None, None, 3, 4]
+
+        w = Wrap(df)
+        wnew = w.summarize("any(B, C) by G")
+        self.assertListEqual(list(["G1", "G2"]), list(wnew.df["G"]))
+        self.assertListEqual(list([30, 40]), list(wnew.df["any_B"]))
+        self.assertListEqual(list([3, 4]), list(wnew.df["any_C"]))
+        self.assertEqual(3, len(wnew.df.columns))
     
