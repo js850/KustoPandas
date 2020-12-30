@@ -497,8 +497,9 @@ def test_summarize_avgif():
     df["C"] = [True, True, True, False, False]
 
     w = Wrap(df)
-    wnew = w.summarize("avgif(B, C)")
+    wnew = w.summarize("avgif(B, C) by G")
     print()
     print(wnew)
-    assert list([11, 111]) == list(wnew.df["avgif_B_C"])
-    assert 1 == len(wnew.df.columns)
+    assert ["G1", "G2"] == list(wnew.df["G"])
+    assert [11, 111] == list(wnew.df["avgif_B_C"])
+    assert 2 == len(wnew.df.columns)

@@ -86,6 +86,7 @@ class SimpleAgg:
         # series.max() just returns a single value
         return self.apply_aggregate(series)
 
+
 class NoArgAgg(SimpleAgg):
     def validate(self, df):
         if self.args:
@@ -101,12 +102,25 @@ class AggTwoArgs(SimpleAgg):
         if len(self.args) != 2:
             raise Exception("{0} must have two arguments: {1}".format(self._get_method_name(), str(self.args)))
 
+class SimpleIfAgg(AggTwoArgs):
+    def apply_aggregate(self, grouped):
+        series = grouped.apply(self.apply_aggregate_series)
+        return series
+    
+    def apply_aggregate_series(self, df):
+        predicate = df[self.input_column_names[1]]
+        series = df[self.input_column_names[0]].loc[predicate]
+        return self._apply_aggregate_series(series)
+    
+    def _apply_aggregate_series(self, series):
+        raise NotImplementedError()
+
 class Count(NoArgAgg):
     def apply_aggregate(self, grouped):
         return grouped.size()
 
     def apply_aggregate_series(self, series):
-        # this is actually a dataframe
+        # this is actually a dataframe because self.input_column_names is empty
         return series.shape[0]
     
 class DCount(AggOneArg):
@@ -127,15 +141,9 @@ class Avg(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.mean()
 
-class AvgIf(AggTwoArgs):
-    def apply_aggregate(self, grouped):
-        series = grouped.apply(self.apply_aggregate_series)
-        return series
-    
-    def apply_aggregate_series(self, df):
-        predicate = df[self.input_column_names[1]]
-        values = df[self.input_column_names[0]].loc[predicate]
-        return values.mean()
+class AvgIf(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return series.mean()
 
 class StDev(AggOneArg):
     def apply_aggregate(self, grouped):
