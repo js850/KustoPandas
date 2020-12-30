@@ -16,19 +16,21 @@ class SimpleAgg:
     apply
 
     """
-    def __init__(self, output_column_name, args):
+    def __init__(self, output_column_name, args, all_columns):
         self.orig_args = args
         self.args = args
         self.output_column_name = output_column_name
 
+        self.input_column_definitions = self._columns_neded_internal(all_columns)
+        # use a random name for the column to avoid conflicting names from different 
+        # aggregate functions operatoring on the same groupby object
+        self.input_column_names = [str(uuid.uuid1()) for a in self.input_column_definitions]
+
     def _columns_neded_internal(self, all_columns):
         return self.args
 
-    def columns_needed(self, all_columns):
-        args = self._columns_neded_internal(all_columns)
-
-        self.arg_names = [str(uuid.uuid1()) for a in args]
-        return zip(self.arg_names, args)
+    def columns_needed(self):
+        return zip(self.input_column_names, self.input_column_definitions)
 
     def _get_method_name(self):
         return self.__class__.__name__.lower()
@@ -51,13 +53,13 @@ class SimpleAgg:
             return self._default_name()
     
     def apply(self, grouped):
-        names = self.arg_names
+        names = self.input_column_names
         if len(names) == 1:
             # operate on a SeriesGroupBy
             grouped = grouped[names[0]]
         elif len(names) > 1:
             # operate on a DataFrameGroupBy
-            grouped = grouped[self.arg_names]
+            grouped = grouped[self.input_column_names]
         
         return self.apply1(grouped)
 
@@ -145,9 +147,9 @@ class ArgMin(AggTwoArgs):
     
     def apply_aggregate_series(self, series):
         # find the index of the min of arg0
-        idx = series[self.arg_names[0]].idxmin()
+        idx = series[self.input_column_names[0]].idxmin()
         # return the value of arg1 at that index
-        return series[self.arg_names[1]].loc[idx]
+        return series[self.input_column_names[1]].loc[idx]
 
 class ArgMax(AggTwoArgs):
     def apply_aggregate(self, grouped):
@@ -156,9 +158,9 @@ class ArgMax(AggTwoArgs):
     
     def apply_aggregate_series(self, series):
         # find the index of the max of arg0
-        idx = series[self.arg_names[0]].idxmax()
+        idx = series[self.input_column_names[0]].idxmax()
         # return the value of arg1 at that index
-        return series[self.arg_names[1]].loc[idx]
+        return series[self.input_column_names[1]].loc[idx]
 
 def _all_non_null_if_possible_mask(s, mask):
     if mask is None:
@@ -200,9 +202,7 @@ class Any(SimpleAgg):
         return self.args
 
     def apply(self, df):
-
-        
-        df = df[self.arg_names]
+        df = df[self.input_column_names]
 
         if _is_groupby(df):
             def _any2(x):
@@ -211,27 +211,20 @@ class Any(SimpleAgg):
         else:
             df_nonull = _any(df, True)
 
-        if len(self.arg_names) == 0:
+        if len(self.input_column_names) == 0:
             output_col_names = [self._get_output_column_name()]
         else:
             output_col_names = []
             prefix = self._get_method_name()
-            for i in range(len(self.arg_names)):
+            for i in range(len(self.input_column_names)):
                 suffix = self._get_arg_name_or_default(i, "")
                 col_name = prefix + "_" + suffix
                 output_col_names.append(col_name)
         
         result = []
-        for output_col_name, c in zip(output_col_names, self.arg_names):
+        for output_col_name, c in zip(output_col_names, self.input_column_names):
             result.append((output_col_name, df_nonull[c]))
         return result
-
-
-    def apply_aggregate(self, grouped):
-        return grouped.first()
-
-    def apply_aggregate_series(self, series):
-        return _any(series)
 
 class Percentiles(SimpleAgg):
     def validate(self, df):
@@ -279,7 +272,7 @@ aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Min, Max
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
-def create_aggregate(parsed):
+def create_aggregate(parsed, all_columns):
     new_col = None
 
     if isinstance(parsed, ep.Assignment):
@@ -299,4 +292,4 @@ def create_aggregate(parsed):
         raise KeyError("Unknown aggregate method: {0}".format(method_name))
 
 
-    return agg_method(new_col, method.args.args)
+    return agg_method(new_col, method.args.args, all_columns)
