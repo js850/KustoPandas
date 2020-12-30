@@ -110,6 +110,8 @@ class SimpleIfAgg(AggTwoArgs):
     def apply_aggregate_series(self, df):
         predicate = df[self.input_column_names[1]]
         series = df[self.input_column_names[0]].loc[predicate]
+        if len(series) == 0:
+            return None
         return self._apply_aggregate_series(series)
     
     def _apply_aggregate_series(self, series):
@@ -123,15 +125,19 @@ class Count(NoArgAgg):
         # this is actually a dataframe because self.input_column_names is empty
         return series.shape[0]
     
-class DCount(AggOneArg):
-    def apply_aggregate(self, grouped):
-        return grouped.nunique()
-
 class CountIf(AggOneArg):
     def apply_aggregate(self, grouped):
         # the countif predicate was precomputed into a new column
         # sum returns the number of true values in that column
         return grouped.sum()
+
+class DCount(AggOneArg):
+    def apply_aggregate(self, grouped):
+        return grouped.nunique()
+
+class DCountIf(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return series.nunique()
 
 class Sum(AggOneArg):
     def apply_aggregate(self, grouped):
@@ -290,7 +296,7 @@ class Percentiles(SimpleAgg):
 def get_method_name(type):
     return type.__name__.lower()
 
-aggregate_methods = [Count, DCount, CountIf, Sum, Avg, AvgIf, StDev, Variance, Min, Max,
+aggregate_methods = [Count, DCount, DCountIf, CountIf, Sum, Avg, AvgIf, StDev, Variance, Min, Max,
                      ArgMin, ArgMax, Any, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])

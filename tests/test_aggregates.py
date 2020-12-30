@@ -151,6 +151,66 @@ class TestAggregates(unittest.TestCase):
 
         self.assertListEqual(["dcount_G"], list(c.df.columns))
         self.assertListEqual([2], list(c.df["dcount_G"]))
+
+    def test_summarize_dcountif(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G1"]
+        df["F"] = [1, 1, 3, 4, 3]
+        df["P"] = [True, True, True, False, True]
+
+        w = Wrap(df)
+        w = w.summarize(["dcountif(F, P)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([2, 1], list(w.df["dcountif_F_P"]))
+        self.assertListEqual(["G", "dcountif_F_P"], list(w.df.columns))
+
+    def test_summarize_dcountif_noby(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G1"]
+        df["F"] = [1, 1, 3, 4, 3]
+        df["P"] = [False, False, True, True, True]
+
+        w = Wrap(df)
+        w = w.summarize(["dcountif(F, P)"])
+
+        print(w.df)
+
+        self.assertListEqual([2], list(w.df["dcountif_F_P"]))
+        self.assertListEqual(["dcountif_F_P"], list(w.df.columns))
+
+    def test_summarize_dcountif_predicatefalse(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G1"]
+        df["F"] = [1, 1, 3, 4, 3]
+        df["P"] = [True, True, False, False, True]
+
+        w = Wrap(df)
+        w = w.summarize(["dcountif(F, P)"], "G")
+
+        print(w.df)
+
+        # np.nan == np.nan evaluates to false
+        result = w.df["dcountif_F_P"]
+        result = np.where(np.isnan(result), -1, result)
+
+        self.assertListEqual([2, -1], list(result))
+        self.assertListEqual(["G", "dcountif_F_P"], list(w.df.columns))
+
+    def test_summarize_dcountif_noby_predicatefalse(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G2", "G1", "G1"]
+        df["F"] = [1, 1, 3, 4, 3]
+        df["P"] = [False, False, False, False, False]
+
+        w = Wrap(df)
+        w = w.summarize(["dcountif(F, P)"])
+
+        print(w.df)
+
+        self.assertListEqual([None], list(w.df["dcountif_F_P"]))
+        self.assertListEqual(["dcountif_F_P"], list(w.df.columns))
     
     def test_summarize_countif(self):
         df = create_df()
