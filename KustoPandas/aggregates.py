@@ -17,16 +17,19 @@ class SimpleAgg:
 
     """
     def __init__(self, output_column_name, args, all_columns):
-        self.orig_args = args
         self.args = args
         self.output_column_name = output_column_name
 
-        self.input_column_definitions = self._columns_neded_internal(all_columns)
+        # Get the definitions of the columns needed for the aggregate.
+        # Each entry can be a simple column name, or a more complex expression, e.g. A+B.
+        # The expressions will be evaluated before the groupby is done, so the inputs to this aggregate 
+        # are the results of the expressions, e.g. A+B
+        self.input_column_definitions = self._get_input_column_definitions(all_columns)
         # use a random name for the column to avoid conflicting names from different 
         # aggregate functions operatoring on the same groupby object
         self.input_column_names = [str(uuid.uuid1()) for a in self.input_column_definitions]
 
-    def _columns_neded_internal(self, all_columns):
+    def _get_input_column_definitions(self, all_columns):
         return self.args
 
     def columns_needed(self):
@@ -35,13 +38,13 @@ class SimpleAgg:
     def _get_method_name(self):
         return self.__class__.__name__.lower()
     
-    def _get_arg_name_or_default(self, i, default):
-        if len(self.args) > i and isinstance(self.args[i], ep.Var):
-            return str(self.args[i])
+    def _get_arg_name_or_default(self, arg, default):
+        if isinstance(arg, ep.Var):
+            return str(arg)
         return default
 
     def _default_name(self):
-        names = [self._get_arg_name_or_default(i, "") for i in range(len(self.args))]
+        names = [self._get_arg_name_or_default(arg, "") for arg in self.args]
         names = [n for n in names if n != ""]
         suffix = "_".join(names)
         return self._get_method_name() + "_" + suffix
@@ -168,7 +171,7 @@ def _all_non_null_if_possible_mask(s, mask):
     
     old_mask = mask
     mask = mask & (~s.isnull())
-    
+
     if np.any(mask):
         return mask
     
@@ -195,9 +198,11 @@ class Any(SimpleAgg):
     def validate(self, df):
         pass
 
-    def _columns_neded_internal(self, all_columns):
-        if isinstance(self.orig_args[0], ep.Star):
-            self.args = [ep.Var(c) for c in all_columns]
+    def _get_input_column_definitions(self, all_columns):
+        if isinstance(self.args[0], ep.Star):
+            # .args is used to generate variable names
+            self.orig_args = self.args
+            return [ep.Var(c) for c in all_columns]
 
         return self.args
 
@@ -216,8 +221,8 @@ class Any(SimpleAgg):
         else:
             output_col_names = []
             prefix = self._get_method_name()
-            for i in range(len(self.input_column_names)):
-                suffix = self._get_arg_name_or_default(i, "")
+            for arg in self.input_column_definitions:
+                suffix = self._get_arg_name_or_default(arg, "")
                 col_name = prefix + "_" + suffix
                 output_col_names.append(col_name)
         
@@ -231,7 +236,7 @@ class Percentiles(SimpleAgg):
         if len(self.args) < 2:
             raise Exception("Percentiles requires at least two args: " + str(self.args))
 
-    def _columns_neded_internal(self, all_columns):
+    def _get_input_column_definitions(self, all_columns):
         return self.args[:1]
 
     def apply1(self, grouped):
