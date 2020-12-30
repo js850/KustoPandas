@@ -127,6 +127,16 @@ class Avg(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.mean()
 
+class AvgIf(AggTwoArgs):
+    def apply_aggregate(self, grouped):
+        series = grouped.apply(self.apply_aggregate_series)
+        return series
+    
+    def apply_aggregate_series(self, df):
+        predicate = df[self.input_column_names[1]]
+        values = df[self.input_column_names[0]].loc[predicate]
+        return values.mean()
+
 class StDev(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.std()
@@ -272,7 +282,7 @@ class Percentiles(SimpleAgg):
 def get_method_name(type):
     return type.__name__.lower()
 
-aggregate_methods = [Count, DCount, CountIf, Sum, Avg, StDev, Variance, Min, Max,
+aggregate_methods = [Count, DCount, CountIf, Sum, Avg, AvgIf, StDev, Variance, Min, Max,
                      ArgMin, ArgMax, Any, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])

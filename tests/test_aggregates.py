@@ -464,4 +464,41 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual(list([30, 40]), list(wnew.df["any_B"]))
         self.assertListEqual(list([3, 4]), list(wnew.df["any_C"]))
         self.assertEqual(3, len(wnew.df.columns))
-    
+
+    def test_summarize_any_star_noby(self):
+        df = pd.DataFrame()
+        df["B"] = [None, 10, 20, 30, 40]
+        df["C"] = [0, None, None, 3, 4]
+
+        w = Wrap(df)
+        wnew = w.summarize("any(*)")
+        print()
+        print(wnew)
+        self.assertListEqual(list([30]), list(wnew.df["any_B"]))
+        self.assertListEqual(list([3]), list(wnew.df["any_C"]))
+        self.assertEqual(2, len(wnew.df.columns))
+
+def test_summarize_avgif_noby():
+    df = pd.DataFrame()
+    df["B"] = [None, 10, 11, 1, 3]
+    df["C"] = [True, False, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("avgif(B, C)")
+    print()
+    print(wnew)
+    assert list([2]) == list(wnew.df["avgif_B_C"])
+    assert 1 == len(wnew.df.columns)
+
+def test_summarize_avgif():
+    df = pd.DataFrame()
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    df["B"] = [12, 10, 111, 1, 3]
+    df["C"] = [True, True, True, False, False]
+
+    w = Wrap(df)
+    wnew = w.summarize("avgif(B, C)")
+    print()
+    print(wnew)
+    assert list([11, 111]) == list(wnew.df["avgif_B_C"])
+    assert 1 == len(wnew.df.columns)
