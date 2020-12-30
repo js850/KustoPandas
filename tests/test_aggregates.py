@@ -693,3 +693,41 @@ def test_summarize_minif():
     assert ["G1", "G2"] == list(wnew.df["G"])
     assert [10, 111] == list(wnew.df["minif_B_C"])
     assert 2 == len(wnew.df.columns)
+
+def test_summarize_anyif_noby():
+    df = pd.DataFrame()
+    df["B"] = [None, 10, -11, 1, 3]
+    df["C"] = [True, False, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("anyif(B, C)")
+    print()
+    print(wnew)
+    assert list([1]) == list(wnew.df["anyif_B_C"])
+    assert 1 == len(wnew.df.columns)
+
+def test_summarize_anyif():
+    df = pd.DataFrame()
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    df["B"] = [None, 10, 111, 1, 3]
+    df["C"] = [True, True, False, False, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("anyif(B, C) by G")
+    print()
+    print(wnew)
+    assert ["G1", "G2"] == list(wnew.df["G"])
+    assert [10, 3] == list(wnew.df["anyif_B_C"])
+    assert 2 == len(wnew.df.columns)
+
+def test_summarize_anyif_noby_allnull():
+    df = pd.DataFrame()
+    df["B"] = [None, None, None, None, None]
+    df["C"] = [True, False, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("anyif(B, C)")
+    print()
+    print(wnew)
+    assert list([None]) == list(wnew.df["anyif_B_C"])
+    assert 1 == len(wnew.df.columns)

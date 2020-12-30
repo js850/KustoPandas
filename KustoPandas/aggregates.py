@@ -275,6 +275,12 @@ class Any(SimpleAgg):
             result.append((output_col_name, df_nonull[c]))
         return result
 
+class AnyIf(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        mask = _all_non_null_if_possible_mask(series, None)
+        s = series.loc[mask]
+        return s.iloc[0]
+
 class Percentiles(SimpleAgg):
     def validate(self, df):
         if len(self.args) < 2:
@@ -319,7 +325,7 @@ def get_method_name(type):
 aggregate_methods = [Count, DCount, DCountIf, CountIf, 
                      Sum, SumIf, Avg, AvgIf, StDev, StDevIf, Variance, VarianceIf, 
                      Min, MinIf, Max, MaxIf,
-                     ArgMin, ArgMax, Any, Percentiles]
+                     ArgMin, ArgMax, Any, AnyIf, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
