@@ -563,3 +563,133 @@ def test_summarize_avgif():
     assert ["G1", "G2"] == list(wnew.df["G"])
     assert [11, 111] == list(wnew.df["avgif_B_C"])
     assert 2 == len(wnew.df.columns)
+
+def test_summarize_sumif_noby():
+    df = pd.DataFrame()
+    df["B"] = [None, 10, 11, 1, 3]
+    df["C"] = [True, False, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("sumif(B, C)")
+    print()
+    print(wnew)
+    assert list([4]) == list(wnew.df["sumif_B_C"])
+    assert 1 == len(wnew.df.columns)
+
+def test_summarize_sumif():
+    df = pd.DataFrame()
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    df["B"] = [12, 10, 111, 1, 3]
+    df["C"] = [True, True, True, False, False]
+
+    w = Wrap(df)
+    wnew = w.summarize("sumif(B, C) by G")
+    print()
+    print(wnew)
+    assert ["G1", "G2"] == list(wnew.df["G"])
+    assert [22, 111] == list(wnew.df["sumif_B_C"])
+    assert 2 == len(wnew.df.columns)
+
+def test_summarize_stdevif_noby():
+    df = pd.DataFrame()
+    df["B"] = [None, 10, 11, 1, 0]
+    df["C"] = [True, False, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("stdevif(B, C)")
+    print()
+    print(wnew)
+    np.testing.assert_almost_equal(wnew.df["stdevif_B_C"], [0.70710678], 3)
+    assert 1 == len(wnew.df.columns)
+
+def test_summarize_stdevif():
+    df = pd.DataFrame()
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    df["B"] = [1, 0, 3, 10, 3]
+    df["C"] = [True, True, True, False, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("stdevif(B, C) by G")
+    print()
+    print(wnew)
+    assert ["G1", "G2"] == list(wnew.df["G"])
+    np.testing.assert_almost_equal(wnew.df["stdevif_B_C"], [0.70710678, 0], 3)
+    assert 2 == len(wnew.df.columns)
+
+def test_summarize_varianceif_noby():
+    df = pd.DataFrame()
+    df["B"] = [None, 10, 11, 1, 0]
+    df["C"] = [True, False, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("varianceif(B, C)")
+    print()
+    print(wnew)
+    np.testing.assert_almost_equal(wnew.df["varianceif_B_C"], [0.5], 3)
+    assert 1 == len(wnew.df.columns)
+
+def test_summarize_varianceif():
+    df = pd.DataFrame()
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    df["B"] = [1, 0, 3, 10, 3]
+    df["C"] = [True, True, True, False, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("varianceif(B, C) by G")
+    print()
+    print(wnew)
+    assert ["G1", "G2"] == list(wnew.df["G"])
+    np.testing.assert_almost_equal(wnew.df["varianceif_B_C"], [0.5, 0], 3)
+    assert 2 == len(wnew.df.columns)
+
+def test_summarize_maxif_noby():
+    df = pd.DataFrame()
+    df["B"] = [None, 10, 11, 1, 3]
+    df["C"] = [True, False, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("maxif(B, C)")
+    print()
+    print(wnew)
+    assert list([3]) == list(wnew.df["maxif_B_C"])
+    assert 1 == len(wnew.df.columns)
+
+def test_summarize_maxif():
+    df = pd.DataFrame()
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    df["B"] = [12, 10, 111, 1, 3]
+    df["C"] = [True, True, True, False, False]
+
+    w = Wrap(df)
+    wnew = w.summarize("maxif(B, C) by G")
+    print()
+    print(wnew)
+    assert ["G1", "G2"] == list(wnew.df["G"])
+    assert [12, 111] == list(wnew.df["maxif_B_C"])
+    assert 2 == len(wnew.df.columns)
+
+def test_summarize_minif_noby():
+    df = pd.DataFrame()
+    df["B"] = [None, 10, -11, 1, 3]
+    df["C"] = [True, False, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("minif(B, C)")
+    print()
+    print(wnew)
+    assert list([1]) == list(wnew.df["minif_B_C"])
+    assert 1 == len(wnew.df.columns)
+
+def test_summarize_minif():
+    df = pd.DataFrame()
+    df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+    df["B"] = [12, 10, 111, 1, 3]
+    df["C"] = [True, True, True, False, False]
+
+    w = Wrap(df)
+    wnew = w.summarize("minif(B, C) by G")
+    print()
+    print(wnew)
+    assert ["G1", "G2"] == list(wnew.df["G"])
+    assert [10, 111] == list(wnew.df["minif_B_C"])
+    assert 2 == len(wnew.df.columns)

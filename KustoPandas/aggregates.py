@@ -143,6 +143,10 @@ class Sum(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.sum()
 
+class SumIf(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return series.sum()
+
 class Avg(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.mean()
@@ -155,17 +159,33 @@ class StDev(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.std()
 
+class StDevIf(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return series.std()
+
 class Variance(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.var()
+
+class VarianceIf(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return series.var()
 
 class Min(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.min()
 
+class MinIf(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return series.min()
+
 class Max(AggOneArg):
     def apply_aggregate(self, grouped):
         return grouped.max()
+
+class MaxIf(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return series.max()
 
 class ArgMin(AggTwoArgs):
     def apply_aggregate(self, grouped):
@@ -296,7 +316,9 @@ class Percentiles(SimpleAgg):
 def get_method_name(type):
     return type.__name__.lower()
 
-aggregate_methods = [Count, DCount, DCountIf, CountIf, Sum, Avg, AvgIf, StDev, Variance, Min, Max,
+aggregate_methods = [Count, DCount, DCountIf, CountIf, 
+                     Sum, SumIf, Avg, AvgIf, StDev, StDevIf, Variance, VarianceIf, 
+                     Min, MinIf, Max, MaxIf,
                      ArgMin, ArgMax, Any, Percentiles]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
