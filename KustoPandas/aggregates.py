@@ -17,14 +17,15 @@ class SimpleAgg:
 
     """
     def __init__(self, output_column_name, args):
+        self.orig_args = args
         self.args = args
         self.output_column_name = output_column_name
 
-    def _columns_neded_internal(self):
+    def _columns_neded_internal(self, all_columns):
         return self.args
 
-    def columns_needed(self):
-        args = self._columns_neded_internal()
+    def columns_needed(self, all_columns):
+        args = self._columns_neded_internal(all_columns)
 
         self.arg_names = [str(uuid.uuid1()) for a in args]
         return zip(self.arg_names, args)
@@ -178,24 +179,25 @@ def _all_non_null_if_possible(df):
     return mask
 
 def _any(df, return_df):
-    if isinstance(df, pd.DataFrame):
-        mask = _all_non_null_if_possible(df)
-        df = df[mask]
-        if return_df:
-            # return a dataframe object with only one row
-            return df.iloc[0:1]
-        else:
-            # return a series object where the index is the columns of df
-            return df.iloc[0]
+    mask = _all_non_null_if_possible(df)
+    df = df[mask]
+    if return_df:
+        # return a dataframe object with only one row
+        return df.iloc[0:1]
     else:
-        raise Exception("not needed")
-        mask = _all_non_null_if_possible_mask(df, None)
-        series = df[mask]
-        return series[0:1]
+        # return a series object where the index is the columns of df
+        return df.iloc[0]
+
 
 class Any(SimpleAgg):
     def validate(self, df):
         pass
+
+    def _columns_neded_internal(self, all_columns):
+        if isinstance(self.orig_args[0], ep.Star):
+            self.args = [ep.Var(c) for c in all_columns]
+
+        return self.args
 
     def apply(self, df):
 
@@ -236,7 +238,7 @@ class Percentiles(SimpleAgg):
         if len(self.args) < 2:
             raise Exception("Percentiles requires at least two args: " + str(self.args))
 
-    def _columns_neded_internal(self):
+    def _columns_neded_internal(self, all_columns):
         return self.args[:1]
 
     def apply1(self, grouped):

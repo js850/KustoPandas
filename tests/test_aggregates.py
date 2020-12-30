@@ -450,3 +450,18 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual(list([3, 4]), list(wnew.df["any_C"]))
         self.assertEqual(3, len(wnew.df.columns))
     
+    def test_summarize_any_star(self):
+        df = pd.DataFrame()
+        df["G"] = ["G1", "G1", "G2", "G1", "G2"]
+        df["B"] = [None, 10, 20, 30, 40]
+        df["C"] = [0, None, None, 3, 4]
+
+        w = Wrap(df)
+        wnew = w.summarize("any(*) by G")
+        print()
+        print(wnew)
+        self.assertListEqual(list(["G1", "G2"]), list(wnew.df["G"]))
+        self.assertListEqual(list([30, 40]), list(wnew.df["any_B"]))
+        self.assertListEqual(list([3, 4]), list(wnew.df["any_C"]))
+        self.assertEqual(3, len(wnew.df.columns))
+    

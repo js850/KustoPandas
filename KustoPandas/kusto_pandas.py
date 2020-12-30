@@ -213,10 +213,13 @@ class Wrap:
                 dftemp[col_name] = series
         
         args = [create_aggregate(a) for a in aggregates]
+
+        all_columns = set(self.df.columns) - set(group_by_col_names)
+
         columns_needed = set()
         for arg in args:
             arg.validate(dftemp)
-            for col_name, col_value in arg.columns_needed():
+            for col_name, col_value in arg.columns_needed(all_columns):
                 columns_needed.add(col_name)
                 if col_name not in dftemp:
                     result = col_value.evaluate(self._get_var_map())

@@ -248,3 +248,8 @@ class TestExpressionParser(unittest.TestCase):
 
         result = parsed.evaluate({"A": 4})
         self.assertListEqual([1, 2, 3, 4], result)
+
+def test_star():
+    x = "any(*)"
+    parsed = parse_expression(x)
+    assert str(parsed) == "any(*)"

@@ -291,13 +291,26 @@ class Between(Opp):
             return (lower <= left) & (left <= upper)
         return lower <= left and left <= upper
 
+class Star(Expression):
+    op = "*"
+    def __str__(self):
+        return self.op
+
+    def __repr__(self):
+        return str(self)
+
 class AmbiguousMinus(Opp):
     # - can be either unary or binary op
     op = "-"
     unary = UnaryMinus
     binary = Sub
 
-all_operators = [Add, AmbiguousMinus, Div, Mul, Eq, NEq, Gt, Lt, Ge, Le,
+class AmbiguousStar(Expression):
+    op = "*"
+    binary = Mul
+    nullary = Star
+
+all_operators = [Add, AmbiguousMinus, AmbiguousStar, Div, Eq, NEq, Gt, Lt, Ge, Le,
                  UnaryNot, Assignment,
                  And, Or, Comma,
                  Contains, NotContains, ContainsCs, NotContainsCs,

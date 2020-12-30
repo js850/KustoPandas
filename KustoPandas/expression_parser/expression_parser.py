@@ -100,7 +100,7 @@ def is_unary_operator(tokens, i):
         return True
     return False
 
-def resolve_ambiguous_operators(tokens):
+def resolve_ambiguous_minus(tokens):
     indices = [i for i, c in enumerate(tokens) if c == AmbiguousMinus]
 
     for i in indices:
@@ -109,6 +109,27 @@ def resolve_ambiguous_operators(tokens):
             tokens[i] = c.unary
         else:
             tokens[i] = c.binary
+    return tokens
+
+def resolve_ambiguous_star(tokens):
+    for i in range(len(tokens)):
+        c = tokens[i]
+        if c == AmbiguousStar:
+            if i == 0 or i == len(tokens) - 1:
+                raise Exception("Star operator must be inside parenthesis")
+            left = tokens[i-1]
+            right = tokens[i+1]
+            if left == "(" and right == ")":
+                tokens[i] = c.nullary()
+            else:
+                tokens[i] = c.binary
+    return tokens
+
+def resolve_ambiguous_operators(tokens):
+    tokens = resolve_ambiguous_minus(tokens)
+
+    tokens = resolve_ambiguous_star(tokens)
+
     return tokens
 
 def tokenize_line_recursively(line, tokenizer, method_stack):
