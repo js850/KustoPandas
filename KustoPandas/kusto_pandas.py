@@ -6,7 +6,7 @@ from .expression_parser import parse_expression, Assignment, Var, Method, By, Co
 from .aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
-from ._input_parsing import _parse_input_expression_args, _parse_input_expression_kwargs, _parse_input_expression_args_kwargs, _split_if_comma, _split_by_operator, _evaluate_and_get_name, _parse_input_expression_or_list_of_expressions, Inputs
+from ._input_parsing import _parse_input_expression_args, _parse_input_expression_kwargs, _parse_input_expression_args_kwargs, _split_if_comma, _split_by_operator, _evaluate_and_get_name, _parse_input_expression_or_list_of_expressions, Inputs, remove_duplicates_maintain_order
 
 
 def ensure_column_name_unique(df, col):
@@ -106,6 +106,15 @@ class Wrap:
 
         return self._copy(dfnew)
     
+    def project_reorder(self, *cols):
+        inputs = Inputs(*cols)
+
+        specified_cols = inputs.parse_as_column_name_or_pattern(self.df)
+        # unspecified columns should be put at the back of the list
+        new_cols = remove_duplicates_maintain_order(specified_cols + list(self.df.columns))
+        dfnew = self.df[new_cols].copy()
+        return self._copy(dfnew)
+
     def summarize(self, aggregates, by=None):
         if isinstance(aggregates, str):
             parsed = parse_expression(aggregates)

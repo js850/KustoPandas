@@ -45,8 +45,7 @@ class Inputs:
         for parsed in self.parsed_inputs:
             column_names += _parse_column_name_or_pattern(parsed, df)
         
-        # remove duplicates but maintain order
-        column_names = list(OrderedDict.fromkeys(column_names))
+        column_names = remove_duplicates_maintain_order(column_names)
         
         return column_names
     
@@ -62,6 +61,9 @@ class Inputs:
             result.append((parsed.assignment_name, str(parsed.expression)))
         
         return result
+
+def remove_duplicates_maintain_order(list_with_duplicates):
+    return list(OrderedDict.fromkeys(list_with_duplicates))
 
 def _flatten_column_name_or_pattern(value):
     # Wildcards are parsed as multiplication because there is no way to distinguish multiplication vs wildcard

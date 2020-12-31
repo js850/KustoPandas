@@ -313,3 +313,15 @@ def test_project_rename_math():
     w = Wrap(df)
     with pytest.raises(Exception):
         wnew = w.project_rename("BB = A + B")
+
+def test_project_reorder():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["AA"] = [2, 4]
+    df["B"] = [5, 6]
+    df["C"] = [7, 8]
+
+    w = Wrap(df)
+    wnew = w.project_reorder("C", "A*")
+    assert ["C", "A", "AA", "B"] == list(wnew.df.columns)
+    assert ["A", "AA", "B", "C"] == list(w.df.columns)
