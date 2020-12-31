@@ -228,4 +228,28 @@ class TestWrap(unittest.TestCase):
         wnew = w.project_away("B")
         self.assertListEqual(["A", "C"], list(wnew.df.columns))
         self.assertListEqual(["A", "B", "C"], list(w.df.columns))
+    
+def test_project_away_wildcard():
+    df = create_df()
+    df = df[["A", "B"]]
+    df["AA"] = df["B"]
+
+    w = Wrap(df)
+    wnew = w.project_away("A*")
+    assert ["B"] == list(wnew.df.columns)
+
+def test_project_away_wildcard2():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["ABC"] = [1, 2]
+    df["B"] = [1, 2]
+    df["Q"] = [1, 2]
+    df["b"] = [1, 2]
+    df["hiA"] = [1, 2]
+    df["hiZ"] = [1, 2]
+    df["hiZ2"] = [1, 2]
+
+    w = Wrap(df)
+    wnew = w.project_away("*B*, A*, *Z")
+    assert ["Q", "b", "hiA", "hiZ2"] == list(wnew.df.columns)
 

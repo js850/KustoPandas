@@ -6,14 +6,14 @@ from .expression_parser import parse_expression, Assignment, Var, Method, By, Co
 from .aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
-from ._input_parsing import _parse_input_expression_args, _parse_input_expression_kwargs, _parse_input_expression_args_kwargs, _split_if_comma, _split_by_operator, _evaluate_and_get_name, _parse_input_expression_or_list_of_expressions
+from ._input_parsing import _parse_input_expression_args, _parse_input_expression_kwargs, _parse_input_expression_args_kwargs, _split_if_comma, _split_by_operator, _evaluate_and_get_name, _parse_input_expression_or_list_of_expressions, Inputs
 
 
 def ensure_column_name_unique(df, col):
     while col in df.columns:
         col = col + "_"
     return col
-    
+
 class MultiDict:
     def __init__(self, dicts):
         self.dicts = dicts
@@ -64,22 +64,22 @@ class Wrap:
         
         w.project("A, Bnew = B+A")
         """
-        parsed_inputs = _parse_input_expression_args_kwargs(cols, renamed_cols)
+        inputs = Inputs(*cols, **renamed_cols)
 
         dfnew = pd.DataFrame()
         var_map = self._get_var_map()
 
-        for parsed in parsed_inputs:
+        for parsed in inputs.parsed_inputs:
             result = parsed.evaluate(var_map)
             dfnew[parsed.get_name()] = result
         
         return self._copy(dfnew)
 
     def project_away(self, *cols):
-        parsed_inputs = _parse_input_expression_args(cols)
+        inputs = Inputs(*cols)
         dfnew = self.df.copy()
-        for parsed in parsed_inputs:
-            del dfnew[parsed.get_name()]
+        for column in inputs.parse_as_column_name_or_pattern(dfnew):
+            del dfnew[column]
 
         return self._copy(dfnew)
 
@@ -158,11 +158,11 @@ class Wrap:
         return self._copy(dfnew)
     
     def extend(self, *args, **kwargs):
-        parsed_inputs = _parse_input_expression_args_kwargs(args, kwargs)
+        inputs = Inputs(*args, **kwargs)
 
         dfnew = self.df.copy(deep=False)
         var_map = self._get_var_map()
-        for parsed in parsed_inputs:
+        for parsed in inputs.parsed_inputs:
             name = parsed.get_name()
             result = parsed.evaluate(var_map)
             dfnew[name] = result

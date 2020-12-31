@@ -115,14 +115,15 @@ def resolve_ambiguous_star(tokens):
     for i in range(len(tokens)):
         c = tokens[i]
         if c == AmbiguousStar:
-            if i == 0 or i == len(tokens) - 1:
-                raise Exception("Star operator must be inside parenthesis")
-            left = tokens[i-1]
-            right = tokens[i+1]
-            if left == "(" and right == ")":
-                tokens[i] = c.nullary()
-            else:
-                tokens[i] = c.binary
+            if i > 0 and i < len(tokens) - 1:
+                #raise Exception("Star operator must be inside parenthesis")
+                left = tokens[i-1]
+                right = tokens[i+1]
+                if left == "(" and right == ")":
+                    tokens[i] = c.nullary()
+                    continue
+
+            tokens[i] = c.binary
     return tokens
 
 def resolve_ambiguous_operators(tokens):

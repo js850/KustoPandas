@@ -1,6 +1,8 @@
 from functools import reduce
+import fnmatch
+from collections import OrderedDict
 
-from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma
+from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma, Mul
 
 class SimpleExpression:
     def __init__(self, parsed):
@@ -30,6 +32,44 @@ class SimpleExpression:
     
     def set_name(self, name):
         self.assignment_name = name
+
+class Inputs:
+    def __init__(self, *args, **kwargs):
+        self.parsed_inputs = _parse_input_expression_args_kwargs(args, kwargs)
+    
+    def parse_as_column_name_or_pattern(self, df):
+        column_names = []
+        for parsed in self.parsed_inputs:
+            column_names += _parse_column_name_or_pattern(parsed, df)
+        
+        # remove duplicates but maintain order
+        column_names = list(OrderedDict.fromkeys(column_names))
+        
+        return column_names
+
+def _flatten_column_name_or_pattern(value):
+    # Wildcards are parsed as multiplication because there is no way to distinguish multiplication vs wildcard
+    # without knowing the context.  This is a bit hacky, but it seems to work.
+    if isinstance(value, Mul):
+        return _flatten_column_name_or_pattern(value.left) + "*" + _flatten_column_name_or_pattern(value.right)
+    if isinstance(value, Var):
+        return str(value)
+    return ""
+
+def _parse_column_name_or_pattern(parsed: SimpleExpression, df):
+    if parsed.assignment_name is not None:
+        # assignments are not allowed if column patterns are allowed
+        raise Exception("expected only column name or pattern: " + str(parsed.parsed))
+
+    pattern = _flatten_column_name_or_pattern(parsed.expression)
+
+    matching_columns = [c for c in df.columns if fnmatch.fnmatchcase(c, pattern)]
+
+    if len(matching_columns) == 0:
+        raise KeyError("Could not find a collumn which matches: " + pattern)
+
+    return matching_columns
+    
 
 def _get_method_default_name(method):
     name = str(method.name)
@@ -90,3 +130,5 @@ def _parse_input_expression_kwargs(kwargs):
 
 def _parse_input_expression_args_kwargs(args, kwargs):
     return _parse_input_expression_args(args) + _parse_input_expression_kwargs(kwargs)
+
+
