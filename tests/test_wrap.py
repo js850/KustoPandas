@@ -1,6 +1,8 @@
 import unittest
 import pandas as pd
 import numpy as np
+import pytest
+
 from context import Wrap
 from context import expression_parser as ep
 
@@ -252,4 +254,20 @@ def test_project_away_wildcard2():
     w = Wrap(df)
     wnew = w.project_away("*B*, A*, *Z")
     assert ["Q", "b", "hiA", "hiZ2"] == list(wnew.df.columns)
+
+def test_project_away_wildcard_nomatch():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+
+    w = Wrap(df)
+    with pytest.raises(KeyError):
+        w.project_away("A, B*")
+
+def test_project_away_badcolumn():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+
+    w = Wrap(df)
+    with pytest.raises(KeyError):
+        w.project_away("B")
 
