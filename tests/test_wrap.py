@@ -282,3 +282,34 @@ def test_project_keep():
     wnew = w.project_keep("B, A*")
     assert ["A", "AA", "B"] == list(wnew.df.columns)
     assert ["A", "AA", "B", "C"] == list(w.df.columns)
+
+def test_project_rename():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["B"] = [5, 6]
+    df["C"] = [7, 8]
+
+    w = Wrap(df)
+    wnew = w.project_rename("BB = B", CC="C")
+    assert ["A", "BB", "CC"] == list(wnew.df.columns)
+    assert ["A", "B", "C"] == list(w.df.columns)
+
+def test_project_rename_badcolumn():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["B"] = [5, 6]
+    df["C"] = [7, 8]
+
+    w = Wrap(df)
+    with pytest.raises(KeyError):
+        wnew = w.project_rename("BB = Q")
+
+def test_project_rename_math():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["B"] = [5, 6]
+    df["C"] = [7, 8]
+
+    w = Wrap(df)
+    with pytest.raises(Exception):
+        wnew = w.project_rename("BB = A + B")

@@ -32,6 +32,9 @@ class SimpleExpression:
     
     def set_name(self, name):
         self.assignment_name = name
+    
+    def __str__(self):
+        return str(self.parsed)
 
 class Inputs:
     def __init__(self, *args, **kwargs):
@@ -46,6 +49,19 @@ class Inputs:
         column_names = list(OrderedDict.fromkeys(column_names))
         
         return column_names
+    
+    def parse_as_simple_assigments(self):
+        result = []
+        for parsed in self.parsed_inputs:
+            if parsed.assignment_name is None:
+                raise Exception("Expected a simple assignment: " + str(parsed))
+            
+            if not isinstance(parsed.expression, Var):
+                raise Exception("Expected a simple assignment: " + str(parsed))
+            
+            result.append((parsed.assignment_name, str(parsed.expression)))
+        
+        return result
 
 def _flatten_column_name_or_pattern(value):
     # Wildcards are parsed as multiplication because there is no way to distinguish multiplication vs wildcard

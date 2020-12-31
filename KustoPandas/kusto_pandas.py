@@ -94,8 +94,17 @@ class Wrap:
         return self._copy(dfnew)
 
     def project_rename(self, *args, **kwargs):
-        # improve this implementation
-        return self.extend(*args, **kwargs)
+        inputs = Inputs(*args, **kwargs)
+
+        col_map = dict()
+        for newcol, oldcol in inputs.parse_as_simple_assigments():
+            col_map[oldcol] = newcol
+            if oldcol not in self.df.columns:
+                raise KeyError("Could not find column: " + oldcol)
+        
+        dfnew = self.df.rename(columns=col_map).copy()
+
+        return self._copy(dfnew)
     
     def summarize(self, aggregates, by=None):
         if isinstance(aggregates, str):
