@@ -83,6 +83,16 @@ class Wrap:
 
         return self._copy(dfnew)
 
+    def project_keep(self, *cols):
+        inputs = Inputs(*cols)
+        columns_to_keep = set(inputs.parse_as_column_name_or_pattern(self.df))
+
+        # maintain the original orderin of the columns
+        columns = [c for c in self.df.columns if c in columns_to_keep]
+
+        dfnew = self.df[columns].copy()
+        return self._copy(dfnew)
+
     def project_rename(self, *args, **kwargs):
         # improve this implementation
         return self.extend(*args, **kwargs)

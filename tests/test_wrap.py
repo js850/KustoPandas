@@ -271,3 +271,14 @@ def test_project_away_badcolumn():
     with pytest.raises(KeyError):
         w.project_away("B")
 
+def test_project_keep():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["AA"] = [1, 2]
+    df["B"] = [1, 2]
+    df["C"] = [1, 2]
+
+    w = Wrap(df)
+    wnew = w.project_keep("B, A*")
+    assert ["A", "AA", "B"] == list(wnew.df.columns)
+    assert ["A", "AA", "B", "C"] == list(w.df.columns)
