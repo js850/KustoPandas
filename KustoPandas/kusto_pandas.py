@@ -6,7 +6,7 @@ from .expression_parser import parse_expression, Assignment, Var, Method, By, Co
 from .aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
-from ._input_parsing import _parse_input_expression_args, _parse_input_expression_kwargs, _parse_input_expression_args_kwargs, _split_if_comma, _split_by_operator, _evaluate_and_get_name, _parse_input_expression_or_list_of_expressions, Inputs, remove_duplicates_maintain_order
+from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order
 
 
 def ensure_column_name_unique(df, col):
@@ -116,11 +116,24 @@ class Wrap:
         return self._copy(dfnew)
 
     def summarize(self, aggregates, by=None):
+        """
+        w.summarize("count(), sum(A) by M, N")
+
+        w.summarize(["count(), sum(A)", by="M, N")
+
+        w.summarize(["count()", "sum(A)"], by=["M", "N"])
+
+        w.summarize("count(), sum(A)")
+
+        w.summarize(["count()", "sum(A)"])
+
+
+        """
         if isinstance(aggregates, str):
             parsed = parse_expression(aggregates)
             if isinstance(parsed, By):
-                aggs, group_by = _split_by_operator(parsed)
-                return self._summarize(aggs, group_by)
+                aggs, by_parsed = _split_by_operator(parsed)
+                return self._summarize(aggs, by_parsed)
             aggregates_parsed = _split_if_comma(parsed)
         else:
             aggregates_parsed = [parse_expression(a) for a in aggregates]
@@ -220,7 +233,8 @@ class Wrap:
         desc (if true, sort by descending order) can be a bool
             or list of bools.  If it's a list, it must be equal in length to the list of expressions 
         """
-        parsed_inputs = _parse_input_expression_or_list_of_expressions(by)
+        inputs = Inputs(by)
+        parsed_inputs = inputs.parsed_inputs
         if isinstance(desc, bool):
             desc = [desc] * len(parsed_inputs)
         elif len(parsed_inputs) != len(desc):
