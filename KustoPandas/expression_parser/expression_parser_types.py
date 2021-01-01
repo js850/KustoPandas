@@ -37,6 +37,28 @@ class UnaryOpp(Expression):
         right = self.right.evaluate(vals)
         return self.evaluate_internal(right)
 
+class UnaryOppLeft(Expression):
+    op = ""
+    def __init__(self, left):
+        self.left = left
+    
+    def __str__(self):
+        if op_is_not_special_chars(self.op):
+            space = " "
+        else:
+            space = ""
+        return "({0}{1}{2})".format(self.left, space, self.op)
+
+    def __repr__(self):
+        return str(self)
+
+    def evaluate_internal(self, left):
+        raise NotImplementedError()
+
+    def evaluate(self, vals):
+        left = self.left.evaluate(vals)
+        return self.evaluate_internal(left)
+
 class Opp(Expression):
     op = ""
     def __init__(self, left, right):
@@ -299,6 +321,12 @@ class Star(Expression):
     def __repr__(self):
         return str(self)
 
+class Asc(UnaryOppLeft):
+    op = "asc"
+
+class Desc(UnaryOppLeft):
+    op = "desc"
+
 class AmbiguousMinus(Opp):
     # - can be either unary or binary op
     op = "-"
@@ -317,8 +345,13 @@ all_operators = [Add, AmbiguousMinus, AmbiguousStar, Div, Eq, NEq, Gt, Lt, Ge, L
                  StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
                  In, NotIn, InCis, NotInCis, 
                  Has, NotHas, HasCs, NotHasCs,
-                 By, Between, DotDot]
-all_operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
+                 By, Between, DotDot, Asc, Desc]
+
+def get_symbol_operators():
+    return [o for o in all_operators if not op_is_not_special_chars(o.op)]
+
+def get_non_symbol_operators():
+    return [o for o in all_operators if op_is_not_special_chars(o.op)]
 
 class NumOrVar(Expression):
     pass

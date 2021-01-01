@@ -205,6 +205,15 @@ class TestExpressionParser(unittest.TestCase):
         result = parsed.evaluate({"xx": 1})
         self.assertEqual(result["y"], 0)
 
+    def test_unary_minus_comma(self):
+        x = "y = xx(A, -B)"
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "(y = xx(A, (-B)))")
+        def xx(a, b):
+            return a + b
+        result = parsed.evaluate({"xx": xx, "A": 1, "B": 2 })
+        self.assertEqual(result["y"], -1)
+
     def test_timespan_literal(self):
         x = "y = C + 1d"
         parsed = parse_expression(x)
@@ -253,3 +262,22 @@ def test_star():
     x = "any(*)"
     parsed = parse_expression(x)
     assert str(parsed) == "any(*)"
+
+def test_asc():
+    x = "A asc"
+    parsed = parse_expression(x)
+    assert str(parsed) == "(A asc)"
+
+    assert isinstance(parsed, ep.Asc)
+
+def test_desc():
+    x = "A desc"
+    parsed = parse_expression(x)
+    assert str(parsed) == "(A desc)"
+
+    assert isinstance(parsed, ep.Desc)
+
+def test_asc_desc():
+    x = "A desc, B asc, C"
+    parsed = parse_expression(x)
+    assert str(parsed) == "((A desc), (B asc), C)"

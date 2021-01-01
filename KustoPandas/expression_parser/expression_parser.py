@@ -78,8 +78,8 @@ def is_whole_word_match(word, line, i):
         return False
     return True
 
-def get_matching_op(line, i):
-    matched_ops = [o for o in all_operators_sorted if op_matches_start(line[i:], o)]
+def get_matching_op(line, i, operators):
+    matched_ops = [o for o in operators if op_matches_start(line[i:], o)]
     for op in matched_ops:
         if op_is_not_special_chars(op.op):
             # have to avoid matching op "and" on "rand" or "android"
@@ -166,11 +166,16 @@ def parentheses_tokenizer(line, i):
         return [line[i]], 1
     return None, 0
 
-def operator_tokenizer(line, i):
-    op = get_matching_op(line, i)
-    if op is not None:
-        return [op], len(op.op)
-    return None, 0
+def get_operator_tokenizer(operators):
+    # parse longer operators first, so e.g. ">=" does not get mistaken for ">"
+    operators_sorted = sorted(all_operators, key=lambda o: len(o.op), reverse=True)
+    def operator_tokenizer(line, i):
+        op = get_matching_op(line, i, operators_sorted)
+        if op is not None:
+            return [op], len(op.op)
+        return None, 0
+    
+    return operator_tokenizer
 
 def get_line_tokenizer(tokenizer):
     def line_tokenizer(line, method_stack):
@@ -183,7 +188,8 @@ def get_tokenization_method_stack():
         get_word_tokenizer(try_tokenize_timespan_literal),
         get_word_tokenizer(try_tokenize_float),
         get_word_tokenizer(try_tokenize_int),
-        get_line_tokenizer(operator_tokenizer),
+        get_line_tokenizer(get_operator_tokenizer(get_non_symbol_operators())),
+        get_line_tokenizer(get_operator_tokenizer(get_symbol_operators())),
         get_line_tokenizer(parentheses_tokenizer),
         get_line_tokenizer(whitespace_tokenizer),
         get_line_tokenizer(string_literal_tokenizer),

@@ -78,6 +78,26 @@ def parse_unary_operators(line, method_stack):
 
     return method_stack.evaluate_next_method(output)
 
+def parse_unary_left_operators(line, method_stack):
+    output = []    
+    i = 0
+
+    # matches = [i for i in range(len(line)-1) if is_unary_operator(line, i)]
+    while i+1 < len(line):
+        if line[i+1] in (Asc, Desc):
+            left = line[i]
+            new_op = line[i+1](left)
+            output.append(new_op)
+            i += 2
+        else:
+            output.append(line[i])
+            i += 1
+    
+    if i < len(line):
+        output.append(line[i])
+
+    return method_stack.evaluate_next_method(output)
+
 def split_one_level(matches):
     groups = []
     i = 0
@@ -213,12 +233,13 @@ def get_expression_tree_method_stack():
         get_parse_operators_method([Eq, NEq]),
         get_parse_operators_method([And]),
         get_parse_operators_method([Or]),
+        parse_unary_operators,
         get_parse_operators_method([Assignment], right_to_left=True),
         get_parse_operators_method([Comma], right_to_left=False),
         get_parse_operators_method([Between]),
         get_parse_operators_method([DotDot]),
         get_parse_operators_method([By]),
-        parse_unary_operators,
+        parse_unary_left_operators,
         parse_square_brackets,
         parse_parentheses,
     ])
