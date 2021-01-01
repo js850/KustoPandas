@@ -323,9 +323,13 @@ class Star(Expression):
 
 class Asc(UnaryOppLeft):
     op = "asc"
+    def evaluate_internal(self, left):
+        return left
 
 class Desc(UnaryOppLeft):
     op = "desc"
+    def evaluate_internal(self, left):
+        return left
 
 class AmbiguousMinus(Opp):
     # - can be either unary or binary op

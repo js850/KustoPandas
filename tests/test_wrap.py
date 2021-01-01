@@ -151,7 +151,6 @@ class TestWrap(unittest.TestCase):
         w = w.where("C !startswith_cs \"hi\"")
         self.assertListEqual(["HI there", "today", "what", "this"], list(w.df["C"]))
 
-    
     def test_take(self):
         df = create_df()
         w = Wrap(df)
@@ -175,6 +174,16 @@ class TestWrap(unittest.TestCase):
         wnew = w.sort("U + 1")
         self.assertListEqual([0, 1, 2, 4, 3], list(wnew.df["B"]))
         self.assertListEqual(list(range(5)), list(w.df["B"]))
+    
+    def test_sort_asc_desc(self):
+        df = create_df()
+        df["U"] = [9, 9, 7, 1, 2]
+        df["U2"] = [1, 2, 3, 4, 5]
+        w = Wrap(df)
+        wnew = w.sort("U asc, U2 desc")
+        assert [3, 4, 2, 1, 0] ==  list(wnew.df["B"])
+        assert [1, 2, 7, 9, 9] ==  list(wnew.df["U"])
+        assert [4, 5, 3, 2, 1] ==  list(wnew.df["U2"])
 
     def test_top(self):
         df = create_df()
@@ -183,7 +192,6 @@ class TestWrap(unittest.TestCase):
         wnew = w.top(4, "U + 1")
         self.assertListEqual([0, 1, 2, 4], list(wnew.df["B"]))
         self.assertListEqual(list(range(5)), list(w.df["B"]))
-
     
     def test_let(self):
         df = create_df()

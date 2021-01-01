@@ -245,9 +245,14 @@ class Wrap:
         col_names = ["__tempcol_" + str(i) for i in range(len(parsed_inputs))]
 
         var_map = self._get_var_map()
-        for col, expr in zip(col_names, parsed_inputs):
+        for i, expr in enumerate(parsed_inputs):
+            col = col_names[i]
             series = expr.evaluate(var_map)
             dfnew[col] = series
+            if expr.is_asc():
+                desc[i] = False
+            if expr.is_desc():
+                desc[i] = True
         
         asc = [not b for b in desc]
         dfnew = dfnew.sort_values(col_names, ascending=asc)

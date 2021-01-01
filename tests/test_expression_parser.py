@@ -281,3 +281,19 @@ def test_asc_desc():
     x = "A desc, B asc, C"
     parsed = parse_expression(x)
     assert str(parsed) == "((A desc), (B asc), C)"
+
+def test_desc_evaluate():
+    x = "y = A desc"
+    parsed = parse_expression(x)
+    assert str(parsed) == "(y = (A desc))"
+
+    result = parsed.evaluate({"A": 4})
+    assert 4 == result["y"] 
+
+def test_asc_evaluate():
+    x = "y = A asc"
+    parsed = parse_expression(x)
+    assert str(parsed) == "(y = (A asc))"
+
+    result = parsed.evaluate({"A": 4})
+    assert 4 == result["y"] 

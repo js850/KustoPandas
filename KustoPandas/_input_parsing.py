@@ -2,7 +2,7 @@ from functools import reduce
 import fnmatch
 from collections import OrderedDict
 
-from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma, Mul
+from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma, Mul, Asc, Desc
 
 class SimpleExpression:
     def __init__(self, parsed):
@@ -32,6 +32,12 @@ class SimpleExpression:
     
     def set_name(self, name):
         self.assignment_name = name
+    
+    def is_asc(self):
+        return isinstance(self.expression, Asc)
+
+    def is_desc(self):
+        return isinstance(self.expression, Desc)
     
     def __str__(self):
         return str(self.parsed)
