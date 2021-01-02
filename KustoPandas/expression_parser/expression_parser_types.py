@@ -342,14 +342,28 @@ class AmbiguousStar(Expression):
     binary = Mul
     nullary = Star
 
-all_operators = [Add, AmbiguousMinus, AmbiguousStar, Div, Eq, NEq, Gt, Lt, Ge, Le,
-                 UnaryNot, Assignment,
-                 And, Or, Comma,
-                 Contains, NotContains, ContainsCs, NotContainsCs,
-                 StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
-                 In, NotIn, InCis, NotInCis, 
-                 Has, NotHas, HasCs, NotHasCs,
-                 By, Between, DotDot, Asc, Desc]
+generic_expression_operators = [
+    Add, AmbiguousMinus, AmbiguousStar, Div, Eq, NEq, Gt, Lt, Ge, Le,
+    UnaryNot, And, Or,
+    Contains, NotContains, ContainsCs, NotContainsCs,
+    StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
+    In, NotIn, InCis, NotInCis, 
+    Has, NotHas, HasCs, NotHasCs,
+    Between, DotDot,
+    Comma,
+    ]
+
+assignment = [Assignment]
+
+all_generic_operators = generic_expression_operators + assignment
+
+# These specialty operators only make sense in the context of certain functions like summarize and sort
+# TODO: do a better job of recognizing operators within the context of where they occur.
+# For example, A*B can be multiplication or wildcard depending on the context.  
+# one option is to pass the context to the parser.  e.g. for the sort operatoror 
+specialty_operators = [By, Asc, Desc] # Star
+
+all_operators = all_generic_operators + specialty_operators
 
 def get_symbol_operators():
     return [o for o in all_operators if not op_is_not_special_chars(o.op)]
