@@ -158,6 +158,13 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual([0, 1], list(wnew.df["B"]))
         self.assertEqual(5, len(w.df["B"]))
     
+    def test_limit(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.limit(2)
+        self.assertListEqual([0, 1], list(wnew.df["B"]))
+        self.assertEqual(5, len(w.df["B"]))
+    
     def test_sort(self):
         df = create_df()
         df["U"] = [9, 1, 7, 1, 2]
@@ -184,6 +191,15 @@ class TestWrap(unittest.TestCase):
         assert [3, 4, 2, 1, 0] ==  list(wnew.df["B"])
         assert [1, 2, 7, 9, 9] ==  list(wnew.df["U"])
         assert [4, 5, 3, 2, 1] ==  list(wnew.df["U2"])
+
+    def test_order(self):
+        df = create_df()
+        df["U"] = [9, 1, 7, 1, 2]
+        expected = [1, 3, 4, 2, 0]
+        w = Wrap(df)
+        wnew = w.order(["U + 1", "B"], [False, False])
+        self.assertListEqual(expected, list(wnew.df["B"]))
+        self.assertListEqual(list(range(5)), list(w.df["B"]))
 
     def test_top(self):
         df = create_df()
@@ -395,5 +411,18 @@ def test_distinct_star():
     assert ["A", "B"] == list(wnew.df.columns)
     assert [1, 1, 2, 2] == list(wnew.df["A"])
     assert [1, 2, 2, 3] == list(wnew.df["B"])
+
+def test_getschema():
+    df = create_df()
+
+    w = Wrap(df)
+
+    wnew = w.getschema()
+    print(wnew.df)
+
+    assert ["A", "B", "C", "D", "G"] == list(wnew.df["ColumnName"])
+    assert [0, 1, 2, 3, 4] == list(wnew.df["ColumnOrdinal"])
+    assert [np.float64, np.int64, object, np.dtype("datetime64[ns]"), object] == list(wnew.df["DataType"])
+    assert 4 == len(wnew.df.columns)
 
     

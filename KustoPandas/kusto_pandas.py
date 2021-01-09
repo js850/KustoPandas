@@ -222,8 +222,14 @@ class Wrap:
     
     def take(self, n):
         newdf = self.df.head(n)
-        return self._copy(newdf)#
+        return self._copy(newdf)
     
+    def limit(self, n):
+        return self.take(n)
+    
+    def order(self, *args, **kwargs):
+        return self.sort(*args, **kwargs)
+
     def sort(self, by, desc=True):
         """
         sort by strlen(country) asc, price desc
@@ -314,6 +320,16 @@ class Wrap:
             dfnew[name] = series
         
         return self._copy(dfnew.drop_duplicates())
+    
+    def getschema(self):
+
+        d2 = pd.DataFrame()
+        d2["ColumnName"] = self.df.columns
+        d2["ColumnOrdinal"] = range(len(self.df.columns))
+        d2["DataType"] = list(self.df.dtypes)
+        d2["ColumnType"] = list(self.df.dtypes)
+
+        return self._copy(d2)
             
         
 
