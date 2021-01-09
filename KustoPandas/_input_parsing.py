@@ -156,3 +156,22 @@ def _parse_input_expression_args_kwargs(args, kwargs):
     return _parse_input_expression_args(args) + _parse_input_expression_kwargs(kwargs)
 
 
+def _parse_inputs_with_by(aggregates, by=None):
+    if isinstance(aggregates, str):
+        parsed = parse_expression(aggregates)
+        if isinstance(parsed, By):
+            aggs, by_parsed = _split_by_operator(parsed)
+            return aggs, by_parsed
+        aggregates_parsed = _split_if_comma(parsed)
+    else:
+        aggregates_parsed = [parse_expression(a) for a in aggregates]
+
+    if isinstance(by, str):
+        parsed = parse_expression(by)
+        by_parsed = _split_if_comma(parsed)
+    elif by is None:
+        by_parsed = []
+    else:
+        by_parsed = [parse_expression(c) for c in by]
+    
+    return aggregates_parsed, by_parsed

@@ -6,7 +6,7 @@ from .expression_parser import parse_expression, Assignment, Var, Method, By, Co
 from .aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
-from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order
+from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by
 
 
 def ensure_column_name_unique(df, col):
@@ -129,23 +129,7 @@ class Wrap:
 
 
         """
-        if isinstance(aggregates, str):
-            parsed = parse_expression(aggregates)
-            if isinstance(parsed, By):
-                aggs, by_parsed = _split_by_operator(parsed)
-                return self._summarize(aggs, by_parsed)
-            aggregates_parsed = _split_if_comma(parsed)
-        else:
-            aggregates_parsed = [parse_expression(a) for a in aggregates]
-
-        if isinstance(by, str):
-            parsed = parse_expression(by)
-            by_parsed = _split_if_comma(parsed)
-        elif by is None:
-            by_parsed = []
-        else:
-            by_parsed = [parse_expression(c) for c in by]
-        
+        aggregates_parsed, by_parsed = _parse_inputs_with_by(aggregates, by=by)
         return self._summarize(aggregates_parsed, by_parsed)
 
     def _summarize(self, aggregates, by):
