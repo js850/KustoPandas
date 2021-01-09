@@ -333,3 +333,67 @@ def test_project_reorder():
     wnew = w.project_reorder("C", "A*")
     assert ["C", "A", "AA", "B"] == list(wnew.df.columns)
     assert ["A", "AA", "B", "C"] == list(w.df.columns)
+
+def test_count():
+    df = create_df()
+    w = Wrap(df)
+    w2 = w.count()
+
+    assert ["Count"] == list(w2.df.columns)
+    assert [5] == list(w2.df["Count"])
+
+def test_distinct():
+    df = pd.DataFrame()
+    df["A"] = [1, 1, 1, 2, 2, 2, 1]
+    df["B"] = [1, 1, 2, 2, 3, 3, 1]
+    df["C"] = [1, 2, 3, 4, 5, 6, 7]
+
+    w = Wrap(df)
+
+    wnew = w.distinct("A, B")
+
+    assert ["A", "B"] == list(wnew.df.columns)
+    assert [1, 1, 2, 2] == list(wnew.df["A"])
+    assert [1, 2, 2, 3] == list(wnew.df["B"])
+
+def test_distinct_one_arg():
+    df = pd.DataFrame()
+    df["A"] = [1, 1, 1, 2, 2, 2, 1]
+    df["B"] = [1, 1, 2, 2, 3, 3, 1]
+    df["C"] = [1, 2, 3, 4, 5, 6, 7]
+
+    w = Wrap(df)
+
+    wnew = w.distinct("A")
+
+    assert ["A"] == list(wnew.df.columns)
+    assert [1, 2] == list(wnew.df["A"])
+
+def test_distinct_args():
+    df = pd.DataFrame()
+    df["A"] = [1, 1, 1, 2, 2, 2, 1]
+    df["B"] = [1, 1, 2, 2, 3, 3, 1]
+    df["C"] = [1, 2, 3, 4, 5, 6, 7]
+
+    w = Wrap(df)
+
+    wnew = w.distinct("A", "B")
+
+    assert ["A", "B"] == list(wnew.df.columns)
+    assert [1, 1, 2, 2] == list(wnew.df["A"])
+    assert [1, 2, 2, 3] == list(wnew.df["B"])
+
+def test_distinct_star():
+    df = pd.DataFrame()
+    df["A"] = [1, 1, 1, 2, 2, 2, 1]
+    df["B"] = [1, 1, 2, 2, 3, 3, 1]
+
+    w = Wrap(df)
+
+    wnew = w.distinct("*")
+
+    assert ["A", "B"] == list(wnew.df.columns)
+    assert [1, 1, 2, 2] == list(wnew.df["A"])
+    assert [1, 2, 2, 3] == list(wnew.df["B"])
+
+    

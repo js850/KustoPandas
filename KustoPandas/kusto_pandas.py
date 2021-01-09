@@ -288,6 +288,33 @@ class Wrap:
             df.to_clipboard(header=True)
                 
         return self
+    
+    def count(self):
+        count = self.df.shape[0]
+
+        dfnew = pd.DataFrame()
+        dfnew["Count"] = [count]
+
+        return self._copy(dfnew)
+    
+    def distinct(self, *args):
+        if args[0] == "*":
+            return self._copy(self.df.drop_duplicates())
+        
+        # note: the arguments to kusto distinct must be either "*" or a list of column names.
+        # Here we support an arbitrary expression.  e.g. distinct("A + B")
+        # It would be extra work to limit it to only column names, and supporting arbitrary expressions seems nice, so I will leave it
+        inputs = Inputs(*args)
+
+        var_map = self._get_var_map()
+        dfnew = pd.DataFrame()
+        for parsed in inputs.parsed_inputs:
+            name = parsed.get_name()
+            series = parsed.evaluate(var_map)
+            dfnew[name] = series
+        
+        return self._copy(dfnew.drop_duplicates())
+            
         
 
     
