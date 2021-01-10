@@ -214,24 +214,24 @@ class Wrap:
     def order(self, *args, **kwargs):
         return self.sort(*args, **kwargs)
 
-    def sort(self, by, desc=True):
+    def sort(self, by, asc=False):
         """
         sort by strlen(country) asc, price desc
 
         by can be a column name, or an expression built from columns e.g. (strlen(country))
             or it can be a list of such expressions
-        desc (if true, sort by descending order) can be a bool
+        asc (if true, sort by ascending order) can be a bool
             or list of bools.  If it's a list, it must be equal in length to the list of expressions 
         """
         inputs = Inputs(by)
         parsed_inputs = inputs.parsed_inputs
-        return self._sort(parsed_inputs, desc=desc)
+        return self._sort(parsed_inputs, asc=asc)
 
-    def _sort(self, by_parsed, desc=True):
-        if isinstance(desc, bool):
-            desc = [desc] * len(by_parsed)
-        elif len(by_parsed) != len(desc):
-            raise Exception("the length of lists by and desc must be equal")
+    def _sort(self, by_parsed, asc=False):
+        if isinstance(asc, bool):
+            asc = [asc] * len(by_parsed)
+        elif len(by_parsed) != len(asc):
+            raise Exception("the length of lists by and asc must be equal")
 
         dfnew = self.df.copy(deep=False)
 
@@ -243,11 +243,10 @@ class Wrap:
             series = expr.evaluate(var_map)
             dfnew[col] = series
             if expr.is_asc():
-                desc[i] = False
+                asc[i] = True
             if expr.is_desc():
-                desc[i] = True
+                asc[i] = False
         
-        asc = [not b for b in desc]
         dfnew = dfnew.sort_values(col_names, ascending=asc)
 
         for c in col_names:
@@ -255,16 +254,16 @@ class Wrap:
 
         return self._copy(dfnew)
 
-    def top(self, n, by=None, desc=True):
+    def top(self, n, by=None, asc=False):
         """
 
         w.top(5, "A")
 
         w.top("5 by A")
 
-        w.top(5, "A", desc=False)
+        w.top(5, "A", asc=True)
 
-        w.top("5 by A desc")
+        w.top("5 by A asc")
         """
         n_parsed, by_parsed = _parse_inputs_with_by_return_simple_expression(n, by=by)
 
@@ -275,7 +274,7 @@ class Wrap:
         if not isinstance(n_value, int):
             raise Exception("n must be an integer")
 
-        return self._sort(by_parsed, desc=desc).take(n_value)
+        return self._sort(by_parsed, asc=asc).take(n_value)
     
     def join(self, right, on=None, left_on=None, right_on=None, kind="inner"):
         if isinstance(right, Wrap):
