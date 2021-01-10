@@ -42,6 +42,9 @@ class Wrap:
 
     def _get_var_map(self):
         return MultiDict([self.df, get_methods()] + self.let_statements)
+    
+    def __str__(self):
+        return str(self.df)
 
     def let(self, **kwargs):
         w = self._copy(self.df)
