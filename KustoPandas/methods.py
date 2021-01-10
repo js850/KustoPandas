@@ -89,6 +89,15 @@ def log10(series):
 def log2(series):
     return pd.Series(np.log2(series))
 
+def exp(series):
+    return pd.Series(np.exp(series))
+
+def exp2(series):
+    return pd.Series(np.exp2(series))
+
+def exp10(series):
+    return pd.Series(np.power(10, series))
+
 def sqrt(series):
     return pd.Series(np.sqrt(series))
 
@@ -114,6 +123,7 @@ all_methods = [iff, datetime, todatetime, bin, floor, ceiling, extract, toint,
                isfinite, isinf,
                tolower, toupper, tostring,
                log, log10, log2, sqrt,
+               exp, exp2, exp10,
                strlen
                ] + dynamic_methods._all_methods
 

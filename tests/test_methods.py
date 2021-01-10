@@ -272,3 +272,28 @@ def test_strlen():
     result = np.where(np.isnan(c.df["F"]), -1, c.df["F"])
 
     assert list([2.0, 0.0, -1, 1.0, 3.0]) == list(result)
+
+
+def test_exp():
+    df = create_df()
+
+    w = Wrap(df)
+    c = w.extend("F = exp(A)")
+
+    assert list(np.exp([0, 1, 2, 3, 4])) == list(c.df["F"])
+
+def test_exp2():
+    df = create_df()
+
+    w = Wrap(df)
+    c = w.extend("F = exp2(A)")
+
+    assert list(np.exp2([0, 1, 2, 3, 4])) == list(c.df["F"])
+
+def test_exp10():
+    df = create_df()
+
+    w = Wrap(df)
+    c = w.extend("F = exp10(A)")
+
+    assert list(np.power(10, [0, 1, 2, 3, 4])) == list(c.df["F"])
