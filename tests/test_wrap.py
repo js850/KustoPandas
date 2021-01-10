@@ -206,9 +206,52 @@ class TestWrap(unittest.TestCase):
         df["U"] = [9, 8, 7, 1, 2]
         w = Wrap(df)
         wnew = w.top(4, "U + 1")
+        assert [9, 8, 7, 2] == list(wnew.df["U"])
         self.assertListEqual([0, 1, 2, 4], list(wnew.df["B"]))
-        self.assertListEqual(list(range(5)), list(w.df["B"]))
-    
+        self.assertListEqual(["foo1", "foo2", "foo3", "foo5"], list(wnew.df["C"]))
+        assert 6 == len(wnew.df.columns)
+        
+        wexpected = w.sort("U").take(4)
+        pd.testing.assert_frame_equal(wnew.df, wexpected.df)
+
+
+    def test_top_asc(self):
+        df = create_df()
+        df["U"] = [9, 8, 7, 1, 2]
+        w = Wrap(df)
+        wnew = w.top(4, "U + 1", desc=False)
+
+        assert [1, 2, 7, 8] == list(wnew.df["U"])
+        assert 6 == len(wnew.df.columns)
+
+        wexpected = w.sort("U", desc=False).take(4)
+        pd.testing.assert_frame_equal(wnew.df, wexpected.df)
+
+
+    def test_top_input_expression(self):
+        df = create_df()
+        df["U"] = [9, 8, 7, 1, 2]
+        w = Wrap(df)
+
+        wexpected = w.top(4, "U + 1")
+        wnew = w.top("4 by U + 1")
+
+        pd.testing.assert_frame_equal(wnew.df, wexpected.df)
+
+    def test_top_input_expression_asc(self):
+        df = create_df()
+        df["U"] = [9, 8, 7, 1, 2]
+        w = Wrap(df)
+
+        wexpected = w.top(4, "U + 1", desc=False)
+        wnew = w.top("4 by U + 1 asc")
+
+        assert [1, 2, 7, 8] == list(wnew.df["U"])
+        assert [1, 2, 7, 8] == list(wexpected.df["U"])
+        assert 6 == len(wnew.df.columns)
+
+        pd.testing.assert_frame_equal(wnew.df, wexpected.df)
+
     def test_let(self):
         df = create_df()
         w = Wrap(df)

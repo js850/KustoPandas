@@ -6,7 +6,7 @@ from .expression_parser import parse_expression, Assignment, Var, Method, By, Co
 from .aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
-from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by
+from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by, _parse_inputs_with_by_return_simple_expression
 
 
 def ensure_column_name_unique(df, col):
@@ -201,7 +201,7 @@ class Wrap:
 
         result = parsed.evaluate(self._get_var_map())
 
-        newdf = self.df[result]
+        newdf = self.df[result].copy()
         return self._copy(newdf)
     
     def take(self, n):
@@ -225,17 +225,20 @@ class Wrap:
         """
         inputs = Inputs(by)
         parsed_inputs = inputs.parsed_inputs
+        return self._sort(parsed_inputs, desc=desc)
+
+    def _sort(self, by_parsed, desc=True):
         if isinstance(desc, bool):
-            desc = [desc] * len(parsed_inputs)
-        elif len(parsed_inputs) != len(desc):
+            desc = [desc] * len(by_parsed)
+        elif len(by_parsed) != len(desc):
             raise Exception("the length of lists by and desc must be equal")
 
         dfnew = self.df.copy(deep=False)
 
-        col_names = ["__tempcol_" + str(i) for i in range(len(parsed_inputs))]
+        col_names = ["__tempcol_" + str(i) for i in range(len(by_parsed))]
 
         var_map = self._get_var_map()
-        for i, expr in enumerate(parsed_inputs):
+        for i, expr in enumerate(by_parsed):
             col = col_names[i]
             series = expr.evaluate(var_map)
             dfnew[col] = series
@@ -252,8 +255,27 @@ class Wrap:
 
         return self._copy(dfnew)
 
-    def top(self, n, by, desc=True):
-        return self.sort(by, desc=desc).take(n)
+    def top(self, n, by=None, desc=True):
+        """
+
+        w.top(5, "A")
+
+        w.top("5 by A")
+
+        w.top(5, "A", desc=False)
+
+        w.top("5 by A desc")
+        """
+        n_parsed, by_parsed = _parse_inputs_with_by_return_simple_expression(n, by=by)
+
+        if not len(n_parsed) == 1:
+            raise Exception("Top expects exactly one n")
+        n_value = n_parsed[0].evaluate(self._get_var_map())
+
+        if not isinstance(n_value, int):
+            raise Exception("n must be an integer")
+
+        return self._sort(by_parsed, desc=desc).take(n_value)
     
     def join(self, right, on=None, left_on=None, right_on=None, kind="inner"):
         if isinstance(right, Wrap):

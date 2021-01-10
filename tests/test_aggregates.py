@@ -431,6 +431,20 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual(list([0, 2, 4]), list(wnew.df["max_B"]))
         self.assertListEqual(["G", "H", "count_", "max_B"], list(wnew.df.columns))
 
+    def test_summarize_by_array(self):
+        df = create_df()
+        df["G"] = ["G1", "G1", "G1", "G2", "G2"]
+        df["H"] = ["H1", "H2", "H2", "H3", "H3"]
+
+        w = Wrap(df)
+        w2 = w.summarize("count(), max(B) by G, H")
+        warrays = w.summarize(["count()", "max(B)"], ["G", "H"])
+
+        print(w2.df)
+        print(warrays.df)
+
+        pd.testing.assert_frame_equal(w2.df, warrays.df)
+
     def test_summarize_any(self):
         df = create_df()
         df["G"] = ["G1", "G1", "G2", "G1", "G2"]

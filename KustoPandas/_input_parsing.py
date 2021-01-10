@@ -5,6 +5,12 @@ from collections import OrderedDict
 from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma, Mul, Asc, Desc
 
 class SimpleExpression:
+    """
+    this class is a wrapper around a simple parsed expression.
+
+    It makes it easier to do things like get the assigned name or default name
+    and determine if there is an additional modifiers like asc or desc
+    """
     def __init__(self, parsed):
         """ parsed can be an assignment or a simple expression
         A = B
@@ -163,6 +169,9 @@ def _parse_inputs_with_by(aggregates, by=None):
             aggs, by_parsed = _split_by_operator(parsed)
             return aggs, by_parsed
         aggregates_parsed = _split_if_comma(parsed)
+    elif isinstance(aggregates, int): # to support w.top(2, "A")
+        # there is probably a better way then to convert it to string and back again
+        aggregates_parsed = [parse_expression(str(aggregates))]
     else:
         aggregates_parsed = [parse_expression(a) for a in aggregates]
 
@@ -175,3 +184,10 @@ def _parse_inputs_with_by(aggregates, by=None):
         by_parsed = [parse_expression(c) for c in by]
     
     return aggregates_parsed, by_parsed
+
+def _wrap_with_simple_expression(expressions):
+    return [SimpleExpression(e) for e in expressions]
+
+def _parse_inputs_with_by_return_simple_expression(aggregates, by=None):
+    aggregates_parsed, by_parsed = _parse_inputs_with_by(aggregates, by=by)
+    return _wrap_with_simple_expression(aggregates_parsed), _wrap_with_simple_expression(by_parsed)
