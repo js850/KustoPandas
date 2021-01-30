@@ -4,6 +4,8 @@ import numpy as np
 
 from . import expression_parser as ep
 
+from ._input_parsing import _generate_temp_column_name
+
 def _is_groupby(g):
     return isinstance(g, pd.core.groupby.SeriesGroupBy) or isinstance(g, pd.core.groupby.DataFrameGroupBy )
 
@@ -27,7 +29,7 @@ class SimpleAgg:
         self.input_column_definitions = self._get_input_column_definitions(all_columns)
         # use a random name for the column to avoid conflicting names from different 
         # aggregate functions operatoring on the same groupby object
-        self.input_column_names = [str(uuid.uuid1()) for a in self.input_column_definitions]
+        self.input_column_names = [_generate_temp_column_name() for a in self.input_column_definitions]
 
     def validate(self, df):
         pass
