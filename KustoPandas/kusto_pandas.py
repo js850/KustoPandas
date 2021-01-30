@@ -6,7 +6,7 @@ from .expression_parser import parse_expression, Assignment, Var, Method, By, Co
 from .aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
-from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by, _parse_inputs_with_by_return_simple_expression
+from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by, _parse_inputs_with_by_return_simple_expression, replace_temp_column_names
 
 
 def ensure_column_name_unique(df, col):
@@ -36,6 +36,7 @@ class Wrap:
         return self.df._repr_html_()
 
     def _copy(self, df):
+        df = replace_temp_column_names(df)
         w = Wrap(df)
         w.let_statements = list(self.let_statements)
         return w
@@ -142,7 +143,9 @@ class Wrap:
         variable_map = self._get_var_map()
         for parsed in by:
             col_name, series = _evaluate_and_get_name(parsed, variable_map)
-            # TODO: deal with conflicting __tempcolname__
+            if col_name in group_by_col_names:
+                raise Exception("Column can only appear once in group by expression " + col_name)
+
             group_by_col_names.append(col_name)
             dftemp[col_name] = series
         

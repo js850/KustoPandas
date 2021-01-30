@@ -49,6 +49,14 @@ class TestWrap(unittest.TestCase):
         z = w.df["z"]
         expected = [0, 2, 4, 6, 8]
         self.assertListEqual(expected, list(z))
+
+    def test_extend_noname(self):
+        df = create_df()
+        df = df[["B"]]
+        w = Wrap(df)
+        wnew = w.extend("B*2, B+1")
+
+        assert ["B", "Column1", "Column2"] == list(wnew.df.columns)
     
     def test_where(self):
         df = create_df()

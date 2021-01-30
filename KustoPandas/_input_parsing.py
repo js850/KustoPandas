@@ -1,8 +1,46 @@
+import uuid
 from functools import reduce
 import fnmatch
 from collections import OrderedDict
 
 from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma, Mul, Asc, Desc
+
+_temp_name_base = "__tempcolumnname__"
+
+class DefaultColumnNameGenerator:
+    def __init__(self):
+        self.count = 0
+
+    def _is_temp_column_name(self, name):
+        return _temp_name_base in name
+    
+    def _generate_default_column_name(self, existing_cols):
+        self.count += 1
+        new_name_base = "Column" + str(self.count)
+        new_name = new_name_base
+        i = 0
+        while new_name in existing_cols:
+            # This is not examply what Kusto does.  If Column1 already exists in the 
+            # dataframe, then kusto changes that column and keeps this default name as Column1
+            i += 1
+            new_name = new_name_base + "_" + str(i)
+        return new_name
+        
+    def replace_temp_column_names(self, df):
+        name_map = {}
+        for c in df.columns:
+            if self._is_temp_column_name(c):
+                new_name = self._generate_default_column_name(df.columns)
+                name_map[c] = new_name
+        
+        return df.rename(columns=name_map)
+
+def _generate_temp_column_name():
+    return _temp_name_base + str(uuid.uuid1())
+
+def replace_temp_column_names(df):
+    name_generator = DefaultColumnNameGenerator()
+    return name_generator.replace_temp_column_names(df)
 
 class SimpleExpression:
     """
@@ -115,7 +153,7 @@ def _get_default_name(parsed):
         return str(parsed)
     if isinstance(parsed, Method):
         return _get_method_default_name(parsed)
-    return "__tempcolumnname_"
+    return _generate_temp_column_name()
 
 def _evaluate_and_get_name(parsed, variable_map):
     result = parsed.evaluate(variable_map)
@@ -126,7 +164,7 @@ def _evaluate_and_get_name(parsed, variable_map):
         return str(parsed), result
     if isinstance(parsed, Method):
         return _get_method_default_name(parsed), result
-    return "__tempcolumnname_", result
+    return _generate_temp_column_name(), result
 
 def _split_if_comma(parsed):
     if isinstance(parsed, Comma):
