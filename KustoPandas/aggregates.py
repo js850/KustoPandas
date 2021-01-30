@@ -15,9 +15,8 @@ class SimpleAgg:
     An aggregate function needs to define the following methods
 
     """
-    def __init__(self, output_column_name, args, all_columns):
+    def __init__(self, args, all_columns):
         self.args = args
-        self.output_column_name = output_column_name
 
         # Get the definitions of the columns needed for the aggregate.
         # Each entry can be a simple column name, or a more complex expression, e.g. A+B.
@@ -54,12 +53,6 @@ class SimpleAgg:
         suffix = "_".join(names)
         return self._get_method_name() + "_" + suffix
 
-    def _get_output_column_name(self):
-        if self.output_column_name:
-            return self.output_column_name
-        else:
-            return self._default_name()
-    
     def evaluate(self, vals):
         return self.apply(self._grouped_val)
 
@@ -75,8 +68,7 @@ class SimpleAgg:
         return self.apply1(grouped)
 
     def apply1(self, grouped):
-        output_column_name = self._get_output_column_name()
-        self._output_column_names = [output_column_name]
+        self._output_column_names = [self._default_name()]
         
         if _is_groupby(grouped):
             series = self.apply_aggregate(grouped)
@@ -118,7 +110,7 @@ class TopLevelAgg(SimpleAgg):
     def _evaluate_column_inputs_traverse(self, vars, parsed):
         if isinstance(parsed, ep.Method) and str(parsed.name) in aggregate_map:
             aggregate_class = aggregate_map[str(parsed.name)]
-            aggregate_instance = aggregate_class(None, parsed.args.args, self.all_columns)
+            aggregate_instance = aggregate_class(parsed.args.args, self.all_columns)
             parsed.aggregate_instance = aggregate_instance
             self.aggregate_instances.append(aggregate_instance)
             return aggregate_instance.evaluate_column_inputs(vars)
@@ -334,7 +326,6 @@ class Any(SimpleAgg):
 
         if len(self.input_column_names) == 0:
             raise Exception("Any must have at least one argument")
-            output_col_names = [self._get_output_column_name()]
         else:
             output_col_names = []
             prefix = self._get_method_name()
