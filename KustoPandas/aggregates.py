@@ -74,8 +74,6 @@ class TopLevelAgg:
 
 class SimpleAgg:
     """
-    An aggregate function needs to define the following methods
-
     """
     def __init__(self, args, all_columns):
         self.args = args
@@ -88,7 +86,7 @@ class SimpleAgg:
         self.input_column_definitions = self._get_input_column_definitions(all_columns)
         # use a random name for the column to avoid conflicting names from different 
         # aggregate functions operatoring on the same groupby object
-        self.input_column_names = [_generate_temp_column_name() for a in self.input_column_definitions]
+        self.input_column_names = [self._get_arg_name_or_default(a, _generate_temp_column_name()) for a in self.input_column_definitions]
 
     def validate(self):
         pass
@@ -123,11 +121,10 @@ class SimpleAgg:
         return self.apply(self._grouped_val)
 
     def apply(self, grouped):
-        names = self.input_column_names
-        if len(names) == 1:
+        if len(self.input_column_names) == 1:
             # operate on a SeriesGroupBy
-            grouped = grouped[names[0]]
-        elif len(names) > 1:
+            grouped = grouped[self.input_column_names[0]]
+        else:
             # operate on a DataFrameGroupBy
             grouped = grouped[self.input_column_names]
         
