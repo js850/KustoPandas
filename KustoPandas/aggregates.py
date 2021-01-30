@@ -17,6 +17,7 @@ class SimpleAgg:
     """
     def __init__(self, args, all_columns):
         self.args = args
+        self._grouped_val = None
 
         # Get the definitions of the columns needed for the aggregate.
         # Each entry can be a simple column name, or a more complex expression, e.g. A+B.
@@ -27,14 +28,14 @@ class SimpleAgg:
         # aggregate functions operatoring on the same groupby object
         self.input_column_names = [_generate_temp_column_name() for a in self.input_column_definitions]
 
-    def validate(self, df):
+    def validate(self):
         pass
 
     def _get_input_column_definitions(self, all_columns):
         return self.args
 
     def evaluate_column_inputs(self, vars):
-        self.validate(None)
+        self.validate()
 
         input_cols = [col.evaluate(vars) for col in self.input_column_definitions]
         return zip(self.input_column_names, input_cols)
@@ -52,6 +53,9 @@ class SimpleAgg:
         names = [n for n in names if n != ""]
         suffix = "_".join(names)
         return [self._get_method_name() + "_" + suffix]
+    
+    def set_grouped_object(self, grouped):
+        self._grouped_val = grouped
 
     def evaluate(self, vals):
         return self.apply(self._grouped_val)
@@ -109,7 +113,7 @@ class TopLevelAgg(SimpleAgg):
         if isinstance(parsed, ep.Method) and str(parsed.name) in aggregate_map:
             aggregate_class = aggregate_map[str(parsed.name)]
             aggregate_instance = aggregate_class(parsed.args.args, self.all_columns)
-            parsed.aggregate_instance = aggregate_instance
+            parsed.set_aggregate_instance(aggregate_instance)
             self.aggregate_instances.append(aggregate_instance)
             return aggregate_instance.evaluate_column_inputs(vars)
 
@@ -124,14 +128,14 @@ class TopLevelAgg(SimpleAgg):
         if self.new_colum_name is not None:
             return [self.new_colum_name]
         
-        if hasattr(self.parsed, "aggregate_instance"):
+        if isinstance(self.parsed, ep.Method) and self.parsed.has_aggregate_instance():
             return self.parsed.aggregate_instance.get_output_column_names()
         
         return [_generate_temp_column_name()]
     
     def apply(self, grouped, vars):
         for agg in self.aggregate_instances:
-            agg._grouped_val = grouped
+            agg.set_grouped_object(grouped)
 
         # result can be a Series or a list of Series (E.g. percentiles returns a list of Series)
         result = self.parsed.evaluate(vars)
@@ -149,17 +153,17 @@ class TopLevelAgg(SimpleAgg):
 
 
 class NoArgAgg(SimpleAgg):
-    def validate(self, df):
+    def validate(self):
         if self.args:
             raise Exception("{0} can't take an arg: {1}".format(self._get_method_name(), str(self.args)))
 
 class AggOneArg(SimpleAgg):
-    def validate(self, df):
+    def validate(self):
         if len(self.args) != 1:
             raise Exception("{0} can only take one argument: {1}".format(self._get_method_name(), str(self.args)))
 
 class AggTwoArgs(SimpleAgg):
-    def validate(self, df):
+    def validate(self):
         if len(self.args) != 2:
             raise Exception("{0} must have two arguments: {1}".format(self._get_method_name(), str(self.args)))
 
@@ -300,7 +304,7 @@ def _any(df, return_df):
 
 
 class Any(SimpleAgg):
-    def validate(self, df):
+    def validate(self):
         if len(self.args) == 0:
             raise Exception("{0} must have at least one arg: {1}".format(self._get_method_name(), str(self.args)))
 
@@ -346,7 +350,7 @@ class AnyIf(SimpleIfAgg):
         return s.iloc[0]
 
 class Percentiles(SimpleAgg):
-    def validate(self, df):
+    def validate(self):
         if len(self.args) < 2:
             raise Exception("Percentiles requires at least two args: " + str(self.args))
 

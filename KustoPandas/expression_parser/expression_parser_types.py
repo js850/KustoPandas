@@ -438,18 +438,25 @@ class Method(Expression):
         self.name = name
         self.args = args
         self.descendents = [name, args]
+        self.aggregate_instance = None
 
     def __str__(self):
         return str(self.name) + str(self.args)
     def __repr__(self):
         return str(self)
     def evaluate(self, vals):
-        if hasattr(self, "aggregate_instance"):
+        if self.has_aggregate_instance():
             return self.aggregate_instance.evaluate(vals)
 
         method = self.name.evaluate(vals)
         args = self.args.evaluate(vals)
         return method(*args)
+    
+    def set_aggregate_instance(self, agg):
+        self.aggregate_instance = agg
+    
+    def has_aggregate_instance(self):
+        return self.aggregate_instance is not None
 
 def _square_brackets_apply(v, k):
     try:
