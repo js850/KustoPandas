@@ -10,6 +10,68 @@ from ._input_parsing import _generate_temp_column_name
 def _is_groupby(g):
     return isinstance(g, pd.core.groupby.SeriesGroupBy) or isinstance(g, pd.core.groupby.DataFrameGroupBy )
 
+class TopLevelAgg:
+    """
+    use this as a wrapper if the aggregate expression is not just a simple aggregate.  e.g.
+
+    summarize("C = avg(A+1) + avg(B)")
+
+    The logic here is complicated because we first have to do this in 3 steps
+    
+        1. evaluate the expressions inside the aggregate functions.  These become the inputs to the agg functions
+        2. Combine them in a DataFrame and do a groupby on all of them at the same time
+        3. Perform the aggregation
+
+    Then the groupby is applied 
+    """
+    def __init__(self, new_column_name, parsed, all_columns):
+        self.new_colum_name = new_column_name
+        self.parsed = parsed
+        self.all_columns = all_columns
+        self.aggregate_instances = []
+    
+    def _evaluate_column_inputs_traverse(self, vars, parsed):
+        if isinstance(parsed, ep.Method) and str(parsed.name) in aggregate_map:
+            aggregate_class = aggregate_map[str(parsed.name)]
+            aggregate_instance = aggregate_class(parsed.args.args, self.all_columns)
+            parsed.set_aggregate_instance(aggregate_instance)
+            self.aggregate_instances.append(aggregate_instance)
+            return aggregate_instance.evaluate_column_inputs(vars)
+
+        list_of_lists = [self._evaluate_column_inputs_traverse(vars, d) for d in parsed.descendents]
+        # flatten lists
+        return list(itertools.chain.from_iterable(list_of_lists))
+
+    def evaluate_column_inputs(self, vars):
+        return self._evaluate_column_inputs_traverse(vars, self.parsed)
+
+    def _get_output_names(self):
+        if self.new_colum_name is not None:
+            return [self.new_colum_name]
+        
+        if isinstance(self.parsed, ep.Method) and self.parsed.has_aggregate_instance():
+            return self.parsed.aggregate_instance.get_output_column_names()
+        
+        return [_generate_temp_column_name()]
+    
+    def apply(self, grouped, vars):
+        for agg in self.aggregate_instances:
+            agg.set_grouped_object(grouped)
+
+        # result can be a Series or a list of Series (E.g. percentiles returns a list of Series)
+        result = self.parsed.evaluate(vars)
+
+        output_names = self._get_output_names()
+
+        if isinstance(result, pd.Series):
+            return [(output_names[0], result)]
+        
+        if len(result) != len(output_names):
+            # eventually this will be allowed A = percentiles(B, 50, 75) should result in columns A and percentiles_B_75
+            raise Exception("Error in Aggregate output naming. Length of output names ({}) does not agree with length of result ({})".format(len(output_names), len(result)))
+
+        return zip(output_names, result)
+
 class SimpleAgg:
     """
     An aggregate function needs to define the following methods
@@ -88,69 +150,6 @@ class SimpleAgg:
         # grouped.max() returns a series with one max value per group
         # series.max() just returns a single value
         return self.apply_aggregate(series)
-
-class TopLevelAgg(SimpleAgg):
-    """
-    use this as a wrapper if the aggregate expression is not just a simple aggregate.  e.g.
-
-    summarize("C = avg(A+1) + avg(B)")
-
-    The logic here is complicated because we first have to do this in 3 steps
-    
-        1. evaluate the expressions inside the aggregate functions.  These become the inputs to the agg functions
-        2. Combine them in a DataFrame and do a groupby on all of them at the same time
-        3. Perform the aggregation
-
-    Then the groupby is applied 
-    """
-    def __init__(self, new_column_name, parsed, all_columns):
-        self.new_colum_name = new_column_name
-        self.parsed = parsed
-        self.all_columns = all_columns
-        self.aggregate_instances = []
-    
-    def _evaluate_column_inputs_traverse(self, vars, parsed):
-        if isinstance(parsed, ep.Method) and str(parsed.name) in aggregate_map:
-            aggregate_class = aggregate_map[str(parsed.name)]
-            aggregate_instance = aggregate_class(parsed.args.args, self.all_columns)
-            parsed.set_aggregate_instance(aggregate_instance)
-            self.aggregate_instances.append(aggregate_instance)
-            return aggregate_instance.evaluate_column_inputs(vars)
-
-        list_of_lists = [self._evaluate_column_inputs_traverse(vars, d) for d in parsed.descendents]
-        # flatten lists
-        return list(itertools.chain.from_iterable(list_of_lists))
-
-    def evaluate_column_inputs(self, vars):
-        return self._evaluate_column_inputs_traverse(vars, self.parsed)
-
-    def _get_output_names(self):
-        if self.new_colum_name is not None:
-            return [self.new_colum_name]
-        
-        if isinstance(self.parsed, ep.Method) and self.parsed.has_aggregate_instance():
-            return self.parsed.aggregate_instance.get_output_column_names()
-        
-        return [_generate_temp_column_name()]
-    
-    def apply(self, grouped, vars):
-        for agg in self.aggregate_instances:
-            agg.set_grouped_object(grouped)
-
-        # result can be a Series or a list of Series (E.g. percentiles returns a list of Series)
-        result = self.parsed.evaluate(vars)
-
-        output_names = self._get_output_names()
-
-        if isinstance(result, pd.Series):
-            return [(output_names[0], result)]
-        
-        if len(result) != len(output_names):
-            # eventually this will be allowed A = percentiles(B, 50, 75) should result in columns A and percentiles_B_75
-            raise Exception("Error in Aggregate output naming. Length of output names ({}) does not agree with length of result ({})".format(len(output_names), len(result)))
-
-        return zip(output_names, result)
-
 
 class NoArgAgg(SimpleAgg):
     def validate(self):
