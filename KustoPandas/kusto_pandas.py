@@ -140,17 +140,11 @@ class Wrap:
 
         group_by_col_names = []
         variable_map = self._get_var_map()
-        for c in by:
-            # TODO: This can be improved and simplified
-            cstr = str(c)
-            if cstr in self.df.columns:
-                group_by_col_names.append(cstr)
-                dftemp[cstr] = self.df[cstr]
-            else:
-                parsed = c
-                col_name, series = _evaluate_and_get_name(parsed, variable_map)
-                group_by_col_names.append(col_name)
-                dftemp[col_name] = series
+        for parsed in by:
+            col_name, series = _evaluate_and_get_name(parsed, variable_map)
+            # TODO: deal with conflicting __tempcolname__
+            group_by_col_names.append(col_name)
+            dftemp[col_name] = series
         
         all_columns = set(self.df.columns) - set(group_by_col_names)
 

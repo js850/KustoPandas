@@ -759,3 +759,18 @@ def test_summarize_composit_argument():
     print(wnew)
     assert list([None]) == list(wnew.df["anyif_B_C"])
     assert 1 == len(wnew.df.columns)
+
+def test_summarize_two_groupby_default_name():
+    df = pd.DataFrame()
+    df["A"] = [1, 0, 1, 0, 1]
+    df["B"] = [1, 1, 1, 0, 0]
+    df["G"] = [1, 1, 1, 1, 1]
+
+    w = Wrap(df)
+    wnew = w.summarize("count() by G + 1, B + 1")
+
+    print()
+    print(wnew)
+    assert list([3, 2]) == list(wnew.df["count_"])
+    assert list([3, 2]) == list(wnew.df["Column1"])
+    assert 3 == len(wnew.df.columns)
