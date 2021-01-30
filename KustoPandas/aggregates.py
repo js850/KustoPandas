@@ -359,7 +359,9 @@ class Percentiles(SimpleAgg):
     def _get_input_column_definitions(self, all_columns):
         return self.args[:1]
 
-    def apply1(self, grouped):
+    def apply(self, grouped):
+        grouped = grouped[self.input_column_names[0]]
+
         percentiles = [int(a.evaluate(None)) for a in self.args[1:]]
         for p in percentiles:
             if p > 100 or p < 0:
@@ -375,8 +377,16 @@ class Percentiles(SimpleAgg):
         result = grouped.quantile(quantiles)
 
         if _is_groupby(grouped):
-            # result is a multi-index.  we need to flatten it
-            flattened = [result[:,q] for q in quantiles]
+            flattened = []
+            for q in quantiles:
+                # The df has a multi-index.  
+                # The first n levels of the multi-index are the group-by columns
+                # The lowest level is the quantile
+                # Select the rows corresponding to quantile q
+                r = result.loc[result.index.get_level_values(-1) == q]
+                # We now need to drop the index level corresponding to q
+                r.index = r.index.droplevel(-1)
+                flattened.append(r)
         elif isinstance(result, pd.DataFrame):
             # not a multi-index so we need to access the results in a different way
             flattened = [result.loc[q] for q in quantiles]

@@ -106,6 +106,19 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual([1.0, 3.0], list(w.df["percentiles_B_50"]))
         self.assertListEqual([2.0, 3.5], list(w.df["percentiles_B_75"]))
 
+    def test_summarize_percentile_2by(self):
+        df = create_df()
+        df["G2"] = df["G"]
+        w = Wrap(df)
+        w = w.summarize("percentiles(B, 50, 75) by G, G2")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["percentiles_B_50"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["percentiles_B_75"]))
+        assert ["G", "G2", "percentiles_B_50", "percentiles_B_75"] == list(w.df.columns)
+
+
     def test_summarize_percentile_one_arg(self):
         df = create_df()
         w = Wrap(df)
