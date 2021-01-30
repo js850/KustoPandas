@@ -47,11 +47,11 @@ class SimpleAgg:
             return str(arg)
         return default
 
-    def _default_name(self):
+    def get_output_column_names(self):
         names = [self._get_arg_name_or_default(arg, "") for arg in self.args]
         names = [n for n in names if n != ""]
         suffix = "_".join(names)
-        return self._get_method_name() + "_" + suffix
+        return [self._get_method_name() + "_" + suffix]
 
     def evaluate(self, vals):
         return self.apply(self._grouped_val)
@@ -68,8 +68,6 @@ class SimpleAgg:
         return self.apply1(grouped)
 
     def apply1(self, grouped):
-        self._output_column_names = [self._default_name()]
-        
         if _is_groupby(grouped):
             series = self.apply_aggregate(grouped)
         else:
@@ -127,7 +125,7 @@ class TopLevelAgg(SimpleAgg):
             return [self.new_colum_name]
         
         if hasattr(self.parsed, "aggregate_instance"):
-            return self.parsed.aggregate_instance._output_column_names
+            return self.parsed.aggregate_instance.get_output_column_names()
         
         return [_generate_temp_column_name()]
     
@@ -314,6 +312,16 @@ class Any(SimpleAgg):
 
         return self.args
     
+    def get_output_column_names(self):
+        output_col_names = []
+        prefix = self._get_method_name()
+        for arg in self.input_column_definitions:
+            suffix = self._get_arg_name_or_default(arg, "")
+            col_name = prefix + "_" + suffix
+            output_col_names.append(col_name)
+        
+        return output_col_names
+
     def apply(self, df):
         df = df[self.input_column_names]
 
@@ -324,21 +332,7 @@ class Any(SimpleAgg):
         else:
             df_nonull = _any(df, True)
 
-        if len(self.input_column_names) == 0:
-            raise Exception("Any must have at least one argument")
-        else:
-            output_col_names = []
-            prefix = self._get_method_name()
-            for arg in self.input_column_definitions:
-                suffix = self._get_arg_name_or_default(arg, "")
-                col_name = prefix + "_" + suffix
-                output_col_names.append(col_name)
-        
-        self._output_column_names = output_col_names
-
-        result = []
-        for output_col_name, c in zip(output_col_names, self.input_column_names):
-            result.append(df_nonull[c])
+        result = [df_nonull[c] for c in self.input_column_names]
 
         if len(result) == 1:
             return result[0]
@@ -358,6 +352,14 @@ class Percentiles(SimpleAgg):
 
     def _get_input_column_definitions(self, all_columns):
         return self.args[:1]
+    
+    def get_output_column_names(self):
+        percentiles = [int(a.evaluate(None)) for a in self.args[1:]]
+        arg_name = self._get_arg_name_or_default(self.input_column_definitions[0], "")
+        basename = "{}_{}_".format(self._get_method_name(), arg_name)
+
+        names = [basename + str(p) for p in percentiles]
+        return names
 
     def apply(self, grouped):
         grouped = grouped[self.input_column_names[0]]
@@ -368,11 +370,6 @@ class Percentiles(SimpleAgg):
                 raise Exception("Percentile must be between 0 and 100")
         
         quantiles = [1.0*p / 100 for p in percentiles]
-        
-        arg_name = self._get_arg_name_or_default(self.input_column_definitions[0], "")
-        basename = "{}_{}_".format(self._get_method_name(), arg_name)
-
-        names = [basename + str(p) for p in percentiles]
 
         result = grouped.quantile(quantiles)
 
@@ -394,7 +391,6 @@ class Percentiles(SimpleAgg):
             # need to convert the result to a Series
             flattened = [pd.Series(result.loc[q]) for q in quantiles]
 
-        self._output_column_names = names
         if len(flattened) == 1:
             return flattened[0]
 
