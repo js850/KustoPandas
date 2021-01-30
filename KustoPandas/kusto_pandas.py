@@ -167,7 +167,7 @@ class Wrap:
         dfnew = pd.DataFrame()
 
         for arg in args:
-            result = arg.apply(grouped)
+            result = arg.apply(grouped, variable_map)
             for col, series in result:
                 col = ensure_column_name_unique(dfnew, col)
                 dfnew[col] = series

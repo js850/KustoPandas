@@ -82,18 +82,29 @@ class TestAggregates(unittest.TestCase):
 
         print(w.df)
 
-        self.assertListEqual([1.0, 3.0], list(w.df["percentiles_50"]))
-        self.assertListEqual([2.0, 3.5], list(w.df["percentiles_75"]))
+        self.assertListEqual([1.0, 3.0], list(w.df["percentiles_B_50"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["percentiles_B_75"]))
 
-    def test_summarize_percentile2(self):
+    def test_summarize_percentiles_2args_1name(self):
+        # multiple name is not supported yet. this will fail until then
         df = create_df()
         w = Wrap(df)
         w = w.summarize(["myperc = percentiles(B, 50, 75)"], "G")
 
         print(w.df)
 
-        self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
-        self.assertListEqual([2.0, 3.5], list(w.df["myperc_75"]))
+        self.assertListEqual([1.0, 3.0], list(w.df["myperc"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["percentiles_B_75"]))
+
+    def test_summarize_percentile2(self):
+        df = create_df()
+        w = Wrap(df)
+        w = w.summarize(["percentiles(B, 50, 75)"], "G")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["percentiles_B_50"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["percentiles_B_75"]))
 
     def test_summarize_percentile_one_arg(self):
         df = create_df()
@@ -102,8 +113,8 @@ class TestAggregates(unittest.TestCase):
 
         print(w.df)
 
-        self.assertListEqual([1.0, 3.0], list(w.df["myperc_50"]))
-        self.assertListEqual(["G", "myperc_50"], list(w.df.columns))
+        self.assertListEqual([1.0, 3.0], list(w.df["myperc"]))
+        self.assertListEqual(["G", "myperc"], list(w.df.columns))
 
     def test_summarize_percentile_noby(self):
         df = create_df()
@@ -113,9 +124,9 @@ class TestAggregates(unittest.TestCase):
         print()
         print(w.df)
 
-        self.assertListEqual(["percentiles_50", "percentiles_75"], list(w.df.columns))
-        self.assertListEqual([2.0], list(w.df["percentiles_50"]))
-        self.assertListEqual([3.0], list(w.df["percentiles_75"]))
+        self.assertListEqual(["percentiles_B_50", "percentiles_B_75"], list(w.df.columns))
+        self.assertListEqual([2.0], list(w.df["percentiles_B_50"]))
+        self.assertListEqual([3.0], list(w.df["percentiles_B_75"]))
 
     def test_summarize_percentile_singlepercentile_noby(self):
         df = create_df()
@@ -125,8 +136,8 @@ class TestAggregates(unittest.TestCase):
         print()
         print(w.df)
 
-        self.assertListEqual(["percentiles_50"], list(w.df.columns))
-        self.assertListEqual([2.0], list(w.df["percentiles_50"]))
+        self.assertListEqual(["percentiles_B_50"], list(w.df.columns))
+        self.assertListEqual([2.0], list(w.df["percentiles_B_50"]))
     
     def test_summarize_dcount(self):
         df = create_df()
@@ -750,56 +761,59 @@ def test_summarize_composit_argument():
     df = pd.DataFrame()
     df["A"] = [1, 0, 1, 0, 1]
     df["B"] = [1, 1, 1, 0, 0]
-    df["G"] = [1, 1, 1, 1, 1]
+    df["G"] = [1, 1, 1, 1, 0]
 
     w = Wrap(df)
-    wnew = w.summarize("count(), avg(A), avg(B), Cov = avg(A * B) - avg(A) * avg(B) by G")
+    wnew = w.summarize("count(), avg(A), Cov = avg(A * B) - avg(A) * avg(B) by G")
 
     print()
     print(wnew)
-    assert list([None]) == list(wnew.df["anyif_B_C"])
-    assert 1 == len(wnew.df.columns)
-
-def test_summarize_composit_argument_method():
-    df = pd.DataFrame()
-    df["A"] = ["HI", "hi", "hi", "HI"]
-    df["G"] = [1, 1, 1, 0]
-
-    w = Wrap(df)
-    wnew = w.summarize("tolower(any(A)) by G")
-
-    print()
-    print(wnew)
-    assert list([None]) == list(wnew.df["anyif_B_C"])
-    assert 1 == len(wnew.df.columns)
+    assert [1, 4] == list(wnew.df["count_"])
+    assert [1, 0.5] == list(wnew.df["avg_A"])
+    assert [0, 0.5 - 0.5*3/4] == list(wnew.df["Cov"])
+    assert 4 == len(wnew.df.columns)
 
 def test_summarize_composit_argument_default_name():
     df = pd.DataFrame()
     df["A"] = [1, 0, 1, 0, 1]
     df["B"] = [1, 1, 1, 0, 0]
-    df["G"] = [1, 1, 1, 1, 1]
+    df["G"] = [1, 1, 1, 1, 0]
 
     w = Wrap(df)
     wnew = w.summarize("avg(A * B) - avg(A) * avg(B) by G")
 
     print()
     print(wnew)
-    assert list([None]) == list(wnew.df["anyif_B_C"])
+    assert [0, 0.5 - 0.5*3/4] == list(wnew.df["Column1"])
+    assert 2 == len(wnew.df.columns)
+
+def test_summarize_composit_argument_method_noby():
+    df = pd.DataFrame()
+    df["A"] = ["HI", "HI", "HI", "HI"]
+    df["G"] = [1, 1, 1, 0]
+
+    w = Wrap(df)
+    wnew = w.summarize("tolower(any(A))")
+
+    print()
+    print(wnew)
+    assert ["hi"] == list(wnew.df["Column1"])
     assert 1 == len(wnew.df.columns)
 
 def test_summarize_composit_argument_default_name_default_groupby_name():
     df = pd.DataFrame()
-    df["A"] = [1, 0, 1, 0, 1]
+    df["A"] = [1, 1, 1, 1, 1]
     df["B"] = [1, 1, 1, 0, 0]
-    df["G"] = [1, 1, 1, 1, 1]
+    df["G"] = [7, 7, 7, 7, 7]
 
     w = Wrap(df)
-    wnew = w.summarize("avg(A * B) - avg(A) * avg(B) by G + 1")
+    wnew = w.summarize("sum(A * B) - any(A) * sum(B) by G + 1")
 
     print()
     print(wnew)
-    assert list([None]) == list(wnew.df["anyif_B_C"])
-    assert 1 == len(wnew.df.columns)
+    assert list([0]) == list(wnew.df["Column2"])
+    assert list([8]) == list(wnew.df["Column1"])
+    assert 2 == len(wnew.df.columns)
 
 def test_summarize_two_groupby_default_name():
     df = pd.DataFrame()
@@ -828,4 +842,4 @@ def test_summarize_default_name_conflicts():
 
     print()
     print(wnew)
-    assert ["Column1", "Column2_1", "count_", "Column3", "Column2" ] == len(wnew.df.columns)
+    assert ["Column1", "Column2_1", "count_", "Column3", "Column2" ] == list(wnew.df.columns)

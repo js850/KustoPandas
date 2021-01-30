@@ -444,6 +444,9 @@ class Method(Expression):
     def __repr__(self):
         return str(self)
     def evaluate(self, vals):
+        if hasattr(self, "aggregate_instance"):
+            return self.aggregate_instance.evaluate(vals)
+
         method = self.name.evaluate(vals)
         args = self.args.evaluate(vals)
         return method(*args)

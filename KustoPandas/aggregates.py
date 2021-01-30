@@ -1,4 +1,5 @@
 import uuid
+import itertools
 import pandas as pd
 import numpy as np
 
@@ -12,10 +13,6 @@ def _is_groupby(g):
 class SimpleAgg:
     """
     An aggregate function needs to define the following methods
-
-    columns_needed => returns list of expression
-    
-    apply
 
     """
     def __init__(self, output_column_name, args, all_columns):
@@ -43,9 +40,6 @@ class SimpleAgg:
         input_cols = [col.evaluate(vars) for col in self.input_column_definitions]
         return zip(self.input_column_names, input_cols)
 
-    def columns_needed(self):
-        return zip(self.input_column_names, self.input_column_definitions)
-
     def _get_method_name(self):
         return self.__class__.__name__.lower()
     
@@ -66,6 +60,9 @@ class SimpleAgg:
         else:
             return self._default_name()
     
+    def evaluate(self, vals):
+        return self.apply(self._grouped_val)
+
     def apply(self, grouped):
         names = self.input_column_names
         if len(names) == 1:
@@ -79,6 +76,7 @@ class SimpleAgg:
 
     def apply1(self, grouped):
         output_column_name = self._get_output_column_name()
+        self._output_column_names = [output_column_name]
         
         if _is_groupby(grouped):
             series = self.apply_aggregate(grouped)
@@ -86,7 +84,7 @@ class SimpleAgg:
             result = self.apply_aggregate_series(grouped)
             series = pd.Series([result])
 
-        return [(output_column_name, series)]
+        return series
     
     def apply_aggregate(self, grouped):
         raise NotImplementedError()
@@ -101,8 +99,63 @@ class TopLevelAgg(SimpleAgg):
     """
     use this as a wrapper if the aggregate expression is not just a simple aggregate.  e.g.
 
-    summarize("C = avg(A) + avg(B)")
+    summarize("C = avg(A+1) + avg(B)")
+
+    The logic here is complicated because we first have to do this in 3 steps
+    
+        1. evaluate the expressions inside the aggregate functions.  These become the inputs to the agg functions
+        2. Combine them in a DataFrame and do a groupby on all of them at the same time
+        3. Perform the aggregation
+
+    Then the groupby is applied 
     """
+    def __init__(self, new_column_name, parsed, all_columns):
+        self.new_colum_name = new_column_name
+        self.parsed = parsed
+        self.all_columns = all_columns
+        self.aggregate_instances = []
+    
+    def _evaluate_column_inputs_traverse(self, vars, parsed):
+        if isinstance(parsed, ep.Method) and str(parsed.name) in aggregate_map:
+            aggregate_class = aggregate_map[str(parsed.name)]
+            aggregate_instance = aggregate_class(None, parsed.args.args, self.all_columns)
+            parsed.aggregate_instance = aggregate_instance
+            self.aggregate_instances.append(aggregate_instance)
+            return aggregate_instance.evaluate_column_inputs(vars)
+
+        list_of_lists = [self._evaluate_column_inputs_traverse(vars, d) for d in parsed.descendents]
+        # flatten lists
+        return list(itertools.chain.from_iterable(list_of_lists))
+
+    def evaluate_column_inputs(self, vars):
+        return self._evaluate_column_inputs_traverse(vars, self.parsed)
+
+    def _get_output_names(self):
+        if self.new_colum_name is not None:
+            return [self.new_colum_name]
+        
+        if hasattr(self.parsed, "aggregate_instance"):
+            return self.parsed.aggregate_instance._output_column_names
+        
+        return [_generate_temp_column_name()]
+    
+    def apply(self, grouped, vars):
+        for agg in self.aggregate_instances:
+            agg._grouped_val = grouped
+
+        # result can be a Series or a list of Series (E.g. percentiles returns a list of Series)
+        result = self.parsed.evaluate(vars)
+
+        output_names = self._get_output_names()
+
+        if isinstance(result, pd.Series):
+            return [(output_names[0], result)]
+        
+        if len(result) != len(output_names):
+            # eventually this will be allowed A = percentiles(B, 50, 75) should result in columns A and percentiles_B_75
+            raise Exception("Error in Aggregate output naming. Length of output names ({}) does not agree with length of result ({})".format(len(output_names), len(result)))
+
+        return zip(output_names, result)
 
 
 class NoArgAgg(SimpleAgg):
@@ -258,7 +311,8 @@ def _any(df, return_df):
 
 class Any(SimpleAgg):
     def validate(self, df):
-        pass
+        if len(self.args) == 0:
+            raise Exception("{0} must have at least one arg: {1}".format(self._get_method_name(), str(self.args)))
 
     def _get_input_column_definitions(self, all_columns):
         if isinstance(self.args[0], ep.Star):
@@ -267,7 +321,7 @@ class Any(SimpleAgg):
             return [ep.Var(c) for c in all_columns]
 
         return self.args
-
+    
     def apply(self, df):
         df = df[self.input_column_names]
 
@@ -279,6 +333,7 @@ class Any(SimpleAgg):
             df_nonull = _any(df, True)
 
         if len(self.input_column_names) == 0:
+            raise Exception("Any must have at least one argument")
             output_col_names = [self._get_output_column_name()]
         else:
             output_col_names = []
@@ -288,9 +343,15 @@ class Any(SimpleAgg):
                 col_name = prefix + "_" + suffix
                 output_col_names.append(col_name)
         
+        self._output_column_names = output_col_names
+
         result = []
         for output_col_name, c in zip(output_col_names, self.input_column_names):
-            result.append((output_col_name, df_nonull[c]))
+            result.append(df_nonull[c])
+
+        if len(result) == 1:
+            return result[0]
+
         return result
 
 class AnyIf(SimpleIfAgg):
@@ -315,11 +376,9 @@ class Percentiles(SimpleAgg):
         
         quantiles = [1.0*p / 100 for p in percentiles]
         
-        if self.output_column_name is not None:
-            basename = self.output_column_name + "_"
-        else:
-            basename = self._get_method_name() + "_"
-        
+        arg_name = self._get_arg_name_or_default(self.input_column_definitions[0], "")
+        basename = "{}_{}_".format(self._get_method_name(), arg_name)
+
         names = [basename + str(p) for p in percentiles]
 
         result = grouped.quantile(quantiles)
@@ -334,7 +393,11 @@ class Percentiles(SimpleAgg):
             # need to convert the result to a Series
             flattened = [pd.Series(result.loc[q]) for q in quantiles]
 
-        return zip(names, flattened)
+        self._output_column_names = names
+        if len(flattened) == 1:
+            return flattened[0]
+
+        return flattened
 
 
 def get_method_name(type):
@@ -347,7 +410,7 @@ aggregate_methods = [Count, DCount, DCountIf, CountIf,
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
-def create_aggregate(parsed, all_columns):
+def create_aggregate_old(parsed, all_columns):
     new_col = None
 
     if isinstance(parsed, ep.Assignment):
@@ -357,7 +420,7 @@ def create_aggregate(parsed, all_columns):
         method = parsed
 
     if not isinstance(method, ep.Method):
-        raise Exception("expected method but got: " + str(method))
+        raise Exception("expected aggregate method but got: " + str(method))
 
     method_name = str(method.name)
 
@@ -368,3 +431,14 @@ def create_aggregate(parsed, all_columns):
 
 
     return agg_method(new_col, method.args.args, all_columns)
+
+def create_aggregate(parsed, all_columns):
+
+    if isinstance(parsed, ep.Assignment):
+        new_col = str(parsed.left)
+        method = parsed.right
+    else:
+        new_col = None
+        method = parsed
+
+    return TopLevelAgg(new_col, method, all_columns)
