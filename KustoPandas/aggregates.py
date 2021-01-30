@@ -29,8 +29,17 @@ class SimpleAgg:
         # aggregate functions operatoring on the same groupby object
         self.input_column_names = [str(uuid.uuid1()) for a in self.input_column_definitions]
 
+    def validate(self, df):
+        pass
+
     def _get_input_column_definitions(self, all_columns):
         return self.args
+
+    def evaluate_column_inputs(self, vars):
+        self.validate(None)
+
+        input_cols = [col.evaluate(vars) for col in self.input_column_definitions]
+        return zip(self.input_column_names, input_cols)
 
     def columns_needed(self):
         return zip(self.input_column_names, self.input_column_definitions)
@@ -85,6 +94,13 @@ class SimpleAgg:
         # grouped.max() returns a series with one max value per group
         # series.max() just returns a single value
         return self.apply_aggregate(series)
+
+class TopLevelAgg(SimpleAgg):
+    """
+    use this as a wrapper if the aggregate expression is not just a simple aggregate.  e.g.
+
+    summarize("C = avg(A) + avg(B)")
+    """
 
 
 class NoArgAgg(SimpleAgg):

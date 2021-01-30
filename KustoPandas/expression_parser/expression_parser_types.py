@@ -19,6 +19,7 @@ class UnaryOpp(Expression):
     op = ""
     def __init__(self, right):
         self.right = right
+        self.descendents = [right]
     
     def __str__(self):
         if op_is_not_special_chars(self.op):
@@ -41,6 +42,7 @@ class UnaryOppLeft(Expression):
     op = ""
     def __init__(self, left):
         self.left = left
+        self.descendents = [left]
     
     def __str__(self):
         if op_is_not_special_chars(self.op):
@@ -64,6 +66,7 @@ class Opp(Expression):
     def __init__(self, left, right):
         self.left = left
         self.right = right
+        self.descendents = [left, right]
     
     def __str__(self):
         return "({0} {1} {2})".format(self.left, self.op, self.right)
@@ -377,6 +380,7 @@ class NumOrVar(Expression):
 class Int(NumOrVar):
     def __init__(self, value):
         self.value = value.strip()
+        self.descendents = []
     def __str__(self):
         return self.value
     def __repr__(self):
@@ -387,6 +391,7 @@ class Int(NumOrVar):
 class Float(NumOrVar):
     def __init__(self, value):
         self.value = value.strip()
+        self.descendents = []
     def __str__(self):
         return self.value
     def __repr__(self):
@@ -397,6 +402,7 @@ class Float(NumOrVar):
 class Var(NumOrVar):
     def __init__(self, value):
         self.value = value.strip()
+        self.descendents = []
     def __str__(self):
         return self.value
     def __repr__(self):
@@ -407,6 +413,7 @@ class Var(NumOrVar):
 class StringLiteral(NumOrVar):
     def __init__(self, value):
         self.value = value
+        self.descendents = []
     def __str__(self):
         return "\"" + self.value + "\""
     def __repr__(self):
@@ -414,9 +421,11 @@ class StringLiteral(NumOrVar):
     def evaluate(self, vals):
         return self.value
 
-class Args:
+class Args(Expression):
     def __init__(self, args):
         self.args = args
+        self.descendents = list(args)
+
     def __str__(self):
         return "(" + ", ".join((str(a) for a in self.args)) + ")"
     def __repr__(self):
@@ -428,6 +437,8 @@ class Method(Expression):
     def __init__(self, name, args):
         self.name = name
         self.args = args
+        self.descendents = [name, args]
+
     def __str__(self):
         return str(self.name) + str(self.args)
     def __repr__(self):
@@ -455,6 +466,8 @@ class SquareBrackets(Expression):
     def __init__(self, variable, value):
         self.variable = variable
         self.value = value
+        self.descendents = [variable, value]
+
     def __str__(self):
         return str(self.variable)  + "[" + str(self.value) + "]"
     def __repr__(self):
@@ -474,6 +487,7 @@ class TimespanLiteral(Expression):
     def __init__(self, count, unit):
         self.count = count
         self.unit = unit
+        self.descendents = []
     def __str__(self):
         return "{0}{1}".format(str(self.count), self.unit)
     def __repr__(self):
@@ -484,6 +498,8 @@ class TimespanLiteral(Expression):
 class ListExpression(Expression):
     def __init__(self, items):
         self.items = items
+        self.descendents = list(items)
+
     def __str__(self):
         return "(" + ", ".join((str(a) for a in self.items)) + ")"
     def __repr__(self):

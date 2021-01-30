@@ -136,17 +136,16 @@ class Wrap:
         return self._summarize(aggregates_parsed, by_parsed)
 
     def _summarize(self, aggregates, by):
-        # if by is None:
-        #     parsed 
-
-        dftemp = self.df.copy(deep=False)
+        dftemp = pd.DataFrame(index=self.df.index.copy())
 
         group_by_col_names = []
         variable_map = self._get_var_map()
         for c in by:
+            # TODO: This can be improved and simplified
             cstr = str(c)
-            if cstr in dftemp.columns:
+            if cstr in self.df.columns:
                 group_by_col_names.append(cstr)
+                dftemp[cstr] = self.df[cstr]
             else:
                 parsed = c
                 col_name, series = _evaluate_and_get_name(parsed, variable_map)
@@ -157,14 +156,10 @@ class Wrap:
 
         args = [create_aggregate(a, all_columns) for a in aggregates]
 
-        columns_needed = set()
         for arg in args:
-            arg.validate(dftemp)
-            for col_name, col_value in arg.columns_needed():
-                columns_needed.add(col_name)
-                if col_name not in dftemp:
-                    result = col_value.evaluate(self._get_var_map())
-                    dftemp[col_name] = result
+            for col_name, col_value in arg.evaluate_column_inputs(variable_map):
+                if col_name not in dftemp.columns:
+                    dftemp[col_name] = col_value
 
         if len(group_by_col_names) > 0:
             grouped = dftemp.groupby(group_by_col_names)

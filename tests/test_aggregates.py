@@ -44,7 +44,7 @@ class TestAggregates(unittest.TestCase):
     def test_summarize_count_noby(self):
         df = create_df()
         w = Wrap(df)
-        c = w.summarize("count()") 
+        c = w.summarize("count()")
 
         print()
         print(c.df)
@@ -741,6 +741,20 @@ def test_summarize_anyif_noby_allnull():
 
     w = Wrap(df)
     wnew = w.summarize("anyif(B, C)")
+    print()
+    print(wnew)
+    assert list([None]) == list(wnew.df["anyif_B_C"])
+    assert 1 == len(wnew.df.columns)
+
+def test_summarize_composit_argument():
+    df = pd.DataFrame()
+    df["A"] = [1, 0, 1, 0, 1]
+    df["B"] = [1, 1, 1, 0, 0]
+    df["G"] = [1, 1, 1, 1, 1]
+
+    w = Wrap(df)
+    wnew = w.summarize("count(), avg(A), avg(B), Cov = avg(A * B) - avg(A) * avg(B) by G")
+
     print()
     print(wnew)
     assert list([None]) == list(wnew.df["anyif_B_C"])

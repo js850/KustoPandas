@@ -305,8 +305,3 @@ def test_asc_with_math_evaluate():
 
     result = parsed.evaluate({"A": 4})
     assert 5 == result["y"] 
-
-def test_asc_desc_with_math_by():
-    x = "5 by A + 1 desc, B - 2 asc"
-    parsed = parse_expression(x)
-    assert str(parsed) == "(5 by (((A + 1) desc), ((B - 2) asc)))"
