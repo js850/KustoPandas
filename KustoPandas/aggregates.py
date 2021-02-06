@@ -19,8 +19,11 @@ class TopLevelAgg:
     The logic here is complicated because we first have to do this in 3 steps
     
         1. evaluate the expressions inside the aggregate functions.  These become the inputs to the agg functions
-        2. Combine them in a DataFrame and do a groupby on all of them at the same time
+        2. Combine them in a DataFrame and do a groupby on all of them at the same time.  This does not happen here, 
+           but higher in the call stack because this is just one of potentially many aggregate functions and we only want to execute groupby once
         3. Perform the aggregation
+        4. Evaluate any mathematical expressions that act on the aggregate result.
+        5. Figure out what the name of the resulting column should be.
 
     Then the groupby is applied 
     """
@@ -31,8 +34,15 @@ class TopLevelAgg:
         self.aggregate_instances = []
     
     def _evaluate_column_inputs_traverse(self, vars, parsed):
+        """
+        Traverse the expression tree to find the aggregate methods.  Once we find one, evaluate the 
+        expressions that are arguments to that method.  Return those evaluated arguments as a list.
+        """
         if isinstance(parsed, ep.Method) and str(parsed.name) in aggregate_map:
             aggregate_class = aggregate_map[str(parsed.name)]
+            # here we instantiate the instance of the aggrege method class.
+            # We attach that to the parsed object for later use because we will need to call it again.
+            # This is an inelegant solution, I should find a cleaner one.
             aggregate_instance = aggregate_class(parsed.args.args, self.all_columns)
             parsed.set_aggregate_instance(aggregate_instance)
             self.aggregate_instances.append(aggregate_instance)
@@ -55,6 +65,18 @@ class TopLevelAgg:
         return [_generate_temp_column_name()]
     
     def apply(self, grouped, vars):
+        """
+        Evaluate the aggregate expression.  Most aggregates output exactly one series, 
+        but some, e.g. percentiles(A, 90, 95) can output multiple series
+
+        """
+        # In this method we will do several things.  
+        # 1. evaluate the aggregate method on the precomputed columns in the groupby 
+        # 2. Evaluate any mathematical expressions operating on the output of the aggregate method
+        # 3. Assign names to the output columns
+        #
+        # For 2. we will use self.parsed.evaluate(vars) which does not allow us to pass down the groupby object.
+        # To work around this we will attache the groupby object to the aggregate method instances
         for agg in self.aggregate_instances:
             agg.set_grouped_object(grouped)
 
@@ -92,6 +114,11 @@ class SimpleAgg:
         pass
 
     def _get_input_column_definitions(self, all_columns):
+        """
+        Return the columns that need to be evaluated and become part of the groupby expression
+
+        For most aggregates this is all arguments, but not all.  e.g. for percentiles(A, 90, 95) only the first arg is a column definition
+        """
         return self.args
 
     def evaluate_column_inputs(self, vars):
@@ -376,7 +403,7 @@ class Percentiles(SimpleAgg):
         if _is_groupby(grouped):
             flattened = []
             for q in quantiles:
-                # The df has a multi-index.  
+                # The result has a multi-index.  
                 # The first n levels of the multi-index are the group-by columns
                 # The lowest level is the quantile
                 # Select the rows corresponding to quantile q
@@ -384,12 +411,10 @@ class Percentiles(SimpleAgg):
                 # We now need to drop the index level corresponding to q
                 r.index = r.index.droplevel(-1)
                 flattened.append(r)
-        elif isinstance(result, pd.DataFrame):
-            # not a multi-index so we need to access the results in a different way
-            flattened = [result.loc[q] for q in quantiles]
-        else: # Series
-            # need to convert the result to a Series
+        elif isinstance(result, pd.Series):
             flattened = [pd.Series(result.loc[q]) for q in quantiles]
+        else: 
+            raise "Unexpected type for the result of quantile " + type(result)
 
         if len(flattened) == 1:
             return flattened[0]
