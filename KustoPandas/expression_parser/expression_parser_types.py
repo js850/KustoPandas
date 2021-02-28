@@ -345,6 +345,17 @@ class AmbiguousStar(Expression):
     binary = Mul
     nullary = Star
 
+class Dot(Opp):
+    op = "."
+    def __str__(self):
+        return "({0}{1}{2})".format(self.left, self.op, self.right)
+    def evaluate(self, vals):
+        # D.k is equivalent to D["k"]
+        left = self.left.evaluate(vals)
+        # The right value should not be evaluated
+        right = str(self.right)
+        return _square_brackets_evaluate(left, right)
+
 generic_expression_operators = [
     Add, AmbiguousMinus, AmbiguousStar, Div, Eq, NEq, Gt, Lt, Ge, Le,
     UnaryNot, And, Or,
@@ -353,7 +364,7 @@ generic_expression_operators = [
     In, NotIn, InCis, NotInCis, 
     Has, NotHas, HasCs, NotHasCs,
     Between, DotDot,
-    Comma,
+    Comma, Dot,
     ]
 
 assignment = [Assignment]
@@ -473,6 +484,13 @@ def _square_brackets_two_series(variables, keys):
     df = pd.DataFrame({"k" : keys, "v" : variables})
     return df.apply(eval_row, axis=1)
 
+def _square_brackets_evaluate(variable, value):
+    if are_all_series(variable):
+        if are_all_series(value):
+            return _square_brackets_two_series(variable, value)
+        return variable.apply(lambda v: _square_brackets_apply(v, value))
+    return _square_brackets_apply(variable, value)
+
 class SquareBrackets(Expression):
     def __init__(self, variable, value):
         self.variable = variable
@@ -486,12 +504,7 @@ class SquareBrackets(Expression):
     def evaluate(self, vals):
         variable = self.variable.evaluate(vals)
         value = self.value.evaluate(vals)
-
-        if are_all_series(variable):
-            if are_all_series(value):
-                return _square_brackets_two_series(variable, value)
-            return variable.apply(lambda v: _square_brackets_apply(v, value))
-        return _square_brackets_apply(variable, value)
+        return _square_brackets_evaluate(variable, value)
 
 class TimespanLiteral(Expression):
     # e.g. 4d resolves to timespan 4 days

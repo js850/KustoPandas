@@ -311,3 +311,18 @@ def test_asc_with_math_evaluate():
 
     result = parsed.evaluate({"A": 4})
     assert 5 == result["y"] 
+
+def test_dot():
+    x = "y = A.b"
+    parsed = parse_expression(x)
+    assert str(parsed) == "(y = (A.b))"
+
+def test_dot_with_math():
+    x = "y = 1 + A.b * 2"
+    parsed = parse_expression(x)
+    assert str(parsed) == "(y = (1 + ((A.b) * 2)))"
+
+def test_dot_left_to_right():
+    x = "y = A.b.c"
+    parsed = parse_expression(x)
+    assert str(parsed) == "(y = ((A.b).c))"

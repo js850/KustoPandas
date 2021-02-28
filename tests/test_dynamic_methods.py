@@ -98,3 +98,12 @@ def test_dynamic_squarebrackets_index_arithmatic():
     assert [3, 6] == list(w.df["f2"])
     assert [3, 6] == list(w.df["f3"])
     assert [3, 6] == list(w.df["f4"])
+
+def test_dynamic_dot():
+    df = pd.DataFrame()
+    df["A"] = ['{ "k": "v0", "k2": { "k3": 3 } }', '{ "k": "v", "k2": { "k3": 13 } }', "[1, 2]"]
+    w = Wrap(df)
+    w = w.extend("d = todynamic(A)").extend("f = d.k, f1 = d.k2.k3")
+
+    assert ["v0", "v", None] == list(w.df["f"])
+    assert [3, 13, None] == replace_nan(w.df["f1"], None)

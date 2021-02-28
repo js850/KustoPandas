@@ -218,6 +218,7 @@ def get_expression_tree_method_stack():
             StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
             In, NotIn, InCis, NotInCis,
             Has, NotHas, HasCs, NotHasCs]), # I'm just guessing what priority these should have
+        get_parse_operators_method([Dot], right_to_left=True),
         get_parse_operators_method([Mul, Div]),
         get_parse_operators_method([Add, Sub]),
         get_parse_operators_method([Gt, Lt, Ge, Le]),
