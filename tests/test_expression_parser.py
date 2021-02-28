@@ -79,10 +79,16 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), "(a = (x[(y(2) + (4 - 1))] - 1))")
         #self.assertEqual(True, parsed.evaluate(None))
 
-    def test_parse_square_brackets_applied_to_non_var_throws(self):
-        x = "a = 4[5]"
-        with self.assertRaises(Exception) as context:
-            parse_expression(x)
+    # def test_parse_square_brackets_applied_to_non_var_throws(self):
+    #     x = "a = 4[5]"
+    #     with self.assertRaises(Exception) as context:
+    #         parse_expression(x)
+
+    def test_parse_square_brackets_negative_index(self):
+        x = "x[-2]"
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "x[(-2)]")
+        self.assertEqual(1, parsed.evaluate({"x": [1, 2]}))
 
     def test_parse_expression_Or(self):
         x = "1 > 1 or 3 > 2"

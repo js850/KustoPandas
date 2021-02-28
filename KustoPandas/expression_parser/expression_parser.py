@@ -96,7 +96,7 @@ def is_op(c):
 def is_unary_operator(tokens, i):
     if i >= len(tokens):
         raise Exception("can't have operator at end of line: " + str(tokens))
-    if i == 0 or is_op(tokens[i-1]) or tokens[i-1] == "(":
+    if i == 0 or is_op(tokens[i-1]) or tokens[i-1] == "(" or tokens[i-1] == "[":
         return True
     return False
 

@@ -196,8 +196,8 @@ def parse_square_brackets(line, method_stack, matches=None):
 
         variable = output.pop()
 
-        if not isinstance(variable, Var):
-            raise Exception("square brackets must be applied to a variable: " + str(line))
+        # if not isinstance(variable, Var):
+        #     raise Exception("square brackets must be applied to a variable: " + str(line))
 
         brackets = SquareBrackets(variable, parsed)
         output.append(brackets)

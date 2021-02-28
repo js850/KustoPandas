@@ -461,7 +461,8 @@ class Method(Expression):
 def _square_brackets_apply(v, k):
     try:
         return v[k]
-    except KeyError:
+    except:
+        # dynamic objects just return null for failure
         return None
 
 def _square_brackets_two_series(variables, keys):
