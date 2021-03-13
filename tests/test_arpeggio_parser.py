@@ -26,3 +26,19 @@ def test_add2():
     assert 3 == parse_and_visit("1 + 1 + 1")
     assert 1 == parse_and_visit("1 + (1 - 1)")
     assert 1 == parse_and_visit("((1 + 1) - 1)")
+
+def test_prod():
+    assert 2 == parse_and_visit("1 * 2")
+    assert 2 == parse_and_visit("4/2")
+
+def test_prod2():
+    assert 6 == parse_and_visit("1 * 2 * 3")
+    assert 8 == parse_and_visit("4 * 8 / 4")
+    assert 8 == parse_and_visit("4 * (8 / 4)")
+    assert 8 == parse_and_visit("(4 * 8) / 4")
+
+def test_prod_add():
+    assert 7 == parse_and_visit("1 + 2 * 3")
+    assert 7 == parse_and_visit("1 + (2 * 3)")
+    assert 9 == parse_and_visit("(1 + 2) * 3")
+    assert 24 == parse_and_visit("(1 + (14 / 2)) * 3")

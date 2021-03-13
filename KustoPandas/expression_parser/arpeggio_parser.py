@@ -6,11 +6,11 @@ from KustoPandas.expression_parser.expression_parser_types import *
 
 
 kusto_peg = r"""
-number <- r'\d*\.\d*|\d+';
-factor    <- ( "+" / "-" )?
-          ( number / "(" expression ")" );
-expression <- factor  (("+" / "-") factor )*;
-kusto   <- expression EOF;
+number      <- r'\d*\.\d*|\d+';
+factor      <- ( "+" / "-" )?  ( number / "(" sum ")" );
+prod        <- factor  (("*" / "/") factor )*;
+sum         <- prod  (("+" / "-") prod )*;
+kusto       <- sum EOF;
 
 
 """
@@ -31,7 +31,7 @@ class Visitor(arpeggio.PTNodeVisitor):
     def visit_add(self, node, children):
         return node.value
     
-    def visit_expression(self, node, children):
+    def _visit_binary_op(self, node, children):
         if len(children) == 1:
             return children[0]
 
@@ -47,6 +47,13 @@ class Visitor(arpeggio.PTNodeVisitor):
             left = operator
 
         return left
+
+    def visit_sum(self, node, children):
+        return self._visit_binary_op(node, children)
+    
+    def visit_prod(self, node, children):
+        return self._visit_binary_op(node, children)
+
 
 def parse_and_visit(input, debug=True):
     parser = ParserPEG(kusto_peg, "kusto", debug=False)
