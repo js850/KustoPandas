@@ -379,6 +379,8 @@ specialty_operators = [By, Asc, Desc] # Star
 
 all_operators = all_generic_operators + specialty_operators
 
+all_operators_dict = dict((o.op, o) for o in all_operators)
+
 def get_symbol_operators():
     return [o for o in all_operators if not op_is_not_special_chars(o.op)]
 
