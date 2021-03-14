@@ -17,7 +17,7 @@ and         <- eq (("and") eq )*;
 or          <- and ("or" and )*;
 
 identifier  <- r'[a-zA-Z_][a-zA-Z_]*';
-stringLiteral <- r'[\'"][^\'"]*[\'"]';
+stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 
 kusto       <- or EOF;
 
@@ -96,9 +96,16 @@ class Visitor(arpeggio.PTNodeVisitor):
     def visit_or(self, node, children):
         return self._visit_binary_op_single(node, children, Or)
 
+# it's a list so I can modify it
+_PARSER = []
+
+def get_parser(debug=False):
+    if not _PARSER:
+        _PARSER.append(ParserPEG(kusto_peg, "kusto", debug=debug))
+    return _PARSER[0]
 
 def parse_expression(input, debug=True):
-    parser = ParserPEG(kusto_peg, "kusto", debug=False)
+    parser = get_parser(debug=False)
 
     parse_tree = parser.parse(input)
 
