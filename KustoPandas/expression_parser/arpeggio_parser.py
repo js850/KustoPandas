@@ -7,7 +7,7 @@ from KustoPandas.expression_parser.expression_parser_types import *
 
 kusto_peg = r"""
 number      <- r'\d*\.\d*|\d+';
-factor      <- ( "+" / "-" )?  ( number / "(" or ")" );
+factor      <- ( "+" / "-" )?  ( number / identifier / "(" or ")" );
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
 
@@ -15,6 +15,8 @@ gt          <- sum (( ">=" / "<=" / ">" / "<" ) sum )*;
 eq          <- gt (( "==" / "!=" ) gt )*;
 and         <- eq (("and") eq )*;
 or          <- and ("or" and )*;
+
+identifier  <- r'[a-zA-Z_][a-zA-Z_]*';
 
 kusto       <- or EOF;
 
@@ -27,6 +29,9 @@ class Visitor(arpeggio.PTNodeVisitor):
             print("DEBUG", node.value)
         return Float(node.value)
     
+    def visit_identifier(self, node, children):
+        return Var(node.value)
+
     def visit_factor(self, node, children):
         if self.debug:
             print("DEBUG VISIT", node.value)
@@ -86,6 +91,7 @@ class Visitor(arpeggio.PTNodeVisitor):
     def visit_or(self, node, children):
         return self._visit_binary_op_single(node, children, Or)
 
+
 def parse_expression(input, debug=True):
     parser = ParserPEG(kusto_peg, "kusto", debug=False)
 
@@ -101,9 +107,3 @@ def parse_expression(input, debug=True):
         print(str(expression_tree))
     return expression_tree
 
-def parse_and_visit(input, debug=True):
-    expression_tree = parse_expression(input, debug=debug)
-
-
-
-    return expression_tree.evaluate(None)

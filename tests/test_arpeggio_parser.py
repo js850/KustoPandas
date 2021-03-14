@@ -4,7 +4,11 @@ from context import Wrap
 # hack to avoid having to add the dependency to the package until it's ready
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../KustoPandas/expression_parser')))
 
-from arpeggio_parser import parse_and_visit, parse_expression
+from arpeggio_parser import parse_expression
+
+def parse_and_visit(input, vars=None):
+    expression_tree = parse_expression(input, debug=True)
+    return expression_tree.evaluate(vars)
 
 def test_number():
     assert 10 == parse_and_visit("10")
@@ -95,3 +99,16 @@ def test_or():
     parsed = parse_expression("3==5 or (1<4)")
     assert str(parsed) == "((3 == 5) or (1 < 4))"
     assert True == parsed.evaluate(None)
+
+def test_var():
+    parsed = parse_expression("x + 1")
+    assert str(parsed) == "(x + 1)"
+    assert 3 == parsed.evaluate({"x": 2})
+
+def test_var2():
+    assert 4 == parse_and_visit("x + y", dict(x=1, y=3))
+    assert True == parse_and_visit("andy and ory", dict(andy=True, ory=True))
+    assert 4 == parse_and_visit("_x + y_", dict(_x=1, y_=3))
+    assert 4 == parse_and_visit("x_y + y", dict(x_y=1, y=3))
+    assert 4 == parse_and_visit("X + x", dict(X=1, x=3))
+
