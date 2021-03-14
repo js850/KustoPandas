@@ -7,11 +7,14 @@ from KustoPandas.expression_parser.expression_parser_types import *
 
 kusto_peg = r"""
 number      <- r'\d*\.\d*|\d+';
-factor      <- ( "+" / "-" )?  ( number / "(" sum ")" );
+factor      <- ( "+" / "-" )?  ( number / "(" eq ")" );
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
+
 gt          <- sum (( ">=" / "<=" / ">" / "<" ) sum )*;
-kusto       <- gt EOF;
+eq          <- gt (( "==" / "!=" ) gt )*;
+
+kusto       <- eq EOF;
 
 
 """
@@ -58,9 +61,11 @@ class Visitor(arpeggio.PTNodeVisitor):
     def visit_gt(self, node, children):
         return self._visit_binary_op(node, children)
 
+    def visit_eq(self, node, children):
+        return self._visit_binary_op(node, children)
 
 def parse_expression(input, debug=True):
-    parser = ParserPEG(kusto_peg, "kusto", debug=False)
+    parser = ParserPEG(kusto_peg, "kusto", debug=debug)
 
     parse_tree = parser.parse(input)
 
@@ -73,16 +78,7 @@ def parse_expression(input, debug=True):
     return expression_tree
 
 def parse_and_visit(input, debug=True):
-    parser = ParserPEG(kusto_peg, "kusto", debug=False)
-
-    parse_tree = parser.parse(input)
-
-    if debug:
-        print(str(parse_tree))
-        print(parse_tree.__repr__())
-        print(parse_tree.tree_str())
-
-    expression_tree = arpeggio.visit_parse_tree(parse_tree, Visitor(debug))
+    expression_tree = parse_expression(input, debug=debug)
 
     if debug:
         print(str(expression_tree))

@@ -72,3 +72,16 @@ def test_lt_add():
     parsed = parse_expression("1 < 5 - 6 ")
     str(parsed) == "(1 < (5 - 6))"
     False == parsed.evaluate(None)
+
+def test_eq():
+    assert True == parse_and_visit("1 == 1")
+    assert False == parse_and_visit("1 == 2")
+
+def test_ne():
+    assert False == parse_and_visit("1 != 1")
+    assert True == parse_and_visit("1 != 2")
+
+def test_ne_lt():
+    parsed = parse_expression("(3>5)!=(1<4)")
+    str(parsed) == "((3 > 5) != (1 < 4))"
+    True == parsed.evaluate(None)
