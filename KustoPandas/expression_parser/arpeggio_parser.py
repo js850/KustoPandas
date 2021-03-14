@@ -10,7 +10,8 @@ number      <- r'\d*\.\d*|\d+';
 factor      <- ( "+" / "-" )?  ( number / "(" sum ")" );
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
-kusto       <- sum EOF;
+gt          <- sum (( ">=" / "<=" / ">" / "<" ) sum )*;
+kusto       <- gt EOF;
 
 
 """
@@ -53,7 +54,23 @@ class Visitor(arpeggio.PTNodeVisitor):
     
     def visit_prod(self, node, children):
         return self._visit_binary_op(node, children)
+    
+    def visit_gt(self, node, children):
+        return self._visit_binary_op(node, children)
 
+
+def parse_expression(input, debug=True):
+    parser = ParserPEG(kusto_peg, "kusto", debug=False)
+
+    parse_tree = parser.parse(input)
+
+    if debug:
+        print(str(parse_tree))
+        print(parse_tree.__repr__())
+        print(parse_tree.tree_str())
+
+    expression_tree = arpeggio.visit_parse_tree(parse_tree, Visitor(debug))
+    return expression_tree
 
 def parse_and_visit(input, debug=True):
     parser = ParserPEG(kusto_peg, "kusto", debug=False)
