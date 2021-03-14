@@ -8,7 +8,8 @@ from arpeggio_parser import parse_expression
 
 def parse_and_visit(input, vars=None):
     expression_tree = parse_expression(input, debug=True)
-    return expression_tree.evaluate(vars)
+    result = expression_tree.evaluate(vars)
+    return result
 
 def test_number():
     assert 10 == parse_and_visit("10")
@@ -115,7 +116,16 @@ def test_var2():
 def test_string_literal():
     assert True == parse_and_visit("x == \"hi\"", dict(x="hi"))
     assert False == parse_and_visit("x == \"hig\"", dict(x="hi"))
+    assert True == parse_and_visit("x == \"h'i\"", dict(x="h'i"))
 
 def test_string_literal_singlequote():
     assert True == parse_and_visit("x == 'hi'", dict(x="hi"))
     assert False == parse_and_visit("x == 'hig'", dict(x="hi"))
+    assert True == parse_and_visit("x == 'h\"i'", dict(x="h\"i"))
+
+def test_assignment():
+    assert 2 == parse_and_visit("x = 2", dict())["x"]
+
+def test_assignment2():
+    assert 2 == parse_and_visit("x = y", dict(y=2))["x"]
+    assert True == parse_and_visit("x = 1 + 2 == y", dict(y=3))["x"]

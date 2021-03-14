@@ -6,7 +6,11 @@ from KustoPandas.expression_parser.expression_parser_types import *
 
 
 kusto_peg = r"""
+
 number      <- r'\d*\.\d*|\d+';
+identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
+stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
+
 factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" or ")" );
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
@@ -16,10 +20,25 @@ eq          <- gt (( "==" / "!=" ) gt )*;
 and         <- eq (("and") eq )*;
 or          <- and ("or" and )*;
 
-identifier  <- r'[a-zA-Z_][a-zA-Z_]*';
+assignment  <- identifier "=" or;
+
+kusto       <- (assignment / or) EOF;
+
+"""
+
+kusto_peg2 = r"""
+
+number      <- r'\d*\.\d*|\d+';
+factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral );
+factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" prod ")" );
+prod        <- factor  (("*" / "/") factor )*;
+
+assignment  <- identifier "=" prod;
+
+identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 
-kusto       <- or EOF;
+kusto       <- assignment EOF;
 
 
 """
@@ -95,7 +114,9 @@ class Visitor(arpeggio.PTNodeVisitor):
 
     def visit_or(self, node, children):
         return self._visit_binary_op_single(node, children, Or)
-
+        
+    def visit_assignment(self, node, children):
+        return self._visit_binary_op_single(node, children, Assignment)
 # it's a list so I can modify it
 _PARSER = []
 
@@ -105,7 +126,7 @@ def get_parser(debug=False):
     return _PARSER[0]
 
 def parse_expression(input, debug=True):
-    parser = get_parser(debug=False)
+    parser = get_parser(debug=True)
 
     parse_tree = parser.parse(input)
 
