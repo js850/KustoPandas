@@ -112,3 +112,10 @@ def test_var2():
     assert 4 == parse_and_visit("x_y + y", dict(x_y=1, y=3))
     assert 4 == parse_and_visit("X + x", dict(X=1, x=3))
 
+def test_string_literal():
+    assert True == parse_and_visit("x == \"hi\"", dict(x="hi"))
+    assert False == parse_and_visit("x == \"hig\"", dict(x="hi"))
+
+def test_string_literal_singlequote():
+    assert True == parse_and_visit("x == 'hi'", dict(x="hi"))
+    assert False == parse_and_visit("x == 'hig'", dict(x="hi"))

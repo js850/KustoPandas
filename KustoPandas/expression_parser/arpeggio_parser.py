@@ -7,7 +7,7 @@ from KustoPandas.expression_parser.expression_parser_types import *
 
 kusto_peg = r"""
 number      <- r'\d*\.\d*|\d+';
-factor      <- ( "+" / "-" )?  ( number / identifier / "(" or ")" );
+factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" or ")" );
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
 
@@ -17,6 +17,7 @@ and         <- eq (("and") eq )*;
 or          <- and ("or" and )*;
 
 identifier  <- r'[a-zA-Z_][a-zA-Z_]*';
+stringLiteral <- r'[\'"][^\'"]*[\'"]';
 
 kusto       <- or EOF;
 
@@ -31,6 +32,10 @@ class Visitor(arpeggio.PTNodeVisitor):
     
     def visit_identifier(self, node, children):
         return Var(node.value)
+
+    def visit_stringLiteral(self, node, children):
+        # remove the enclosing quote
+        return StringLiteral(node.value[1:-1])
 
     def visit_factor(self, node, children):
         if self.debug:
