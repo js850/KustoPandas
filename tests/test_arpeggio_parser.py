@@ -5,14 +5,18 @@ from context import Wrap
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../KustoPandas/expression_parser')))
 
 from arpeggio_parser import parse_expression
+import KustoPandas.expression_parser.expression_parser_types as ept
 
 def parse_and_visit(input, vars=None):
     expression_tree = parse_expression(input, debug=True)
     result = expression_tree.evaluate(vars)
     return result
 
-def test_number():
+def test_int():
     assert 10 == parse_and_visit("10")
+    assert isinstance(parse_expression("10"), ept.Int)
+
+def test_number():
     assert 1 == parse_and_visit("1.")
     assert .1 == parse_and_visit(".1")
     assert 1.1 == parse_and_visit("1.1")

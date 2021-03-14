@@ -40,9 +40,11 @@ kusto       <- assignment EOF;
 
 class Visitor(arpeggio.PTNodeVisitor):
     def visit_number(self, node, children):
-        if self.debug:
-            print("DEBUG", node.value)
-        return Float(node.value)
+        try:
+            int(node.value)
+            return Int(node.value)
+        except:
+            return Float(node.value)
     
     def visit_identifier(self, node, children):
         return Var(node.value)
