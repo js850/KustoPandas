@@ -11,7 +11,7 @@ number      <- r'\d*\.\d*|\d+';
 identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 
-factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" or ")" );
+factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" stringOp ")" );
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
 
@@ -20,26 +20,14 @@ eq          <- gt (( "==" / "!=" ) gt )*;
 and         <- eq (("and") eq )*;
 or          <- and ("or" and )*;
 
-assignment  <- identifier "=" or;
+stringOp   <- or (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
+                    "startswith_cs" / "!startswith_cs" / "startswith" / "!startswith" /
+                    "has_cs" / "!has_cs" / "has" / "!has"
+                   ) or )*;
 
-kusto       <- (assignment / or) EOF;
+assignment  <- identifier "=" stringOp;
 
-"""
-
-kusto_peg2 = r"""
-
-number      <- r'\d*\.\d*|\d+';
-factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral );
-factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" prod ")" );
-prod        <- factor  (("*" / "/") factor )*;
-
-assignment  <- identifier "=" prod;
-
-identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
-stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
-
-kusto       <- assignment EOF;
-
+kusto       <- (assignment / stringOp) EOF;
 
 """
 
@@ -117,6 +105,10 @@ class Visitor(arpeggio.PTNodeVisitor):
         
     def visit_assignment(self, node, children):
         return self._visit_binary_op_single(node, children, Assignment)
+
+    def visit_stringOp(self, node, children):
+        return self._visit_binary_op(node, children)
+
 # it's a list so I can modify it
 _PARSER = []
 
@@ -126,7 +118,7 @@ def get_parser(debug=False):
     return _PARSER[0]
 
 def parse_expression(input, debug=True):
-    parser = get_parser(debug=True)
+    parser = get_parser(debug=False)
 
     parse_tree = parser.parse(input)
 

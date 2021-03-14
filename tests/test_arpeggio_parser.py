@@ -129,3 +129,32 @@ def test_assignment():
 def test_assignment2():
     assert 2 == parse_and_visit("x = y", dict(y=2))["x"]
     assert True == parse_and_visit("x = 1 + 2 == y", dict(y=3))["x"]
+
+def test_contains():
+    assert True == parse_and_visit("x contains y", dict(x="hight", y="Hi"))
+    assert False == parse_and_visit("x !contains y", dict(x="hight", y="hi"))
+
+def test_contains_cs():
+    assert False == parse_and_visit("x contains_cs y", dict(x="hight", y="Hi"))
+    assert True == parse_and_visit("x contains_cs y", dict(x="hight", y="hi"))
+    assert False == parse_and_visit("x !contains_cs y", dict(x="hight", y="hi"))
+
+def test_startswith():
+    assert True == parse_and_visit("x startswith y", dict(x="hight", y="Hi"))
+    assert False == parse_and_visit("x !startswith y", dict(x="hight", y="hi"))
+
+def test_startswith_cs():
+    assert False == parse_and_visit("x startswith_cs y", dict(x="hight", y="Hi"))
+    assert True == parse_and_visit("x startswith_cs y", dict(x="hight", y="hi"))
+    assert False == parse_and_visit("x !startswith_cs y", dict(x="hight", y="hi"))
+
+def test_has():
+    assert True == parse_and_visit("x has y", dict(x="a hi ght", y="Hi"))
+    assert False == parse_and_visit("x has y", dict(x="ahi ght", y="Hi"))
+    assert False == parse_and_visit("x has y", dict(x="a hight", y="Hi"))
+    assert False == parse_and_visit("x !has y", dict(x="a hi ght", y="hi"))
+
+def test_has_cs():
+    assert False == parse_and_visit("x has_cs y", dict(x="a hi ght", y="Hi"))
+    assert True == parse_and_visit("x has_cs y", dict(x="a hi ght", y="hi"))
+    assert False == parse_and_visit("x !has_cs y", dict(x="a hi ght", y="hi"))

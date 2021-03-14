@@ -165,7 +165,10 @@ class Or(Opp):
 def _contains(left, right, case_sensitive):
     if are_all_series(left):
         return left.str.contains(right, case=case_sensitive, na=False)
-    return right.lower() in left.lower() 
+    if case_sensitive:
+        return right in left
+    else:
+        return right.lower() in left.lower() 
 
 class Contains(Opp):
     op = "contains"
