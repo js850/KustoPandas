@@ -11,7 +11,7 @@ number      <- r'\d*\.\d*|\d+';
 identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 
-factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" stringOp ")" );
+factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" assignment ")" );
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
 
@@ -20,14 +20,14 @@ eq          <- gt (( "==" / "!=" ) gt )*;
 and         <- eq (("and") eq )*;
 or          <- and ("or" and )*;
 
-stringOp   <- or (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
-                    "startswith_cs" / "!startswith_cs" / "startswith" / "!startswith" /
-                    "has_cs" / "!has_cs" / "has" / "!has"
-                   ) or )*;
+stringOp    <- or (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
+                     "startswith_cs" / "!startswith_cs" / "startswith" / "!startswith" /
+                     "has_cs" / "!has_cs" / "has" / "!has"
+                    ) or )*;
 
-assignment  <- identifier "=" stringOp;
+assignment  <- identifier "=" assignment / stringOp;
 
-kusto       <- (assignment / stringOp) EOF;
+kusto       <- assignment EOF;
 
 """
 
