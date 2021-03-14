@@ -11,7 +11,14 @@ number      <- r'\d*\.\d*|\d+';
 identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 
-factor      <- ( "+" / "-" )?  ( number / identifier / stringLiteral / "(" assignment ")" );
+primaryExpr <- ( number / identifier / stringLiteral / "(" assignment ")" );
+
+args        <- assignment ("," assignment)*;
+methodCall  <- identifier "(" args? ")";
+posfixExpr  <- methodCall / primaryExpr;
+
+factor      <- ( "+" / "-" )?  posfixExpr;
+
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
 
@@ -108,6 +115,19 @@ class Visitor(arpeggio.PTNodeVisitor):
 
     def visit_stringOp(self, node, children):
         return self._visit_binary_op(node, children)
+
+    def visit_args(self, node, children):
+        return Args(list(children))
+
+    def visit_methodCall(self, node, children):
+        method = children[0] 
+            
+        if len(children) < 2:
+            args = Args([])
+        else:
+            args = children[1]
+        
+        return Method(method, args)
 
 # it's a list so I can modify it
 _PARSER = []

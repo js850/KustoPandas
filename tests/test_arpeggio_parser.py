@@ -158,3 +158,16 @@ def test_has_cs():
     assert False == parse_and_visit("x has_cs y", dict(x="a hi ght", y="Hi"))
     assert True == parse_and_visit("x has_cs y", dict(x="a hi ght", y="hi"))
     assert False == parse_and_visit("x !has_cs y", dict(x="a hi ght", y="hi"))
+
+def test_method_call():
+    assert 3 == parse_and_visit("y = x(2)", dict(x=lambda k: k+1))["y"]
+
+def test_method_call2():
+    def x(a, b):
+        return a - b
+    assert -1 == parse_and_visit("y = x(2, 3)", dict(x=x))["y"]
+
+def test_method_call0():
+    def x():
+        return 7
+    assert 7 == parse_and_visit("y = x()", dict(x=x))["y"]
