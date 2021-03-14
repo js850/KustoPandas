@@ -7,14 +7,16 @@ from KustoPandas.expression_parser.expression_parser_types import *
 
 kusto_peg = r"""
 number      <- r'\d*\.\d*|\d+';
-factor      <- ( "+" / "-" )?  ( number / "(" eq ")" );
+factor      <- ( "+" / "-" )?  ( number / "(" or ")" );
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
 
 gt          <- sum (( ">=" / "<=" / ">" / "<" ) sum )*;
 eq          <- gt (( "==" / "!=" ) gt )*;
+and         <- eq (("and") eq )*;
+or          <- and ("or" and )*;
 
-kusto       <- eq EOF;
+kusto       <- or EOF;
 
 
 """
@@ -51,6 +53,20 @@ class Visitor(arpeggio.PTNodeVisitor):
             left = operator
 
         return left
+    
+    def _visit_binary_op_single(self, node, children, op):
+        # if there is only one operator, then the op is not in the children list
+        if len(children) == 1:
+            return children[0]
+        
+        left = children[0]
+
+        for right in children[1:]:
+            operator = op(left, right)
+            left = operator
+
+        return left
+        
 
     def visit_sum(self, node, children):
         return self._visit_binary_op(node, children)
@@ -64,8 +80,14 @@ class Visitor(arpeggio.PTNodeVisitor):
     def visit_eq(self, node, children):
         return self._visit_binary_op(node, children)
 
+    def visit_and(self, node, children):
+        return self._visit_binary_op_single(node, children, And)
+
+    def visit_or(self, node, children):
+        return self._visit_binary_op_single(node, children, Or)
+
 def parse_expression(input, debug=True):
-    parser = ParserPEG(kusto_peg, "kusto", debug=debug)
+    parser = ParserPEG(kusto_peg, "kusto", debug=False)
 
     parse_tree = parser.parse(input)
 
@@ -75,12 +97,13 @@ def parse_expression(input, debug=True):
         print(parse_tree.tree_str())
 
     expression_tree = arpeggio.visit_parse_tree(parse_tree, Visitor(debug))
+    if debug:
+        print(str(expression_tree))
     return expression_tree
 
 def parse_and_visit(input, debug=True):
     expression_tree = parse_expression(input, debug=debug)
 
-    if debug:
-        print(str(expression_tree))
+
 
     return expression_tree.evaluate(None)

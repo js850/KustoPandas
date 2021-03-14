@@ -65,13 +65,13 @@ def test_le():
 
 def test_parse_parentheses_lt():
     parsed = parse_expression("1 < (6 - 4) ")
-    str(parsed) == "(1 < (6 - 4))"
-    True == parsed.evaluate(None)
+    assert str(parsed) == "(1 < (6 - 4))"
+    assert True == parsed.evaluate(None)
 
 def test_lt_add():
     parsed = parse_expression("1 < 5 - 6 ")
-    str(parsed) == "(1 < (5 - 6))"
-    False == parsed.evaluate(None)
+    assert str(parsed) == "(1 < (5 - 6))"
+    assert False == parsed.evaluate(None)
 
 def test_eq():
     assert True == parse_and_visit("1 == 1")
@@ -83,5 +83,15 @@ def test_ne():
 
 def test_ne_lt():
     parsed = parse_expression("(3>5)!=(1<4)")
-    str(parsed) == "((3 > 5) != (1 < 4))"
-    True == parsed.evaluate(None)
+    assert str(parsed) == "((3 > 5) != (1 < 4))"
+    assert True == parsed.evaluate(None)
+
+def test_and():
+    parsed = parse_expression("3>5 and (1<4)")
+    assert str(parsed) == "((3 > 5) and (1 < 4))"
+    assert False == parsed.evaluate(None)
+
+def test_or():
+    parsed = parse_expression("3==5 or (1<4)")
+    assert str(parsed) == "((3 == 5) or (1 < 4))"
+    assert True == parsed.evaluate(None)
