@@ -55,8 +55,9 @@ extend      <- "extend" assignmentList;
 summarize   <- "summarize" assignmentList ( "by" assignmentList )?;
 sort        <- "sort" "by" sortColumn ("," sortColumn)*;
 top         <- "top" int "by" sortColumn ("," sortColumn)*;
+project     <- "project" assignmentList;
 
-tabularOperator <- take / where / extend / summarize / sort / top;
+tabularOperator <- take / where / extend / summarize / sort / top / project;
 
 kusto       <- tabularOperator EOF;
 
@@ -197,6 +198,9 @@ class Visitor(arpeggio.PTNodeVisitor):
         n = children[0]
         sort_columns = children[1:]
         return Top(n, sort_columns)
+    
+    def visit_project(self, node, children):
+        return Project(children[0])
 
 # it's a list so I can modify it
 _PARSER = dict()

@@ -36,9 +36,9 @@ class TestWrap(unittest.TestCase):
     def test_project_kwargs2(self):
         df = create_df()
         w = Wrap(df)
-        wnew = w.project("A", **{"Z col": "B * 2"})
-        self.assertListEqual(["A", "Z col"], list(wnew.df.columns))
-        self.assertListEqual([0, 2, 4, 6, 8], list(wnew.df["Z col"]))
+        wnew = w.project("A", **{"Z_col": "B * 2"})
+        self.assertListEqual(["A", "Z_col"], list(wnew.df.columns))
+        self.assertListEqual([0, 2, 4, 6, 8], list(wnew.df["Z_col"]))
         self.assertGreater(len(w.df.columns), 2)
 
     def test_extend(self):

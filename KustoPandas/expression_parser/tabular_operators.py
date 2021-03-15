@@ -138,4 +138,17 @@ class Top(TabularOperator):
     def evaluate_pipe(self, w):
         pipe = Pipe([Sort(self.sort_columns), Take(self.n)])
         return pipe.evaluate_pipe(w)
+
+class Project(TabularOperator):
+    def __init__(self, columns):
+        self.columns = columns
+    
+    def _evaluate_top(self, df, variable_map):
+        dfnew = pd.DataFrame()
+
+        for parsed in self.columns:
+            se = SimpleExpression(parsed)
+            result = se.evaluate(variable_map)
+            dfnew[se.get_name()] = result
         
+        return dfnew

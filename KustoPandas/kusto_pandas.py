@@ -25,6 +25,30 @@ class MultiDict:
         
         raise KeyError(key)
 
+def _serialize_expressions(args):
+    if args:
+        return ", ".join([str(a) for a in args])
+    return ""
+
+def _serialize_named_expressions(kwargs):
+    if kwargs:
+        return ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
+    return ""
+
+def _serialize_expressions(args, kwargs):
+    expr = ""
+    args_expr = ", ".join([str(a) for a in args])
+    kwargs_expr = ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
+
+    expr += args_expr
+
+    if args_expr and kwargs_expr:
+        expr += ", "
+    
+    expr += kwargs_expr
+    return expr
+
+
 class Wrap:
     def __init__(self, df):
         self.df = df
@@ -66,16 +90,21 @@ class Wrap:
         
         w.project("A, Bnew = B+A")
         """
-        inputs = Inputs(*cols, **renamed_cols)
+        expr = "project " + _serialize_expressions(cols, renamed_cols)
 
-        dfnew = pd.DataFrame()
-        var_map = self._get_var_map()
+        parsed = parse_expression_toplevel(expr)
+        return parsed.evaluate_pipe(self)
 
-        for parsed in inputs.parsed_inputs:
-            result = parsed.evaluate(var_map)
-            dfnew[parsed.get_name()] = result
+        # inputs = Inputs(*cols, **renamed_cols)
+
+        # dfnew = pd.DataFrame()
+        # var_map = self._get_var_map()
+
+        # for parsed in inputs.parsed_inputs:
+        #     result = parsed.evaluate(var_map)
+        #     dfnew[parsed.get_name()] = result
         
-        return self._copy(dfnew)
+        # return self._copy(dfnew)
 
     def project_away(self, *cols):
         inputs = Inputs(*cols)
@@ -148,12 +177,7 @@ class Wrap:
         return parsed.evaluate_pipe(self)
 
     def extend(self, *args, **kwargs):
-        expr = "extend "
-        if args:
-            expr += ", ".join([str(a) for a in args])
-        
-        if kwargs:
-            expr += ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
+        expr = "extend " + _serialize_expressions(args, kwargs)
 
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
