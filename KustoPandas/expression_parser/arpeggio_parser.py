@@ -10,7 +10,7 @@ kusto_peg = r"""
 number      <- r'\d*\.\d*|\d+';
 identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
-timespanLiteral <- number ("d" / "h" / "m" / "s");
+timespanLiteral <- r'[1-9]\d*[dhms]';
 
 primaryExpr <- ( timespanLiteral / number / identifier / stringLiteral / "(" assignment ")" );
 
@@ -55,7 +55,9 @@ class Visitor(arpeggio.PTNodeVisitor):
         return StringLiteral(node.value[1:-1])
 
     def visit_timespanLiteral(self, node, children):
-        return TimespanLiteral(children[0], children[1])
+        num = node.value[:-1]
+        unit = node.value[-1]
+        return TimespanLiteral(Int(num), unit)
 
     def visit_factor(self, node, children):
         if self.debug:
