@@ -6,7 +6,7 @@ import pandas as pd
 # hack to avoid having to add the dependency to the package until it's ready
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../KustoPandas/expression_parser')))
 
-from arpeggio_parser import parse_expression
+from arpeggio_parser import parse_expression, parse_expression_toplevel
 import KustoPandas.expression_parser.expression_parser_types as ept
 
 
@@ -200,3 +200,6 @@ def test_in_notcs():
     assert True == parse_and_visit('"hi" in~ ("Hi", "there")')
     assert False == parse_and_visit('"hi" in~ ("hid", "there")')
     assert False == parse_and_visit('"hi" !in~ ("Hi", "there")')
+
+def test_project_away():
+    parsed = parse_expression_toplevel("project-away B")

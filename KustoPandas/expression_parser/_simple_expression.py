@@ -1,4 +1,5 @@
 import uuid
+from collections import OrderedDict
 
 _temp_name_base = "__tempcolumnname__"
 
@@ -110,3 +111,15 @@ def _evaluate_and_get_name(parsed, variable_map):
     if isinstance(parsed, Method):
         return _get_method_default_name(parsed), result
     return _generate_temp_column_name(), result
+
+def remove_duplicates_maintain_order(list_with_duplicates):
+    return list(OrderedDict.fromkeys(list_with_duplicates))
+
+def parse_column_name_or_pattern_list(column_name_or_pattern_list, df):
+    column_names = []
+    for column_name_or_pattern in column_name_or_pattern_list:
+        column_names += column_name_or_pattern.get_matching_columns(df)
+    
+    column_names = remove_duplicates_maintain_order(column_names)
+    
+    return column_names

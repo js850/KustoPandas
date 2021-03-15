@@ -13,6 +13,7 @@ int         <- r'\d\d*';
 float       <- r'\d+\.\d*' /  r'\d*\.\d+';
 number      <- float / int;
 identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
+columnNameOrPattern  <- r'[a-zA-Z0-9_*]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 timespanLiteral <- r'[1-9]\d*[dhms]';
 
@@ -49,6 +50,7 @@ kustoStatement  <- assignment EOF;
 asc         <- "asc" / "desc";
 sortColumn  <- stringOp asc?;
 
+
 take        <- "take" int;
 where       <- "where" inList;
 extend      <- "extend" assignmentList;
@@ -56,8 +58,9 @@ summarize   <- "summarize" assignmentList ( "by" assignmentList )?;
 sort        <- "sort" "by" sortColumn ("," sortColumn)*;
 top         <- "top" int "by" sortColumn ("," sortColumn)*;
 project     <- "project" assignmentList;
+projectAway <- "project-away" columnNameOrPattern ("," columnNameOrPattern)*;
 
-tabularOperator <- take / where / extend / summarize / sort / top / project;
+tabularOperator <- take / where / extend / summarize / sort / top / projectAway / project;
 
 kusto       <- tabularOperator EOF;
 
@@ -72,6 +75,9 @@ class Visitor(arpeggio.PTNodeVisitor):
 
     def visit_identifier(self, node, children):
         return Var(node.value)
+    
+    def visit_columnNameOrPattern(self, node, children):
+        return ColumnNameOrPattern(node.value)
 
     def visit_stringLiteral(self, node, children):
         # remove the enclosing quotes
@@ -201,6 +207,9 @@ class Visitor(arpeggio.PTNodeVisitor):
     
     def visit_project(self, node, children):
         return Project(children[0])
+    
+    def visit_projectAway(self, node, children):
+        return ProjectAway(list(children))
 
 # it's a list so I can modify it
 _PARSER = dict()

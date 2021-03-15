@@ -1,6 +1,6 @@
 import pandas as pd
 
-from ._simple_expression import SimpleExpression, _evaluate_and_get_name
+from ._simple_expression import SimpleExpression, _evaluate_and_get_name, parse_column_name_or_pattern_list
 from .aggregates import create_aggregate
 
 def ensure_column_name_unique(df, col):
@@ -151,4 +151,15 @@ class Project(TabularOperator):
             result = se.evaluate(variable_map)
             dfnew[se.get_name()] = result
         
+        return dfnew
+
+class ProjectAway(TabularOperator):
+    def __init__(self, column_name_or_pattern_list):
+        self.column_name_or_pattern_list = column_name_or_pattern_list
+    
+    def _evaluate_top(self, df, variable_map):
+        dfnew = df.copy()
+        for column in parse_column_name_or_pattern_list(self.column_name_or_pattern_list, df):
+            del dfnew[column]
+
         return dfnew

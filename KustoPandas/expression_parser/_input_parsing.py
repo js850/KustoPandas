@@ -1,13 +1,12 @@
 import uuid
 from functools import reduce
 import fnmatch
-from collections import OrderedDict
 
 # from .arpeggio_parser import parse_expression
 from .expression_parser_types import Assignment, Var, Method, By, Comma, Mul, Asc, Desc
 from .expression_tree import flatten_comma
 
-from ._simple_expression import SimpleExpression, _get_method_default_name, _generate_temp_column_name, replace_temp_column_names, _evaluate_and_get_name
+from ._simple_expression import SimpleExpression, _get_method_default_name, _generate_temp_column_name, replace_temp_column_names, _evaluate_and_get_name, remove_duplicates_maintain_order
 
 class Inputs:
     def __init__(self, *args, **kwargs):
@@ -35,9 +34,6 @@ class Inputs:
         
         return result
 
-def remove_duplicates_maintain_order(list_with_duplicates):
-    return list(OrderedDict.fromkeys(list_with_duplicates))
-
 def _flatten_column_name_or_pattern(value):
     # Wildcards are parsed as multiplication because there is no way to distinguish multiplication vs wildcard
     # without knowing the context.  This is a bit hacky, but it seems to work.
@@ -57,7 +53,7 @@ def _parse_column_name_or_pattern(parsed: SimpleExpression, df):
     matching_columns = [c for c in df.columns if fnmatch.fnmatchcase(c, pattern)]
 
     if len(matching_columns) == 0:
-        raise KeyError("Could not find a collumn which matches: " + pattern)
+        raise KeyError("Could not find a column which matches: " + pattern)
 
     return matching_columns
 

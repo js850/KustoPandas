@@ -1,5 +1,7 @@
 import numpy as np
 import re
+import fnmatch
+
 import pandas as pd
 import inspect 
 
@@ -447,6 +449,17 @@ class Var(NumOrVar):
         return "Var({})".format(self.value)
     def evaluate(self, vals):
         return vals[self.value]
+
+class ColumnNameOrPattern(Var):
+    def get_matching_columns(self, df):
+        pattern = self.value
+
+        matching_columns = [c for c in df.columns if fnmatch.fnmatchcase(c, pattern)]
+
+        if len(matching_columns) == 0:
+            raise KeyError("Could not find a column which matches: " + pattern)
+
+        return matching_columns
 
 class StringLiteral(NumOrVar):
     def __init__(self, value):

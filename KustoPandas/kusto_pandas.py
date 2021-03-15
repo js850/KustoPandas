@@ -25,20 +25,16 @@ class MultiDict:
         
         raise KeyError(key)
 
-def _serialize_expressions(args):
-    if args:
-        return ", ".join([str(a) for a in args])
-    return ""
+def _serialize_expressions_args(args):
+    return ", ".join([str(a) for a in args])
 
 def _serialize_named_expressions(kwargs):
-    if kwargs:
-        return ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
-    return ""
+    return ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
 
 def _serialize_expressions(args, kwargs):
     expr = ""
-    args_expr = ", ".join([str(a) for a in args])
-    kwargs_expr = ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
+    args_expr = _serialize_expressions_args(args)
+    kwargs_expr = _serialize_named_expressions(kwargs)
 
     expr += args_expr
 
@@ -107,12 +103,16 @@ class Wrap:
         # return self._copy(dfnew)
 
     def project_away(self, *cols):
-        inputs = Inputs(*cols)
-        dfnew = self.df.copy()
-        for column in inputs.parse_as_column_name_or_pattern(dfnew):
-            del dfnew[column]
+        expr = "project-away " + _serialize_expressions_args(cols)
+        parsed = parse_expression_toplevel(expr)
+        return parsed.evaluate_pipe(self)
 
-        return self._copy(dfnew)
+        # inputs = Inputs(*cols)
+        # dfnew = self.df.copy()
+        # for column in inputs.parse_as_column_name_or_pattern(dfnew):
+        #     del dfnew[column]
+
+        # return self._copy(dfnew)
 
     def project_keep(self, *cols):
         inputs = Inputs(*cols)
