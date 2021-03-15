@@ -163,3 +163,17 @@ class ProjectAway(TabularOperator):
             del dfnew[column]
 
         return dfnew
+    
+class ProjectKeep(TabularOperator):
+    def __init__(self, column_name_or_pattern_list):
+        self.column_name_or_pattern_list = column_name_or_pattern_list
+    
+    def _evaluate_top(self, df, variable_map):
+        columns_to_keep = set(parse_column_name_or_pattern_list(self.column_name_or_pattern_list, df))
+
+        # maintain the original orderin of the columns
+        columns = [c for c in df.columns if c in columns_to_keep]
+
+        dfnew = df[columns].copy()
+
+        return dfnew

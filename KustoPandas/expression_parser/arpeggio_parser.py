@@ -59,8 +59,9 @@ sort        <- "sort" "by" sortColumn ("," sortColumn)*;
 top         <- "top" int "by" sortColumn ("," sortColumn)*;
 project     <- "project" assignmentList;
 projectAway <- "project-away" columnNameOrPattern ("," columnNameOrPattern)*;
+projectKeep <- "project-keep" columnNameOrPattern ("," columnNameOrPattern)*;
 
-tabularOperator <- take / where / extend / summarize / sort / top / projectAway / project;
+tabularOperator <- take / where / extend / summarize / sort / top / projectAway / projectKeep / project;
 
 kusto       <- tabularOperator EOF;
 
@@ -210,6 +211,9 @@ class Visitor(arpeggio.PTNodeVisitor):
     
     def visit_projectAway(self, node, children):
         return ProjectAway(list(children))
+        
+    def visit_projectKeep(self, node, children):
+        return ProjectKeep(list(children))
 
 # it's a list so I can modify it
 _PARSER = dict()

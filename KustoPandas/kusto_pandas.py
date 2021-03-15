@@ -115,14 +115,18 @@ class Wrap:
         # return self._copy(dfnew)
 
     def project_keep(self, *cols):
-        inputs = Inputs(*cols)
-        columns_to_keep = set(inputs.parse_as_column_name_or_pattern(self.df))
+        expr = "project-keep " + _serialize_expressions_args(cols)
+        parsed = parse_expression_toplevel(expr)
+        return parsed.evaluate_pipe(self)
 
-        # maintain the original orderin of the columns
-        columns = [c for c in self.df.columns if c in columns_to_keep]
+        # inputs = Inputs(*cols)
+        # columns_to_keep = set(inputs.parse_as_column_name_or_pattern(self.df))
 
-        dfnew = self.df[columns].copy()
-        return self._copy(dfnew)
+        # # maintain the original orderin of the columns
+        # columns = [c for c in self.df.columns if c in columns_to_keep]
+
+        # dfnew = self.df[columns].copy()
+        # return self._copy(dfnew)
 
     def project_rename(self, *args, **kwargs):
         inputs = Inputs(*args, **kwargs)
@@ -196,8 +200,8 @@ class Wrap:
     def limit(self, n):
         return self.take(n)
     
-    def order(self, *args, **kwargs):
-        return self.sort(*args, **kwargs)
+    def order(self, by):
+        return self.sort(by)
 
     def sort(self, by):
         """
