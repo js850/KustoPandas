@@ -8,27 +8,35 @@ def ensure_column_name_unique(df, col):
         col = col + "_"
     return col
 
-class Take:
+class TabularOperator:
+    def evaluate_pipe(self, w):
+        newdf = self._evaluate_top(w.df, w._get_var_map())
+        return w._copy(newdf)
+
+    def _evaluate_top(self, df, vars):
+        raise NotImplementedError()
+
+class Take(TabularOperator):
     def __init__(self, n):
         self.n = n
     
-    def evaluate_top(self, df, vars):
+    def _evaluate_top(self, df, vars):
         n = self.n.evaluate(vars)
         return df.head(n)   
 
-class Where:
+class Where(TabularOperator):
     def __init__(self, predicate):
         self.predicate = predicate
     
-    def evaluate_top(self, df, vars):
+    def _evaluate_top(self, df, vars):
         mask = self.predicate.evaluate(vars)
 
         return df[mask].copy()
-class Extend:
+class Extend(TabularOperator):
     def __init__(self, args):
         self.args = args
     
-    def evaluate_top(self, df, var_map):
+    def _evaluate_top(self, df, var_map):
         dfnew = df.copy(deep=False)
         for parsed in self.args:
             se = SimpleExpression(parsed)
@@ -38,12 +46,12 @@ class Extend:
         
         return dfnew
 
-class Summarize:
+class Summarize(TabularOperator):
     def __init__(self, aggregates, by):
         self.aggregates = aggregates
         self.by = by
     
-    def evaluate_top(self, df, variable_map):
+    def _evaluate_top(self, df, variable_map):
         dftemp = pd.DataFrame(index=df.index.copy())
 
         group_by_col_names = []
@@ -106,19 +114,20 @@ def _sort(df, sort_columns, variable_map):
     
     return dfnew
 
-class Sort:
+class Sort(TabularOperator):
     def __init__(self, sort_columns):
         self.sort_columns = sort_columns
     
-    def evaluate_top(self, df, variable_map):
+    def _evaluate_top(self, df, variable_map):
         return _sort(df, self.sort_columns, variable_map)
 
-class Top:
+class Top(TabularOperator):
     def __init__(self, n, sort_columns):
         self.n = n
         self.sort_columns = sort_columns
     
-    def evaluate_top(self, df, variable_map):
-        dfsorted = _sort(df, self.sort_columns, variable_map)
-        n = self.n.evaluate(variable_map)
-        return dfsorted.head(n).copy()
+    def _evaluate_top(self, df, variable_map):
+        sort = Sort(self.sort_columns)
+        dfnew = sort._evaluate_top(df, variable_map)
+        take = Take(self.n)
+        return take._evaluate_top(dfnew, variable_map)

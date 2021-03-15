@@ -145,8 +145,7 @@ class Wrap:
 
         parsed = parse_expression_toplevel(expr)
 
-        dfnew = parsed.evaluate_top(self.df, self._get_var_map())
-        return self._copy(dfnew)
+        return parsed.evaluate_pipe(self)
 
     def extend(self, *args, **kwargs):
         expr = "extend "
@@ -157,23 +156,18 @@ class Wrap:
             expr += ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
 
         parsed = parse_expression_toplevel(expr)
-        dfnew = parsed.evaluate_top(self.df, self._get_var_map())
-
-        return self._copy(dfnew)
+        return parsed.evaluate_pipe(self)
     
     def where(self, condition):
         expr = "where " + condition
 
         parsed = parse_expression_toplevel(expr)
-        newdf = parsed.evaluate_top(self.df, self._get_var_map())
-
-        return self._copy(newdf)
+        return parsed.evaluate_pipe(self)
     
     def take(self, n):
         expr = "take " + str(n)
         parsed = parse_expression_toplevel(expr)
-        newdf = parsed.evaluate_top(self.df, None)
-        return self._copy(newdf)
+        return parsed.evaluate_pipe(self)
     
     def limit(self, n):
         return self.take(n)
@@ -195,9 +189,7 @@ class Wrap:
             expr += ", ".join(by)
         
         parsed = parse_expression_toplevel(expr)
-        dfnew = parsed.evaluate_top(self.df, self._get_var_map())
-
-        return self._copy(dfnew)
+        return parsed.evaluate_pipe(self)
 
     def top(self, n, by=None):
         """
@@ -219,8 +211,8 @@ class Wrap:
                 expr += ", ".join(by)
 
         parsed = parse_expression_toplevel(expr)
-        dfnew = parsed.evaluate_top(self.df, self._get_var_map())
-        return self._copy(dfnew)
+        result = parsed.evaluate_pipe(self)
+        return result
         
     def join(self, right, on=None, left_on=None, right_on=None, kind="inner"):
         if isinstance(right, Wrap):
