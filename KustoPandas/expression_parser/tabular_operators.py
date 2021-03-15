@@ -8,6 +8,15 @@ def ensure_column_name_unique(df, col):
         col = col + "_"
     return col
 
+class Pipe:
+    def __init__(self, tabular_operators):
+        self.tabular_operators = tabular_operators
+    
+    def evaluate_pipe(self, w):
+        for op in self.tabular_operators:
+            w = op.evaluate_pipe(w)
+        return w
+
 class TabularOperator:
     def evaluate_pipe(self, w):
         newdf = self._evaluate_top(w.df, w._get_var_map())
@@ -126,8 +135,7 @@ class Top(TabularOperator):
         self.n = n
         self.sort_columns = sort_columns
     
-    def _evaluate_top(self, df, variable_map):
-        sort = Sort(self.sort_columns)
-        dfnew = sort._evaluate_top(df, variable_map)
-        take = Take(self.n)
-        return take._evaluate_top(dfnew, variable_map)
+    def evaluate_pipe(self, w):
+        pipe = Pipe([Sort(self.sort_columns), Take(self.n)])
+        return pipe.evaluate_pipe(w)
+        
