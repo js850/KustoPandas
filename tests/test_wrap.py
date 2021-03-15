@@ -178,7 +178,7 @@ class TestWrap(unittest.TestCase):
         df["U"] = [9, 1, 7, 1, 2]
         expected = [1, 3, 4, 2, 0]
         w = Wrap(df)
-        wnew = w.sort(["U + 1", "B"], [True, True])
+        wnew = w.sort(["U + 1 asc", "B asc"])
         self.assertListEqual([1, 1, 2, 7, 9], list(wnew.df["U"]))
         self.assertListEqual(expected, list(wnew.df["B"]))
         self.assertListEqual(list(range(5)), list(w.df["B"]))

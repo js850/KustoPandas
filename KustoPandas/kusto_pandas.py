@@ -181,43 +181,21 @@ class Wrap:
     def order(self, *args, **kwargs):
         return self.sort(*args, **kwargs)
 
-    def sort(self, by, asc=False):
+    def sort(self, by):
         """
         sort by strlen(country) asc, price desc
 
         by can be a column name, or an expression built from columns e.g. (strlen(country))
             or it can be a list of such expressions
-        asc (if true, sort by ascending order) can be a bool
-            or list of bools.  If it's a list, it must be equal in length to the list of expressions 
         """
-        inputs = Inputs(by)
-        parsed_inputs = inputs.parsed_inputs
-        return self._sort(parsed_inputs, asc=asc)
-
-    def _sort(self, by_parsed, asc=False):
-        if isinstance(asc, bool):
-            asc = [asc] * len(by_parsed)
-        elif len(by_parsed) != len(asc):
-            raise Exception("the length of lists by and asc must be equal")
-
-        dfnew = self.df.copy(deep=False)
-
-        col_names = ["__tempcol_" + str(i) for i in range(len(by_parsed))]
-
-        var_map = self._get_var_map()
-        for i, expr in enumerate(by_parsed):
-            col = col_names[i]
-            series = expr.evaluate(var_map)
-            dfnew[col] = series
-            if expr.is_asc():
-                asc[i] = True
-            if expr.is_desc():
-                asc[i] = False
+        expr = "sort by "
+        if isinstance(by, str):
+            expr += by
+        else:
+            expr += ", ".join(by)
         
-        dfnew = dfnew.sort_values(col_names, ascending=asc)
-
-        for c in col_names:
-            del dfnew[c]
+        parsed = parse_expression_toplevel(expr)
+        dfnew = parsed.evaluate_top(self.df, self._get_var_map())
 
         return self._copy(dfnew)
 

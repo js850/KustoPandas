@@ -82,3 +82,30 @@ class Summarize:
             dfnew = dfnew.reset_index()
         
         return dfnew
+    
+class Sort:
+    def __init__(self, columns):
+        self.columns = columns
+    
+    def evaluate_top(self, df, variable_map):
+        dfnew = df.copy(deep=False)
+
+        col_names = ["__tempcol_" + str(i) for i in range(len(self.columns))]
+        asc = [False] * len(self.columns)
+
+        var_map = variable_map
+        for i, expr in enumerate(self.columns):
+            col = col_names[i]
+            series = expr.evaluate(var_map)
+            dfnew[col] = series
+            if expr.is_asc():
+                asc[i] = True
+            # if expr.is_desc():
+            #     asc[i] = False
+        
+        dfnew = dfnew.sort_values(col_names, ascending=asc)
+
+        for c in col_names:
+            del dfnew[c]
+        
+        return dfnew

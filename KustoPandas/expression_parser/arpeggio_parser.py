@@ -45,12 +45,17 @@ assignment  <- identifier "=" assignment / inList;
 
 kustoStatement  <- assignment EOF;
 
+
+asc         <- "asc" / "desc";
+sortColumn  <- stringOp asc?;
+
 take        <- "take" int;
 where       <- "where" inList;
 extend      <- "extend" assignmentList;
 summarize   <- "summarize" assignmentList ( "by" assignmentList )?;
+sort        <- "sort" "by" sortColumn ("," sortColumn)*;
 
-tabularOperator <- take / where / extend / summarize;
+tabularOperator <- take / where / extend / summarize / sort;
 
 kusto       <- tabularOperator EOF;
 
@@ -175,7 +180,17 @@ class Visitor(arpeggio.PTNodeVisitor):
         else:
             by = []
         return Summarize(aggregates, by)
-
+    
+    def visit_sortColumn(self, node, children):
+        var = children[0]
+        if len(children) == 1:
+            return SortColumn(var)
+        
+        asc = children[1] == "asc"
+        return SortColumn(var, asc=asc)
+        
+    def visit_sort(self, node, children):
+        return Sort(list(children))
 
 # it's a list so I can modify it
 _PARSER = dict()
@@ -190,6 +205,7 @@ def parse_expression(input, debug=True, root="kustoStatement"):
     parser = get_parser(root, debug=False)
 
     if debug:
+        print ("---------------------- INPUT -----------------------------")
         print(input)
 
     parse_tree = parser.parse(input)

@@ -331,11 +331,33 @@ class Asc(UnaryOppLeft):
     op = "asc"
     def evaluate_internal(self, left):
         return left
-
+    
 class Desc(UnaryOppLeft):
     op = "desc"
     def evaluate_internal(self, left):
         return left
+
+class SortColumn(Expression):
+    op = ""
+    def __init__(self, left, asc=False):
+        self.left = left
+        self.descendents = [left]
+        self.asc = asc
+    
+    def __str__(self):
+        ascstr = "desc"
+        if self.asc:
+            ascstr = "asc"
+        return "({0} {1})".format(self.left, ascstr)
+
+    def __repr__(self):
+        return str(self)
+
+    def is_asc(self):
+        return self.asc
+
+    def evaluate(self, vals):
+        return self.left.evaluate(vals)
 
 class AmbiguousMinus(Opp):
     # - can be either unary or binary op
