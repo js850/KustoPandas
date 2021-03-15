@@ -2,7 +2,7 @@ import pandas as pd
 import re
 from functools import reduce
 
-from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma
+from .expression_parser import parse_expression, parse_expression_toplevel, Assignment, Var, Method, By, Comma, flatten_comma
 from .aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
@@ -178,29 +178,39 @@ class Wrap:
         return self._copy(dfnew)
     
     def extend(self, *args, **kwargs):
-        inputs = Inputs(*args, **kwargs)
+        expr = "extend "
+        if args:
+            expr += ", ".join([str(a) for a in args])
+        
+        if kwargs:
+            expr += ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
 
-        dfnew = self.df.copy(deep=False)
-        var_map = self._get_var_map()
-        for parsed in inputs.parsed_inputs:
-            name = parsed.get_name()
-            result = parsed.evaluate(var_map)
-            dfnew[name] = result
+        parsed = parse_expression_toplevel(expr)
+        dfnew = parsed.evaluate_top(self.df, self._get_var_map())
+
+        # inputs = Inputs(*args, **kwargs)
+
+        # dfnew = self.df.copy(deep=False)
+        # var_map = self._get_var_map()
+        # for parsed in inputs.parsed_inputs:
+        #     name = parsed.get_name()
+        #     result = parsed.evaluate(var_map)
+        #     dfnew[name] = result
 
         return self._copy(dfnew)
     
     def where(self, condition):
-        parsed = parse_expression(condition)
-        if isinstance(parsed, Assignment):
-            raise Exception("where cannot have assignment: " + str(parsed))
+        expr = "where " + condition
 
-        result = parsed.evaluate(self._get_var_map())
+        parsed = parse_expression_toplevel(expr)
+        newdf = parsed.evaluate_top(self.df, self._get_var_map())
 
-        newdf = self.df[result].copy()
         return self._copy(newdf)
     
     def take(self, n):
-        newdf = self.df.head(n)
+        expr = "take " + str(n)
+        parsed = parse_expression_toplevel(expr)
+        newdf = parsed.evaluate_top(self.df, None)
         return self._copy(newdf)
     
     def limit(self, n):

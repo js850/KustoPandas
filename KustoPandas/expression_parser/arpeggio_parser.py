@@ -4,10 +4,12 @@ from arpeggio.peg import ParserPEG
 
 from KustoPandas.expression_parser.expression_parser_types import *
 
+from KustoPandas.expression_parser.tabular_operators import *
+
 
 kusto_peg = r"""
 
-int         <- r'[1-9]\d*';
+int         <- r'\d\d*';
 float       <- r'\d+\.\d*' /  r'\d*\.\d+';
 number      <- float / int;
 identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
@@ -41,7 +43,15 @@ inList      <- stringOp ("in~" / "!in~" / "!in" / "in" ) list / stringOp;
 
 assignment  <- identifier "=" assignment / inList;
 
-kusto       <- assignment EOF;
+kustoStatement  <- assignment EOF;
+
+take        <- "take" int;
+where       <- "where" inList;
+extend      <- "extend" assignment ("," assignment)*;
+
+tabularOperator <- take / where / extend;
+
+kusto       <- tabularOperator EOF;
 
 """
 
@@ -149,17 +159,30 @@ class Visitor(arpeggio.PTNodeVisitor):
 
     def visit_inList(self, node, children):
         return self._visit_binary_op(node, children)
+        
+    def visit_take(self, node, children):
+        return Take(children[0])
+    
+    def visit_where(self, node, children):
+        return Where(children[0])
+
+    def visit_extend(self, node, children):
+        return Extend(list(children))
 
 # it's a list so I can modify it
-_PARSER = []
+_PARSER = dict()
 
-def get_parser(debug=False):
-    if not _PARSER:
-        _PARSER.append(ParserPEG(kusto_peg, "kusto", debug=False))
-    return _PARSER[0]
+def get_parser(root, debug=False):
+    if not root in _PARSER:
+        _PARSER[root] = ParserPEG(kusto_peg, root, debug=debug)
 
-def parse_expression(input, debug=True):
-    parser = get_parser(debug=True)
+    return _PARSER[root]
+
+def parse_expression(input, debug=True, root="kustoStatement"):
+    parser = get_parser(root, debug=False)
+
+    if debug:
+        print(input)
 
     parse_tree = parser.parse(input)
 
@@ -172,4 +195,7 @@ def parse_expression(input, debug=True):
     if debug:
         print(str(expression_tree))
     return expression_tree
+
+def parse_expression_toplevel(input, debug=True):
+    return parse_expression(input, debug=debug, root="kusto")
 

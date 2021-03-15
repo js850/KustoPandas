@@ -19,6 +19,9 @@ def test_int():
     assert 10 == parse_and_visit("10")
     assert isinstance(parse_expression("10"), ept.Int)
 
+def test_int0():
+    assert 0 == parse_and_visit("0")
+
 def test_number():
     assert 1 == parse_and_visit("1.")
     assert .1 == parse_and_visit(".1")
