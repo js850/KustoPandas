@@ -3,8 +3,11 @@ from functools import reduce
 import fnmatch
 from collections import OrderedDict
 
-from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma, Mul, Asc, Desc
-from .expression_parser import SimpleExpression, _get_method_default_name, _generate_temp_column_name, replace_temp_column_names
+# from .arpeggio_parser import parse_expression
+from .expression_parser_types import Assignment, Var, Method, By, Comma, Mul, Asc, Desc
+from .expression_tree import flatten_comma
+
+from ._simple_expression import SimpleExpression, _get_method_default_name, _generate_temp_column_name, replace_temp_column_names, _evaluate_and_get_name
 
 class Inputs:
     def __init__(self, *args, **kwargs):
@@ -57,18 +60,6 @@ def _parse_column_name_or_pattern(parsed: SimpleExpression, df):
         raise KeyError("Could not find a collumn which matches: " + pattern)
 
     return matching_columns
-    
-
-def _evaluate_and_get_name(parsed, variable_map):
-    result = parsed.evaluate(variable_map)
-    if isinstance(parsed, Assignment):
-        for name, value in result.items():
-            return name, value
-    if isinstance(parsed, Var):
-        return str(parsed), result
-    if isinstance(parsed, Method):
-        return _get_method_default_name(parsed), result
-    return _generate_temp_column_name(), result
 
 def _split_if_comma(parsed):
     if isinstance(parsed, Comma):

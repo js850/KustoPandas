@@ -166,7 +166,15 @@ class Visitor(arpeggio.PTNodeVisitor):
         return Where(children[0])
 
     def visit_extend(self, node, children):
-        return Extend(list(children[0]))
+        return Extend(children[0])
+    
+    def visit_summarize(self, node, children):
+        aggregates = children[0]
+        if len(children) > 1:
+            by = children[1]
+        else:
+            by = []
+        return Summarize(aggregates, by)
 
 
 # it's a list so I can modify it

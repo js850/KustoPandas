@@ -3,16 +3,14 @@ import re
 from functools import reduce
 
 from .expression_parser import parse_expression, parse_expression_toplevel, Assignment, Var, Method, By, Comma, flatten_comma
-from .aggregates import create_aggregate
+from .expression_parser.aggregates import create_aggregate
 from .methods import get_methods
 from ._render import render
-from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by, _parse_inputs_with_by_return_simple_expression, replace_temp_column_names
+from .expression_parser._input_parsing import (
+    _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by,
+    _parse_inputs_with_by_return_simple_expression, replace_temp_column_names)
 
 
-def ensure_column_name_unique(df, col):
-    while col in df.columns:
-        col = col + "_"
-    return col
 
 class MultiDict:
     def __init__(self, dicts):
@@ -133,8 +131,25 @@ class Wrap:
 
 
         """
-        aggregates_parsed, by_parsed = _parse_inputs_with_by(aggregates, by=by)
-        return self._summarize(aggregates_parsed, by_parsed)
+        expr = "summarize"
+        if isinstance(aggregates, str):
+            expr += " " + str(aggregates)
+        else:
+            expr += " " + ",".join(aggregates)
+        
+        if by is not None:
+            if isinstance(by, str):
+                expr += " by " + str(by)
+            else:
+              expr += " by " + ",".join(by)
+
+        parsed = parse_expression_toplevel(expr)
+
+        dfnew = parsed.evaluate_top(self.df, self._get_var_map())
+        return self._copy(dfnew)
+
+        # aggregates_parsed, by_parsed = _parse_inputs_with_by(aggregates, by=by)
+        # return self._summarize(aggregates_parsed, by_parsed)
 
     def _summarize(self, aggregates, by):
         dftemp = pd.DataFrame(index=self.df.index.copy())

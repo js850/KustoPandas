@@ -99,3 +99,14 @@ def _get_default_name(parsed):
     if isinstance(parsed, Method):
         return _get_method_default_name(parsed)
     return _generate_temp_column_name()
+
+def _evaluate_and_get_name(parsed, variable_map):
+    result = parsed.evaluate(variable_map)
+    if isinstance(parsed, Assignment):
+        for name, value in result.items():
+            return name, value
+    if isinstance(parsed, Var):
+        return str(parsed), result
+    if isinstance(parsed, Method):
+        return _get_method_default_name(parsed), result
+    return _generate_temp_column_name(), result
