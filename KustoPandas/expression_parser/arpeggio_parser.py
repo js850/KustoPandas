@@ -18,6 +18,7 @@ primaryExpr <- ( timespanLiteral / number / identifier / stringLiteral / "(" ass
 
 args        <- assignment ("," assignment)*;
 methodCall  <- identifier "(" args? ")";
+
 posfixExpr  <- methodCall / primaryExpr;
 
 factor      <- ( "+" / "-" )?  posfixExpr;
@@ -35,7 +36,10 @@ stringOp    <- or (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
                      "has_cs" / "!has_cs" / "has" / "!has"
                     ) or )*;
 
-assignment  <- identifier "=" assignment / stringOp;
+list        <- "(" args ")";
+inList      <- stringOp ("in~" / "!in~" / "!in" / "in" ) list / stringOp;
+
+assignment  <- identifier "=" assignment / inList;
 
 kusto       <- assignment EOF;
 
@@ -137,13 +141,21 @@ class Visitor(arpeggio.PTNodeVisitor):
             args = children[1]
         
         return Method(method, args)
+    
+    def visit_list(self, node, children):
+        # unwarp the args variable
+        args = children[0]
+        return ListExpression(args.descendents)
+
+    def visit_inList(self, node, children):
+        return self._visit_binary_op(node, children)
 
 # it's a list so I can modify it
 _PARSER = []
 
 def get_parser(debug=False):
     if not _PARSER:
-        _PARSER.append(ParserPEG(kusto_peg, "kusto", debug=debug))
+        _PARSER.append(ParserPEG(kusto_peg, "kusto", debug=False))
     return _PARSER[0]
 
 def parse_expression(input, debug=True):

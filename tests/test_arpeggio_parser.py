@@ -186,3 +186,14 @@ def test_timespaneLiteral():
 def test_timespaneLiteral2():
     result = parse_and_visit("y = C + 1d", dict(C=pd.to_datetime("2020-01-02")))
     assert pd.to_datetime("2020-01-03") == result["y"]
+
+def test_in():
+    assert True == parse_and_visit('"hi" in ("hi", "there")')
+    assert False == parse_and_visit('"hi" in ("Hi", "there")')
+    assert False == parse_and_visit('"hi" in ("hid", "there")')
+    assert True == parse_and_visit('"hi" !in ("hid", "there")')
+
+def test_in_notcs():
+    assert True == parse_and_visit('"hi" in~ ("Hi", "there")')
+    assert False == parse_and_visit('"hi" in~ ("hid", "there")')
+    assert False == parse_and_visit('"hi" !in~ ("Hi", "there")')
