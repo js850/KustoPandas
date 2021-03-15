@@ -177,3 +177,21 @@ class ProjectKeep(TabularOperator):
         dfnew = df[columns].copy()
 
         return dfnew
+
+class ProjectRename(TabularOperator):
+    def __init__(self, simple_assignments):
+        self.simple_assignments = simple_assignments
+    
+    def _evaluate_top(self, df, variable_map):
+        col_map = dict()
+
+        for simple_assignment in self.simple_assignments:
+            se = SimpleExpression(simple_assignment)
+            newcol = se.get_name()
+            oldcol = str(se.expression)
+            col_map[oldcol] = newcol
+            if oldcol not in df.columns:
+                raise KeyError("Could not find column: " + oldcol)
+        
+        dfnew = df.rename(columns=col_map).copy()
+        return dfnew

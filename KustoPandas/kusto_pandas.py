@@ -91,55 +91,32 @@ class Wrap:
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
 
-        # inputs = Inputs(*cols, **renamed_cols)
-
-        # dfnew = pd.DataFrame()
-        # var_map = self._get_var_map()
-
-        # for parsed in inputs.parsed_inputs:
-        #     result = parsed.evaluate(var_map)
-        #     dfnew[parsed.get_name()] = result
-        
-        # return self._copy(dfnew)
-
     def project_away(self, *cols):
         expr = "project-away " + _serialize_expressions_args(cols)
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
-
-        # inputs = Inputs(*cols)
-        # dfnew = self.df.copy()
-        # for column in inputs.parse_as_column_name_or_pattern(dfnew):
-        #     del dfnew[column]
-
-        # return self._copy(dfnew)
 
     def project_keep(self, *cols):
         expr = "project-keep " + _serialize_expressions_args(cols)
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
 
-        # inputs = Inputs(*cols)
-        # columns_to_keep = set(inputs.parse_as_column_name_or_pattern(self.df))
-
-        # # maintain the original orderin of the columns
-        # columns = [c for c in self.df.columns if c in columns_to_keep]
-
-        # dfnew = self.df[columns].copy()
-        # return self._copy(dfnew)
-
     def project_rename(self, *args, **kwargs):
-        inputs = Inputs(*args, **kwargs)
+        expr = "project-rename " + _serialize_expressions(args, kwargs)
+        parsed = parse_expression_toplevel(expr)
+        return parsed.evaluate_pipe(self)
 
-        col_map = dict()
-        for newcol, oldcol in inputs.parse_as_simple_assigments():
-            col_map[oldcol] = newcol
-            if oldcol not in self.df.columns:
-                raise KeyError("Could not find column: " + oldcol)
+        # inputs = Inputs(*args, **kwargs)
+
+        # col_map = dict()
+        # for newcol, oldcol in inputs.parse_as_simple_assigments():
+        #     col_map[oldcol] = newcol
+        #     if oldcol not in self.df.columns:
+        #         raise KeyError("Could not find column: " + oldcol)
         
-        dfnew = self.df.rename(columns=col_map).copy()
+        # dfnew = self.df.rename(columns=col_map).copy()
 
-        return self._copy(dfnew)
+        # return self._copy(dfnew)
     
     def project_reorder(self, *cols):
         inputs = Inputs(*cols)

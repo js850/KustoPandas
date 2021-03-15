@@ -49,7 +49,7 @@ kustoStatement  <- assignment EOF;
 
 asc         <- "asc" / "desc";
 sortColumn  <- stringOp asc?;
-
+simpleAssignment <- identifier "=" identifier;
 
 take        <- "take" int;
 where       <- "where" inList;
@@ -60,8 +60,9 @@ top         <- "top" int "by" sortColumn ("," sortColumn)*;
 project     <- "project" assignmentList;
 projectAway <- "project-away" columnNameOrPattern ("," columnNameOrPattern)*;
 projectKeep <- "project-keep" columnNameOrPattern ("," columnNameOrPattern)*;
+projectRename <- "project-rename" simpleAssignment ("," simpleAssignment)*;
 
-tabularOperator <- take / where / extend / summarize / sort / top / projectAway / projectKeep / project;
+tabularOperator <- take / where / extend / summarize / sort / top / projectAway / projectKeep / projectRename / project;
 
 kusto       <- tabularOperator EOF;
 
@@ -211,9 +212,15 @@ class Visitor(arpeggio.PTNodeVisitor):
     
     def visit_projectAway(self, node, children):
         return ProjectAway(list(children))
-        
+
     def visit_projectKeep(self, node, children):
         return ProjectKeep(list(children))
+    
+    def visit_simpleAssignment(self, node, children):
+        return self.visit_assignment(node, children)
+    
+    def visit_projectRename(self, node, children):
+        return ProjectRename(list(children))
 
 # it's a list so I can modify it
 _PARSER = dict()
