@@ -7,7 +7,9 @@ from KustoPandas.expression_parser.expression_parser_types import *
 
 kusto_peg = r"""
 
-number      <- r'\d*\.\d*|\d+';
+int         <- r'[1-9]\d*';
+float       <- r'\d+\.\d*' /  r'\d*\.\d+';
+number      <- float / int;
 identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 timespanLiteral <- r'[1-9]\d*[dhms]';
@@ -40,13 +42,12 @@ kusto       <- assignment EOF;
 """
 
 class Visitor(arpeggio.PTNodeVisitor):
-    def visit_number(self, node, children):
-        try:
-            int(node.value)
-            return Int(node.value)
-        except:
-            return Float(node.value)
-    
+    def visit_int(self, node, children):
+        return Int(node.value)
+        
+    def visit_float(self, node, children):
+        return Float(node.value)
+
     def visit_identifier(self, node, children):
         return Var(node.value)
 

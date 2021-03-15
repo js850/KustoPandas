@@ -183,10 +183,6 @@ def test_method_call0():
 def test_timespaneLiteral():
     assert pd.to_timedelta("1d") == parse_and_visit("1d")
 
-def test_timespaneLiteral3():
-    # ideally this test would fail.  I should try to exclude ws here
-    assert pd.to_timedelta("1 d") == parse_and_visit("1d")
-
 def test_timespaneLiteral2():
     result = parse_and_visit("y = C + 1d", dict(C=pd.to_datetime("2020-01-02")))
     assert pd.to_datetime("2020-01-03") == result["y"]
