@@ -18,8 +18,8 @@ timespanLiteral <- r'[1-9]\d*[dhms]';
 
 primaryExpr <- ( timespanLiteral / number / identifier / stringLiteral / "(" assignment ")" );
 
-args        <- assignment ("," assignment)*;
-methodCall  <- identifier "(" args? ")";
+assignmentList      <- assignment ("," assignment)*;
+methodCall  <- identifier "(" assignmentList? ")";
 
 posfixExpr  <- methodCall / primaryExpr;
 
@@ -38,7 +38,7 @@ stringOp    <- or (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
                      "has_cs" / "!has_cs" / "has" / "!has"
                     ) or )*;
 
-list        <- "(" args ")";
+list        <- "(" assignmentList ")";
 inList      <- stringOp ("in~" / "!in~" / "!in" / "in" ) list / stringOp;
 
 assignment  <- identifier "=" assignment / inList;
@@ -47,9 +47,10 @@ kustoStatement  <- assignment EOF;
 
 take        <- "take" int;
 where       <- "where" inList;
-extend      <- "extend" assignment ("," assignment)*;
+extend      <- "extend" assignmentList;
+summarize   <- "summarize" assignmentList ( "by" assignmentList )?;
 
-tabularOperator <- take / where / extend;
+tabularOperator <- take / where / extend / summarize;
 
 kusto       <- tabularOperator EOF;
 
@@ -139,8 +140,8 @@ class Visitor(arpeggio.PTNodeVisitor):
     def visit_stringOp(self, node, children):
         return self._visit_binary_op(node, children)
 
-    def visit_args(self, node, children):
-        return Args(list(children))
+    def visit_assignmentList(self, node, children):
+        return list(children)
 
     def visit_methodCall(self, node, children):
         method = children[0] 
@@ -148,14 +149,12 @@ class Visitor(arpeggio.PTNodeVisitor):
         if len(children) < 2:
             args = Args([])
         else:
-            args = children[1]
+            args = Args(children[1])
         
         return Method(method, args)
     
     def visit_list(self, node, children):
-        # unwarp the args variable
-        args = children[0]
-        return ListExpression(args.descendents)
+        return ListExpression(children[0])
 
     def visit_inList(self, node, children):
         return self._visit_binary_op(node, children)
@@ -167,7 +166,8 @@ class Visitor(arpeggio.PTNodeVisitor):
         return Where(children[0])
 
     def visit_extend(self, node, children):
-        return Extend(list(children))
+        return Extend(list(children[0]))
+
 
 # it's a list so I can modify it
 _PARSER = dict()
