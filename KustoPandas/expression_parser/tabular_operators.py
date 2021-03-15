@@ -1,6 +1,6 @@
 import pandas as pd
 
-from ._simple_expression import SimpleExpression, _evaluate_and_get_name, parse_column_name_or_pattern_list
+from ._simple_expression import SimpleExpression, _evaluate_and_get_name, parse_column_name_or_pattern_list, remove_duplicates_maintain_order
 from .aggregates import create_aggregate
 
 def ensure_column_name_unique(df, col):
@@ -175,6 +175,18 @@ class ProjectKeep(TabularOperator):
         columns = [c for c in df.columns if c in columns_to_keep]
 
         dfnew = df[columns].copy()
+
+        return dfnew
+
+class ProjectReorder(TabularOperator):
+    def __init__(self, column_name_or_pattern_list):
+        self.column_name_or_pattern_list = column_name_or_pattern_list
+    
+    def _evaluate_top(self, df, variable_map):
+        specified_cols = parse_column_name_or_pattern_list(self.column_name_or_pattern_list, df)
+        # unspecified columns should be put at the back of the list
+        new_cols = remove_duplicates_maintain_order(specified_cols + list(df.columns))
+        dfnew = df[new_cols].copy()
 
         return dfnew
 

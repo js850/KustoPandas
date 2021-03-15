@@ -119,13 +119,17 @@ class Wrap:
         # return self._copy(dfnew)
     
     def project_reorder(self, *cols):
-        inputs = Inputs(*cols)
+        expr = "project-reorder " + _serialize_expressions_args(cols)
+        parsed = parse_expression_toplevel(expr)
+        return parsed.evaluate_pipe(self)
 
-        specified_cols = inputs.parse_as_column_name_or_pattern(self.df)
-        # unspecified columns should be put at the back of the list
-        new_cols = remove_duplicates_maintain_order(specified_cols + list(self.df.columns))
-        dfnew = self.df[new_cols].copy()
-        return self._copy(dfnew)
+        # inputs = Inputs(*cols)
+
+        # specified_cols = inputs.parse_as_column_name_or_pattern(self.df)
+        # # unspecified columns should be put at the back of the list
+        # new_cols = remove_duplicates_maintain_order(specified_cols + list(self.df.columns))
+        # dfnew = self.df[new_cols].copy()
+        # return self._copy(dfnew)
 
     def summarize(self, aggregates, by=None):
         """
