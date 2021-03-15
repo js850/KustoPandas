@@ -135,63 +135,19 @@ class Wrap:
         if isinstance(aggregates, str):
             expr += " " + str(aggregates)
         else:
-            expr += " " + ",".join(aggregates)
+            expr += " " + ", ".join(aggregates)
         
         if by is not None:
             if isinstance(by, str):
                 expr += " by " + str(by)
             else:
-              expr += " by " + ",".join(by)
+              expr += " by " + ", ".join(by)
 
         parsed = parse_expression_toplevel(expr)
 
         dfnew = parsed.evaluate_top(self.df, self._get_var_map())
         return self._copy(dfnew)
 
-        # aggregates_parsed, by_parsed = _parse_inputs_with_by(aggregates, by=by)
-        # return self._summarize(aggregates_parsed, by_parsed)
-
-    def _summarize(self, aggregates, by):
-        dftemp = pd.DataFrame(index=self.df.index.copy())
-
-        group_by_col_names = []
-        variable_map = self._get_var_map()
-        for parsed in by:
-            col_name, series = _evaluate_and_get_name(parsed, variable_map)
-            if col_name in group_by_col_names:
-                raise Exception("Column can only appear once in group by expression " + col_name)
-
-            group_by_col_names.append(col_name)
-            dftemp[col_name] = series
-        
-        all_columns = set(self.df.columns) - set(group_by_col_names)
-
-        args = [create_aggregate(a, all_columns) for a in aggregates]
-
-        for arg in args:
-            for col_name, col_value in arg.evaluate_column_inputs(variable_map):
-                if col_name not in dftemp.columns:
-                    dftemp[col_name] = col_value
-
-        if len(group_by_col_names) > 0:
-            grouped = dftemp.groupby(group_by_col_names)
-        else:
-            # it's allowed to pass nothing as group by.  In which case the aggregate will 
-            # operate on the entire series
-            grouped = dftemp
-        dfnew = pd.DataFrame()
-
-        for arg in args:
-            result = arg.apply(grouped, variable_map)
-            for col, series in result:
-                col = ensure_column_name_unique(dfnew, col)
-                dfnew[col] = series
-        
-        if len(group_by_col_names) > 0:
-            dfnew = dfnew.reset_index()
-
-        return self._copy(dfnew)
-    
     def extend(self, *args, **kwargs):
         expr = "extend "
         if args:
@@ -202,15 +158,6 @@ class Wrap:
 
         parsed = parse_expression_toplevel(expr)
         dfnew = parsed.evaluate_top(self.df, self._get_var_map())
-
-        # inputs = Inputs(*args, **kwargs)
-
-        # dfnew = self.df.copy(deep=False)
-        # var_map = self._get_var_map()
-        # for parsed in inputs.parsed_inputs:
-        #     name = parsed.get_name()
-        #     result = parsed.evaluate(var_map)
-        #     dfnew[name] = result
 
         return self._copy(dfnew)
     
