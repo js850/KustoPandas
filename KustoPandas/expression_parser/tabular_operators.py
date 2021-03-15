@@ -14,8 +14,8 @@ class Take:
     
     def evaluate_top(self, df, vars):
         n = self.n.evaluate(vars)
-        return df.head(n)
-    
+        return df.head(n)   
+
 class Where:
     def __init__(self, predicate):
         self.predicate = predicate
@@ -82,30 +82,43 @@ class Summarize:
             dfnew = dfnew.reset_index()
         
         return dfnew
+
+def _sort(df, sort_columns, variable_map):
+    dfnew = df.copy(deep=False)
+
+    col_names = ["__tempcol_" + str(i) for i in range(len(sort_columns))]
+    asc = [False] * len(sort_columns)
+
+    var_map = variable_map
+    for i, expr in enumerate(sort_columns):
+        col = col_names[i]
+        series = expr.evaluate(var_map)
+        dfnew[col] = series
+        if expr.is_asc():
+            asc[i] = True
+        # if expr.is_desc():
+        #     asc[i] = False
     
+    dfnew = dfnew.sort_values(col_names, ascending=asc)
+
+    for c in col_names:
+        del dfnew[c]
+    
+    return dfnew
+
 class Sort:
-    def __init__(self, columns):
-        self.columns = columns
+    def __init__(self, sort_columns):
+        self.sort_columns = sort_columns
     
     def evaluate_top(self, df, variable_map):
-        dfnew = df.copy(deep=False)
+        return _sort(df, self.sort_columns, variable_map)
 
-        col_names = ["__tempcol_" + str(i) for i in range(len(self.columns))]
-        asc = [False] * len(self.columns)
-
-        var_map = variable_map
-        for i, expr in enumerate(self.columns):
-            col = col_names[i]
-            series = expr.evaluate(var_map)
-            dfnew[col] = series
-            if expr.is_asc():
-                asc[i] = True
-            # if expr.is_desc():
-            #     asc[i] = False
-        
-        dfnew = dfnew.sort_values(col_names, ascending=asc)
-
-        for c in col_names:
-            del dfnew[c]
-        
-        return dfnew
+class Top:
+    def __init__(self, n, sort_columns):
+        self.n = n
+        self.sort_columns = sort_columns
+    
+    def evaluate_top(self, df, variable_map):
+        dfsorted = _sort(df, self.sort_columns, variable_map)
+        n = self.n.evaluate(variable_map)
+        return dfsorted.head(n).copy()

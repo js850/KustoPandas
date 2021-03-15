@@ -230,12 +230,12 @@ class TestWrap(unittest.TestCase):
         df = create_df()
         df["U"] = [9, 8, 7, 1, 2]
         w = Wrap(df)
-        wnew = w.top(4, "U + 1", asc=True)
+        wnew = w.top(4, "U + 1 asc")
 
         assert [1, 2, 7, 8] == list(wnew.df["U"])
         assert 6 == len(wnew.df.columns)
 
-        wexpected = w.sort("U", asc=True).take(4)
+        wexpected = w.sort("U asc").take(4)
         pd.testing.assert_frame_equal(wnew.df, wexpected.df)
 
 
@@ -254,7 +254,7 @@ class TestWrap(unittest.TestCase):
         df["U"] = [9, 8, 7, 1, 2]
         w = Wrap(df)
 
-        wexpected = w.top(4, "U + 1", asc=True)
+        wexpected = w.top(4, "U + 1 asc")
         wnew = w.top("4 by U + 1 asc")
 
         assert [1, 2, 7, 8] == list(wnew.df["U"])

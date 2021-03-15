@@ -199,7 +199,7 @@ class Wrap:
 
         return self._copy(dfnew)
 
-    def top(self, n, by=None, asc=False):
+    def top(self, n, by=None):
         """
 
         w.top(5, "A")
@@ -210,17 +210,18 @@ class Wrap:
 
         w.top("5 by A asc")
         """
-        n_parsed, by_parsed = _parse_inputs_with_by_return_simple_expression(n, by=by)
+        expr = "top " + str(n)
+        if by is not None:
+            expr += " by "
+            if isinstance(by, str):
+                expr += by
+            else:
+                expr += ", ".join(by)
 
-        if not len(n_parsed) == 1:
-            raise Exception("Top expects exactly one n")
-        n_value = n_parsed[0].evaluate(self._get_var_map())
-
-        if not isinstance(n_value, int):
-            raise Exception("n must be an integer")
-
-        return self._sort(by_parsed, asc=asc).take(n_value)
-    
+        parsed = parse_expression_toplevel(expr)
+        dfnew = parsed.evaluate_top(self.df, self._get_var_map())
+        return self._copy(dfnew)
+        
     def join(self, right, on=None, left_on=None, right_on=None, kind="inner"):
         if isinstance(right, Wrap):
             right = right.df
