@@ -10,8 +10,9 @@ kusto_peg = r"""
 number      <- r'\d*\.\d*|\d+';
 identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
+timespanLiteral <- number ("d" / "h" / "m" / "s");
 
-primaryExpr <- ( number / identifier / stringLiteral / "(" assignment ")" );
+primaryExpr <- ( timespanLiteral / number / identifier / stringLiteral / "(" assignment ")" );
 
 args        <- assignment ("," assignment)*;
 methodCall  <- identifier "(" args? ")";
@@ -50,8 +51,11 @@ class Visitor(arpeggio.PTNodeVisitor):
         return Var(node.value)
 
     def visit_stringLiteral(self, node, children):
-        # remove the enclosing quote
+        # remove the enclosing quotes
         return StringLiteral(node.value[1:-1])
+
+    def visit_timespanLiteral(self, node, children):
+        return TimespanLiteral(children[0], children[1])
 
     def visit_factor(self, node, children):
         if self.debug:
@@ -140,7 +144,7 @@ def get_parser(debug=False):
     return _PARSER[0]
 
 def parse_expression(input, debug=True):
-    parser = get_parser(debug=False)
+    parser = get_parser(debug=True)
 
     parse_tree = parser.parse(input)
 

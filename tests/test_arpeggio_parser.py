@@ -1,11 +1,14 @@
 import os, sys
 from context import Wrap
 
+import pandas as pd
+
 # hack to avoid having to add the dependency to the package until it's ready
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../KustoPandas/expression_parser')))
 
 from arpeggio_parser import parse_expression
 import KustoPandas.expression_parser.expression_parser_types as ept
+
 
 def parse_and_visit(input, vars=None):
     expression_tree = parse_expression(input, debug=True)
@@ -116,6 +119,7 @@ def test_var2():
     assert 4 == parse_and_visit("_x + y_", dict(_x=1, y_=3))
     assert 4 == parse_and_visit("x_y + y", dict(x_y=1, y=3))
     assert 4 == parse_and_visit("X + x", dict(X=1, x=3))
+    assert 4 == parse_and_visit("x_1 + y0f", dict(x_1=1, y0f=3))
 
 def test_string_literal():
     assert True == parse_and_visit("x == \"hi\"", dict(x="hi"))
@@ -175,3 +179,14 @@ def test_method_call0():
     def x():
         return 7
     assert 7 == parse_and_visit("y = x()", dict(x=x))["y"]
+
+def test_timespaneLiteral():
+    assert pd.to_timedelta("1d") == parse_and_visit("1d")
+
+def test_timespaneLiteral3():
+    # ideally this test would fail.  I should try to exclude ws here
+    assert pd.to_timedelta("1 d") == parse_and_visit("1d")
+
+def test_timespaneLiteral2():
+    result = parse_and_visit("y = C + 1d", dict(C=pd.to_datetime("2020-01-02")))
+    assert pd.to_datetime("2020-01-03") == result["y"]
