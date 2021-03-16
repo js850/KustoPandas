@@ -22,9 +22,12 @@ timespanLiteral <- r'[1-9]\d*[dhms]';
 // DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
 // operator precedence is defined by the chaining of the operators together
 
+// todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
+// this is not the case in Kusto, I should update it to reflect that.
+
 primaryExpr <- ( timespanLiteral / number / identifier / stringLiteral / "(" assignment ")" );
 
-assignmentList      <- assignment ("," assignment)*;
+// todo: you cannot have assignments inside a method call
 methodCall  <- identifier "(" assignmentList? ")";
 
 posfixExpr  <- methodCall / primaryExpr;
@@ -48,8 +51,9 @@ list        <- "(" assignmentList ")";
 inList      <- stringOp ("in~" / "!in~" / "!in" / "in" ) list / stringOp;
 
 assignment  <- identifier "=" inList / inList;
+assignmentList      <- assignment ("," assignment)*;
 
-// Use this root rule if you just want to pares a simple expression
+// Use this root rule if you just want to parse a simple expression
 kustoStatement  <- assignment EOF;
 
 // DEFINE THE KUSTO TABULAR OPERATORS 
