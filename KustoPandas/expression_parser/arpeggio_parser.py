@@ -9,6 +9,8 @@ from KustoPandas.expression_parser.tabular_operators import *
 
 kusto_peg = r"""
 
+// DEFINE THE TERMINAL rules.
+
 int         <- r'\d\d*';
 float       <- r'\d+\.\d*' /  r'\d*\.\d+';
 number      <- float / int;
@@ -16,6 +18,9 @@ identifier  <- r'[a-zA-Z_][a-zA-Z0-9_]*';
 columnNameOrPattern  <- r'[a-zA-Z0-9_*]*';
 stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 timespanLiteral <- r'[1-9]\d*[dhms]';
+
+// DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
+// operator precedence is defined by the chaining of the operators together
 
 primaryExpr <- ( timespanLiteral / number / identifier / stringLiteral / "(" assignment ")" );
 
@@ -29,24 +34,25 @@ factor      <- ( "+" / "-" )?  posfixExpr;
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
 
-gt          <- sum (( ">=" / "<=" / ">" / "<" ) sum )*;
-eq          <- gt (( "==" / "!=" ) gt )*;
-and         <- eq (("and") eq )*;
-or          <- and ("or" and )*;
+gt          <- sum (( ">=" / "<=" / ">" / "<" ) sum )?;
+eq          <- gt (( "==" / "!=" ) gt )?;
+and         <- eq (("and") eq )?;
+or          <- and ("or" and )?;
 
 stringOp    <- or (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
                      "startswith_cs" / "!startswith_cs" / "startswith" / "!startswith" /
                      "has_cs" / "!has_cs" / "has" / "!has"
-                    ) or )*;
+                    ) or )?;
 
 list        <- "(" assignmentList ")";
 inList      <- stringOp ("in~" / "!in~" / "!in" / "in" ) list / stringOp;
 
-assignment  <- identifier "=" assignment / inList;
+assignment  <- identifier "=" inList / inList;
 
+// Use this root rule if you just want to pares a simple expression
 kustoStatement  <- assignment EOF;
 
-
+// DEFINE THE KUSTO TABULAR OPERATORS 
 asc         <- "asc" / "desc";
 sortColumn  <- stringOp asc?;
 simpleAssignment <- identifier "=" identifier;
@@ -65,6 +71,7 @@ projectRename <- "project-rename" simpleAssignment ("," simpleAssignment)*;
 
 tabularOperator <- take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project;
 
+// use this root rule if you want to parse a full Kusto statement
 kusto       <- tabularOperator EOF;
 
 """
@@ -226,7 +233,6 @@ class Visitor(arpeggio.PTNodeVisitor):
     def visit_projectReorder(self, node, children):
         return ProjectReorder(list(children))
 
-# it's a list so I can modify it
 _PARSER = dict()
 
 def get_parser(root, debug=False):
