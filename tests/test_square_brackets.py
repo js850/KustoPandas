@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from context import expression_parser as ep
 
-from KustoPandas.expression_parser.expression_parser import parse_expression
+from KustoPandas.expression_parser import parse_expression
 from KustoPandas.expression_parser.expression_tree import find_matching_parentheses
 from KustoPandas.dynamic_methods import todynamic
 
