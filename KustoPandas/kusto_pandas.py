@@ -11,7 +11,6 @@ from .expression_parser._input_parsing import (
     _parse_inputs_with_by_return_simple_expression, replace_temp_column_names)
 
 
-
 class MultiDict:
     def __init__(self, dicts):
         self.dicts = dicts
@@ -29,9 +28,12 @@ def _serialize_expressions_args(args):
     return ", ".join([str(a) for a in args])
 
 def _serialize_named_expressions(kwargs):
+    if kwargs is None:
+        return ""
+
     return ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
 
-def _serialize_expressions(args, kwargs):
+def _serialize_expressions(args, kwargs = None):
     expr = ""
     args_expr = _serialize_expressions_args(args)
     kwargs_expr = _serialize_named_expressions(kwargs)
@@ -106,30 +108,10 @@ class Wrap:
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
 
-        # inputs = Inputs(*args, **kwargs)
-
-        # col_map = dict()
-        # for newcol, oldcol in inputs.parse_as_simple_assigments():
-        #     col_map[oldcol] = newcol
-        #     if oldcol not in self.df.columns:
-        #         raise KeyError("Could not find column: " + oldcol)
-        
-        # dfnew = self.df.rename(columns=col_map).copy()
-
-        # return self._copy(dfnew)
-    
     def project_reorder(self, *cols):
         expr = "project-reorder " + _serialize_expressions_args(cols)
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
-
-        # inputs = Inputs(*cols)
-
-        # specified_cols = inputs.parse_as_column_name_or_pattern(self.df)
-        # # unspecified columns should be put at the back of the list
-        # new_cols = remove_duplicates_maintain_order(specified_cols + list(self.df.columns))
-        # dfnew = self.df[new_cols].copy()
-        # return self._copy(dfnew)
 
     def summarize(self, aggregates, by=None):
         """
@@ -256,23 +238,10 @@ class Wrap:
         return self._copy(dfnew)
     
     def distinct(self, *args):
-        if args[0] == "*":
-            return self._copy(self.df.drop_duplicates())
-        
-        # note: the arguments to kusto distinct must be either "*" or a list of column names.
-        # Here we support an arbitrary expression.  e.g. distinct("A + B")
-        # It would be extra work to limit it to only column names, and supporting arbitrary expressions seems nice, so I will leave it
-        inputs = Inputs(*args)
+        expr = "distinct " + _serialize_expressions(args)
+        parsed = parse_expression_toplevel(expr)
+        return parsed.evaluate_pipe(self)
 
-        var_map = self._get_var_map()
-        dfnew = pd.DataFrame()
-        for parsed in inputs.parsed_inputs:
-            name = parsed.get_name()
-            series = parsed.evaluate(var_map)
-            dfnew[name] = series
-        
-        return self._copy(dfnew.drop_duplicates())
-    
     def getschema(self):
 
         d2 = pd.DataFrame()

@@ -75,8 +75,9 @@ projectAway <- "project-away" columnNameOrPattern ("," columnNameOrPattern)*;
 projectKeep <- "project-keep" columnNameOrPattern ("," columnNameOrPattern)*;
 projectReorder <- "project-reorder" columnNameOrPattern ("," columnNameOrPattern)*;
 projectRename <- "project-rename" simpleAssignment ("," simpleAssignment)*;
+distinct    <- "distinct" ("*" / assignmentList);
 
-tabularOperator <- take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project;
+tabularOperator <- take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct;
 
 // use this root rule if you want to parse a full Kusto statement
 kusto       <- tabularOperator EOF;
@@ -250,6 +251,9 @@ class Visitor(arpeggio.PTNodeVisitor):
 
     def visit_projectReorder(self, node, children):
         return ProjectReorder(list(children))
+
+    def visit_distinct(self, node, children):
+        return Distinct(children[0])
 
 _PARSER = dict()
 

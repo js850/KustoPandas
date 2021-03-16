@@ -207,3 +207,24 @@ class ProjectRename(TabularOperator):
         
         dfnew = df.rename(columns=col_map).copy()
         return dfnew
+
+class Distinct(TabularOperator):
+    def __init__(self, columnsOrStar):
+        self.columnsOrStar = columnsOrStar
+    
+    def _evaluate_top(self, df, variable_map):
+        if self.columnsOrStar == "*":
+            return df.drop_duplicates()
+        
+        # note: the arguments to kusto distinct must be either "*" or a list of column names.
+        # Here we support an arbitrary expression.  e.g. distinct("A + B")
+        # It would be extra work to limit it to only column names, and supporting arbitrary expressions seems nice, so I will leave it
+
+        dfnew = pd.DataFrame()
+        for parsed in self.columnsOrStar:
+            se = SimpleExpression(parsed)
+            name = se.get_name()
+            series = se.evaluate(variable_map)
+            dfnew[name] = series
+        
+        return dfnew.drop_duplicates()
