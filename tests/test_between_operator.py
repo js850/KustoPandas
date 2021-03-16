@@ -63,9 +63,9 @@ class TestBetweenOperator(unittest.TestCase):
         result = parsed.evaluate(vars)
         self.assertListEqual(list(result), [False, True, False])
     
-    def test_between_no_DotDot(self):
-        x = '1 between 2'
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), '(1 between 2)')
-        with self.assertRaises(Exception) as context:
-            parsed.evaluate(None)
+    # def test_between_no_DotDot(self):
+    #     x = '1 between 2'
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), '(1 between 2)')
+    #     with self.assertRaises(Exception) as context:
+    #         parsed.evaluate(None)

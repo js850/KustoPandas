@@ -20,7 +20,7 @@ stringLiteral <- ( r'"[^"]*"' / r'\'[^\']*\'' );
 timespanLiteral <- r'[1-9]\d*[dhms]';
 
 // DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
-// operator precedence is defined by the chaining of the operators together
+// operator precedence is defined by the chaining of the rules together
 
 // todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
 // this is not the case in Kusto, I should update it to reflect that.
@@ -42,10 +42,12 @@ eq          <- gt (( "==" / "!=" ) gt )?;
 and         <- eq (("and") eq )?;
 or          <- and ("or" and )?;
 
-stringOp    <- or (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
+between     <- or ( "between" "(" or ".." or ")" )?;
+
+stringOp    <- between (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
                      "startswith_cs" / "!startswith_cs" / "startswith" / "!startswith" /
                      "has_cs" / "!has_cs" / "has" / "!has"
-                    ) or )?;
+                    ) between )?;
 
 list        <- "(" assignmentList ")";
 inList      <- stringOp ("in~" / "!in~" / "!in" / "in" ) list / stringOp;
@@ -163,6 +165,14 @@ class Visitor(arpeggio.PTNodeVisitor):
         
     def visit_assignment(self, node, children):
         return self._visit_binary_op_single(node, children, Assignment)
+    
+    def visit_between(self, node, children):
+        if len(children) == 1:
+            return children[0]
+        
+        # todo: refactor. there is no need for DotDot here
+        dotdot = DotDot(children[1], children[2])
+        return Between(children[0], dotdot)
 
     def visit_stringOp(self, node, children):
         return self._visit_binary_op(node, children)
