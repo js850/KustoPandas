@@ -203,3 +203,12 @@ def test_in_notcs():
 
 def test_project_away():
     parsed = parse_expression_toplevel("project-away B")
+    assert parsed is not None
+
+def test_square_brackets_twolevel():
+    parsed = parse_expression_toplevel("extend D = d['k2']['k3']")
+    assert parsed is not None
+
+def test_square_brackets():
+    parsed = parse_expression_toplevel("extend D = d['k2']")
+    assert parsed is not None

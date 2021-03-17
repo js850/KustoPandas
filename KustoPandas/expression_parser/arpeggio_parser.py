@@ -29,7 +29,7 @@ primaryExpr <- ( timespanLiteral / number / identifier / stringLiteral / "(" ass
 
 // todo: you cannot have assignments inside a method call
 methodCall  <- identifier "(" assignmentList? ")";
-squareBrackets  <- identifier "[" assignment "]";
+squareBrackets  <- identifier ("[" assignment "]")+;
 
 posfixExpr  <- methodCall / squareBrackets / primaryExpr;
 
@@ -193,7 +193,10 @@ class Visitor(arpeggio.PTNodeVisitor):
         return Method(method, args)
     
     def visit_squareBrackets(self, node, children):
-        return SquareBrackets(children[0], children[1])
+        left = children[0]
+        for child in children[1:]:
+            left = SquareBrackets(left, child)
+        return left
     
     def visit_list(self, node, children):
         return ListExpression(children[0])
