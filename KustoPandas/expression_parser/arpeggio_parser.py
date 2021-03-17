@@ -36,7 +36,7 @@ posfixExpr  <- methodCall / squareBrackets / primaryExpr;
 
 dot         <- posfixExpr ("." posfixExpr)*;
 
-factor      <- ( "+" / "-" )?  dot;
+factor      <- ( "+" / "-" / "not" )?  dot;
 
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
@@ -110,10 +110,10 @@ class Visitor(arpeggio.PTNodeVisitor):
         return TimespanLiteral(Int(num), unit)
 
     def visit_factor(self, node, children):
-        if self.debug:
-            print("DEBUG VISIT", node.value)
         if "-" in children:
             return UnaryMinus(children[-1])
+        elif "not" in children:
+            return UnaryNot(children[-1])
         return children[-1]
     
     def visit_add(self, node, children):
