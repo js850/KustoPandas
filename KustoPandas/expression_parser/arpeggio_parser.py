@@ -53,7 +53,7 @@ stringOp    <- between (( "contains_cs" / "!contains_cs" / "contains" / "!contai
                     ) between )?;
 
 list        <- "(" assignmentList ")";
-inList      <- stringOp ("in~" / "!in~" / "!in" / "in" ) list / stringOp;
+inList      <- stringOp ("in~" / "!in~" / "!in" / "in" ) (list / stringOp) / stringOp;
 
 assignment  <- identifier "=" inList / inList;
 assignmentList      <- assignment ("," assignment)*;
