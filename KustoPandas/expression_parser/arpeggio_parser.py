@@ -28,7 +28,8 @@ timespanLiteral <- r'[1-9]\d*[dhms]';
 primaryExpr <- ( timespanLiteral / number / identifier / stringLiteral / "(" assignment ")" );
 
 // todo: you cannot have assignments inside a method call
-methodCall  <- identifier "(" assignmentList? ")";
+// generally * is not allowed, but any(*) is an exception.  
+methodCall  <- identifier "(" ( "*" / assignmentList )? ")";
 squareBrackets  <- identifier ("[" assignment "]")+;
 
 posfixExpr  <- methodCall / squareBrackets / primaryExpr;
@@ -189,6 +190,8 @@ class Visitor(arpeggio.PTNodeVisitor):
             
         if len(children) < 2:
             args = Args([])
+        elif children[1] == "*":
+            args = Args([Star()])
         else:
             args = Args(children[1])
         
