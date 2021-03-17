@@ -291,11 +291,12 @@ def parse_expression(input, debug=True, root="kustoStatement"):
         print(parse_tree.__repr__())
         print(parse_tree.tree_str())
 
-    expression_tree = arpeggio.visit_parse_tree(parse_tree, Visitor(debug))
+    expression_tree = arpeggio.visit_parse_tree(parse_tree, Visitor(debug=debug))
     if debug:
         print(str(expression_tree))
+
     return expression_tree
 
-def parse_expression_toplevel(input, debug=True):
+def parse_expression_toplevel(input, debug=False):
     return parse_expression(input, debug=debug, root="kusto")
 
