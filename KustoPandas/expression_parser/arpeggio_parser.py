@@ -33,7 +33,9 @@ squareBrackets  <- identifier ("[" assignment "]")+;
 
 posfixExpr  <- methodCall / squareBrackets / primaryExpr;
 
-factor      <- ( "+" / "-" )?  posfixExpr;
+dot         <- posfixExpr ("." posfixExpr)*;
+
+factor      <- ( "+" / "-" )?  dot;
 
 prod        <- factor  (("*" / "/") factor )*;
 sum         <- prod  (("+" / "-") prod )*;
@@ -196,6 +198,12 @@ class Visitor(arpeggio.PTNodeVisitor):
         left = children[0]
         for child in children[1:]:
             left = SquareBrackets(left, child)
+        return left
+
+    def visit_dot(self, node, children):
+        left = children[0]
+        for child in children[1:]:
+            left = Dot(left, child)
         return left
     
     def visit_list(self, node, children):
