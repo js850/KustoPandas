@@ -27,19 +27,35 @@ MUL         = "*" WS*
 DIV         = "/" WS*
 NOT         = "not" WS*
 
+GT         = ">" WS*
+LT         = "<" WS*
+GE         = ">=" WS*
+LE         = "<=" WS*
+EQ         = "==" WS*
+NEQ        = "!=" WS*
+AND        = "and" WS*
+OR         = "or" WS*
+
+
 # DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
 # operator precedence is defined by the chaining of the rules together
 
 # todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
 # this is not the case in Kusto, I should update it to reflect that.
 
-expressionInParens = LPAR sum RPAR
+expressionInParens = LPAR or RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 factor      = ( PLUS / MINUS / NOT )? primaryExpr
+
 prod        = factor ((MUL / DIV) factor )*
 sum         = prod ((PLUS / MINUS) prod)*
 
-kustoStatement = WS* sum
+gt          = sum (( GE / LE / GT / LT ) sum )?
+eq          = gt (( EQ / NEQ ) gt )?
+and         = eq (AND eq )?
+or          = and (OR and )?
+
+kustoStatement = WS* or
 
 """
 
@@ -142,6 +158,16 @@ class Visitor(NodeVisitor):
         self.visit_DIV = self.lift_first_child_of_two
         self.visit_NOT = self.lift_first_child_of_two
 
+        self.visit_GT = self.lift_first_child_of_two
+        self.visit_LT = self.lift_first_child_of_two
+        self.visit_GE = self.lift_first_child_of_two
+        self.visit_LE = self.lift_first_child_of_two
+        self.visit_EQ = self.lift_first_child_of_two
+        self.visit_NEQ = self.lift_first_child_of_two
+        self.visit_AND = self.lift_first_child_of_two
+        self.visit_OR = self.lift_first_child_of_two
+
+
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
             return children[0]
@@ -180,7 +206,7 @@ class Visitor(NodeVisitor):
         return TimespanLiteral(Int(num), unit)
 
     def visit_factor(self, node, children):
-        if len(children) == 1:
+        if len(children) == 1: # TODO: not possible
             return children[0]
         if "-" == children[0]:
             return UnaryMinus(children[-1])
@@ -190,7 +216,7 @@ class Visitor(NodeVisitor):
         return children[-1]
     
     def visit_expressionInParens(self, node, children):
-        # ignore parentheses
+        # ignore parentheses at index 0 and 2
         return children[1]
     
     def _visit_binary_op(self, node, children):
@@ -216,6 +242,7 @@ class Visitor(NodeVisitor):
         return left
     
     def _visit_binary_op_single(self, node, children, op):
+        return self._visit_binary_op(node, children)
         # if there is only one operator, then the op is not in the children list
         if len(children) == 1:
             return children[0]
