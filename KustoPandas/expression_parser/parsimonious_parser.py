@@ -36,6 +36,9 @@ NEQ        = "!=" WS*
 AND        = "and" WS*
 OR         = "or" WS*
 
+BETWEEN    = "between" WS*
+DOTDOT     = ".." WS*
+
 
 # DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
 # operator precedence is defined by the chaining of the rules together
@@ -43,7 +46,7 @@ OR         = "or" WS*
 # todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
 # this is not the case in Kusto, I should update it to reflect that.
 
-expressionInParens = LPAR or RPAR
+expressionInParens = LPAR between RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 factor      = ( PLUS / MINUS / NOT )? primaryExpr
 
@@ -55,7 +58,9 @@ eq          = gt (( EQ / NEQ ) gt )?
 and         = eq (AND eq )?
 or          = and (OR and )?
 
-kustoStatement = WS* or
+between     = or ( BETWEEN LPAR or DOTDOT or RPAR )?
+
+kustoStatement = WS* between
 
 """
 
@@ -167,6 +172,8 @@ class Visitor(NodeVisitor):
         self.visit_AND = self.lift_first_child_of_two
         self.visit_OR = self.lift_first_child_of_two
 
+        self.visit_BETWEEN = self.lift_first_child_of_two
+        self.visit_DOTDOT = self.lift_first_child_of_two
 
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
@@ -278,11 +285,12 @@ class Visitor(NodeVisitor):
         return self._visit_binary_op_single(node, children, Assignment)
     
     def visit_between(self, node, children):
-        if len(children) == 1:
+        if children[1] == "":
             return children[0]
         
         # todo: refactor. there is no need for DotDot here
-        dotdot = DotDot(children[1], children[2])
+        partial = children[1] # this has ["(", left, "..", right, ")"]
+        dotdot = DotDot(partial[2], partial[4])
         return Between(children[0], dotdot)
 
     def visit_stringOp(self, node, children):

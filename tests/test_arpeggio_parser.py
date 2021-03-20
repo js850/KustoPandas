@@ -227,3 +227,9 @@ def test_square_brackets_twolevel():
 def test_square_brackets():
     parsed = parse_expression_toplevel("extend D = d['k2']")
     assert parsed is not None
+
+def test_between():
+    assert True == parse_and_visit('1 between (0 .. 2)')
+    assert True == parse_and_visit('1 between ( 1 .. 2 )')
+    assert True == parse_and_visit('2 between ( 1 .. 2 )')
+    assert False == parse_and_visit('-1 between ( 1 .. 2 )')
