@@ -39,6 +39,21 @@ OR         = "or" WS*
 BETWEEN    = "between" WS*
 DOTDOT     = ".." WS*
 
+CONTAINS         = "contains" WS*
+CONTAINS_CS      = "contains_cs" WS*
+NOTCONTAINS      = "!contains" WS*
+NOTCONTAINS_CS   = "!contains_cs" WS*
+
+STARTSWITH       = "startswith" WS*
+STARTSWITH_CS    = "startswith_cs" WS*
+NOTSTARTSWITH    = "!startswith" WS*
+NOTSTARTSWITH_CS = "!startswith_cs" WS*
+
+HAS              = "has" WS*
+HAS_CS           = "has_cs" WS*
+NOTHAS           = "!has" WS*
+NOTHAS_CS        = "!has_cs" WS*
+
 
 # DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
 # operator precedence is defined by the chaining of the rules together
@@ -46,7 +61,7 @@ DOTDOT     = ".." WS*
 # todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
 # this is not the case in Kusto, I should update it to reflect that.
 
-expressionInParens = LPAR between RPAR
+expressionInParens = LPAR stringOp RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 factor      = ( PLUS / MINUS / NOT )? primaryExpr
 
@@ -60,7 +75,13 @@ or          = and (OR and )?
 
 between     = or ( BETWEEN LPAR or DOTDOT or RPAR )?
 
-kustoStatement = WS* between
+stringOp    = between (( 
+                    NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
+                    NOTSTARTSWITH_CS / NOTSTARTSWITH / STARTSWITH_CS / STARTSWITH /
+                    NOTHAS_CS / NOTHAS / HAS_CS / HAS
+                    ) between )?
+
+kustoStatement = WS* stringOp
 
 """
 
@@ -174,6 +195,21 @@ class Visitor(NodeVisitor):
 
         self.visit_BETWEEN = self.lift_first_child_of_two
         self.visit_DOTDOT = self.lift_first_child_of_two
+
+        self.visit_CONTAINS = self.lift_first_child_of_two
+        self.visit_CONTAINS_CS = self.lift_first_child_of_two
+        self.visit_NOTCONTAINS = self.lift_first_child_of_two
+        self.visit_NOTCONTAINS_CS = self.lift_first_child_of_two
+
+        self.visit_STARTSWITH = self.lift_first_child_of_two
+        self.visit_STARTSWITH_CS = self.lift_first_child_of_two
+        self.visit_NOTSTARTSWITH = self.lift_first_child_of_two
+        self.visit_NOTSTARTSWITH_CS = self.lift_first_child_of_two
+
+        self.visit_HAS = self.lift_first_child_of_two
+        self.visit_HAS_CS = self.lift_first_child_of_two
+        self.visit_NOTHAS = self.lift_first_child_of_two
+        self.visit_NOTHAS_CS = self.lift_first_child_of_two
 
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
