@@ -39,7 +39,11 @@ def test_factor2():
 
 def test_add():
     assert 2 == parse_and_visit("1 + 1")
+    assert 2 == parse_and_visit("1+1")
+    assert 2 == parse_and_visit(" 1 + 1 ")
     assert 0 == parse_and_visit("1 - 1")
+
+def test_add_parens():
     assert -1 == parse_and_visit("-2 - (-1)")
 
 def test_add2():

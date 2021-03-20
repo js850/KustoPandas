@@ -35,8 +35,8 @@ NOT         = "not" WS*
 
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / (LPAR sum RPAR) )
 factor      = ( PLUS / MINUS / NOT )? primaryExpr
-prod        = factor ((MUL / DIV) factor )*
-sum         = prod ((PLUS / MINUS) prod )*
+#prod        = factor ((MUL / DIV) factor )*
+sum         = factor ((PLUS / MINUS) factor )*
 
 kustoStatement = WS* sum
 
@@ -122,7 +122,27 @@ kusto       = tabularOperator EOF
 
 """
 
+class PartialNode:
+    def __init__(self, node, children):
+        self.node = node
+        self.children = children
+
 class Visitor(NodeVisitor):
+    def __init__(self):
+        # WS is the second child, we should ignore it
+        self.visit_LPAR = self.lift_first_child_of_two
+        self.visit_RPAR = self.lift_first_child_of_two
+        self.visit_PLUS = self.lift_first_child_of_two
+        self.visit_MINUS = self.lift_first_child_of_two
+        self.visit_MUL = self.lift_first_child_of_two
+        self.visit_DIV = self.lift_first_child_of_two
+        self.visit_NOT = self.lift_first_child_of_two
+    
+    def lift_first_child_of_two(self, node, children):
+        if len(children) == 2:
+            return children[0]
+        raise Exception("Expected two children, got " + len(children))
+
     def visit_kustoStatement(self, node, children):
         return children[1]
 
@@ -131,9 +151,11 @@ class Visitor(NodeVisitor):
             return node.text
         if len(children) == 1:
             return children[0]
-        if all([ "" == n.strip() for n in children[1:] ]):
-            return children[0]
-        raise NotImplementedError("generic_visit for children: " + str(children))
+        
+        return PartialNode(node, children)
+        # if all([ "" == n.strip() for n in children[1:] ]):
+        #     return children[0]
+        # raise NotImplementedError("generic_visit for children: " + str(children))
     
     # def visit_WS(self, node, children):
     #     return node
@@ -175,14 +197,16 @@ class Visitor(NodeVisitor):
 
         left = children[0]
 
-        for o, right in zip(children[1::2], children[2::2]):
-            op = all_operators_dict[o]
-            if op == AmbiguousMinus or op == AmbiguousStar:
-                op = op.binary
-            
-            operator = op(left, right)
+        for partial in children[1:]:
+            if isinstance(partial, PartialNode):
+                opstr, right = partial.children
+                op = all_operators_dict[opstr]
+                if op == AmbiguousMinus or op == AmbiguousStar:
+                    op = op.binary
+                
+                operator = op(left, right)
 
-            left = operator
+                left = operator
 
         return left
     
