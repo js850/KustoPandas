@@ -36,8 +36,8 @@ NOT         = "not" WS*
 expressionInParens = LPAR sum RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 factor      = ( PLUS / MINUS / NOT )? primaryExpr
-#prod        = factor ((MUL / DIV) factor )*
-sum         = factor ((PLUS / MINUS) factor)*
+prod        = factor ((MUL / DIV) factor )*
+sum         = prod ((PLUS / MINUS) prod)*
 
 kustoStatement = WS* sum
 

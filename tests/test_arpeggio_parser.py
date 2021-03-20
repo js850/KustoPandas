@@ -62,7 +62,7 @@ def test_prod():
     assert 2 == parse_and_visit("4/2")
 
 def test_prod2():
-    assert 6 == parse_and_visit("1 * 2 * 3")
+    assert 24 == parse_and_visit("1 * 2 * 3 * 4")
     assert 8 == parse_and_visit("4 * 8 / 4")
     assert 8 == parse_and_visit("4 * (8 / 4)")
     assert 8 == parse_and_visit("(4 * 8) / 4")
