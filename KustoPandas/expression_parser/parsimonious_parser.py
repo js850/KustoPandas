@@ -123,17 +123,13 @@ kusto       = tabularOperator EOF
 
 """
 
-class PartialNode:
-    def __init__(self, node, children):
-        self.node = node
-        self.children = children
-    
-    # def flatten(self):
-    #     result = []
-    #     for c in self.children:
-    #         if isinstance(c, PartialNode):
-    #             result += c.flatten()
-    #     return result
+class PartialNode(list):
+    def __init__(self, children):
+         for c in children:
+            if isinstance(c, PartialNode):
+                self += c
+            else:
+                self.append(c)
 
 class Visitor(NodeVisitor):
     def __init__(self):
@@ -160,13 +156,7 @@ class Visitor(NodeVisitor):
         if len(children) == 1:
             return children[0]
         
-        return PartialNode(node, children)
-        # if all([ "" == n.strip() for n in children[1:] ]):
-        #     return children[0]
-        # raise NotImplementedError("generic_visit for children: " + str(children))
-    
-    # def visit_WS(self, node, children):
-    #     return node
+        return PartialNode(children)
 
     def visit_int(self, node, children):
         return Int(node.text)
@@ -207,40 +197,23 @@ class Visitor(NodeVisitor):
         if children[1] == "":
             return children[0]
 
-        left = children[0]
-
         if len(children) != 2: raise Exception()
 
-        top_partial = children[1]
-        if isinstance(top_partial.children[0], PartialNode):
-            partials = top_partial.children
-        else:
-            partials = [top_partial]
+        left = children[0]
 
-        for p in partials:
-            opstr, right = p.children
+        flattened = children[1]
+        for i in range(0, len(flattened), 2):
+            opstr = flattened[i]
+            right = flattened[i+1]
             op = all_operators_dict[opstr]
             if op == AmbiguousMinus or op == AmbiguousStar:
                 op = op.binary
             
-            op = op(left, right)
-            left = op
-        
-        return op
+            operator = op(left, right)
 
-        # flattened = children[1].flatten()
-        # for i in range(0, len(flattened), 2):
-        #     opstr = flattened[i]
-        #     right = flattened[i+1]
-        #     op = all_operators_dict[opstr]
-        #     if op == AmbiguousMinus or op == AmbiguousStar:
-        #         op = op.binary
-            
-        #     operator = op(left, right)
+            left = operator
 
-        #     left = operator
-
-        # return left
+        return left
     
     def _visit_binary_op_single(self, node, children, op):
         # if there is only one operator, then the op is not in the children list
