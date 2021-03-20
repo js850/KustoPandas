@@ -37,8 +37,7 @@ expressionInParens = LPAR sum RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 factor      = ( PLUS / MINUS / NOT )? primaryExpr
 #prod        = factor ((MUL / DIV) factor )*
-sumPartial  = ((PLUS / MINUS) factor)
-sum         = factor sumPartial*
+sum         = factor ((PLUS / MINUS) factor)*
 
 kustoStatement = WS* sum
 
@@ -129,13 +128,12 @@ class PartialNode:
         self.node = node
         self.children = children
     
-    def flatten(self):
-        result = []
-        for c in self.children:
-            if isinstance(c, PartialNode):
-                result += c.flatten()
-            result.append(c)
-        return result
+    # def flatten(self):
+    #     result = []
+    #     for c in self.children:
+    #         if isinstance(c, PartialNode):
+    #             result += c.flatten()
+    #     return result
 
 class Visitor(NodeVisitor):
     def __init__(self):
@@ -148,8 +146,6 @@ class Visitor(NodeVisitor):
         self.visit_DIV = self.lift_first_child_of_two
         self.visit_NOT = self.lift_first_child_of_two
 
-        self.visit_sumPartial = self._visit_partial_binary_op
-    
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
             return children[0]
@@ -207,18 +203,6 @@ class Visitor(NodeVisitor):
         # ignore parentheses
         return children[1]
     
-    def _visit_partial_binary_op(self, node, children):
-        # visit the right half of a binary operation, e.g "+ 1"
-        opstr, right = children
-        op = all_operators_dict[opstr]
-        if op == AmbiguousMinus or op == AmbiguousStar:
-            op = op.binary
-
-        # I will have to fill in the left operand later
-        return op(None, right)
-
-
-
     def _visit_binary_op(self, node, children):
         if children[1] == "":
             return children[0]
@@ -227,16 +211,21 @@ class Visitor(NodeVisitor):
 
         if len(children) != 2: raise Exception()
 
-        if isinstance(children[1], Opp):
-            ops = [children[1]]
+        top_partial = children[1]
+        if isinstance(top_partial.children[0], PartialNode):
+            partials = top_partial.children
         else:
-            assert isinstance(children[1], PartialNode)
-            ops = children[1].children
-        
-        for op in ops:
-            op.left = left
-            left = op
+            partials = [top_partial]
 
+        for p in partials:
+            opstr, right = p.children
+            op = all_operators_dict[opstr]
+            if op == AmbiguousMinus or op == AmbiguousStar:
+                op = op.binary
+            
+            op = op(left, right)
+            left = op
+        
         return op
 
         # flattened = children[1].flatten()
