@@ -22,6 +22,7 @@ def test_int0():
     assert 0 == parse_and_visit("0")
     assert 10 == parse_and_visit("10 ")
     assert 10 == parse_and_visit(" 10")
+    assert 10 == parse_and_visit("   10   ")
 
 def test_number():
     assert 1 == parse_and_visit("1.")
@@ -37,6 +38,10 @@ def test_factor2():
     assert 10 == parse_and_visit("+ 10")
     assert -10 == parse_and_visit(" - 10.0 ")
 
+def test_parens():
+    assert 2 == parse_and_visit("(2)")
+    assert 2 == parse_and_visit(" ( 2 ) ")
+
 def test_add():
     assert 2 == parse_and_visit("1 + 1")
     assert 2 == parse_and_visit("1+1")
@@ -44,10 +49,11 @@ def test_add():
     assert 0 == parse_and_visit("1 - 1")
 
 def test_add_parens():
+    assert 2 == parse_and_visit("1 + (1)")
     assert -1 == parse_and_visit("-2 - (-1)")
 
 def test_add2():
-    assert 3 == parse_and_visit("1 + 1 + 1")
+    assert 5 == parse_and_visit("1 + 1 + 1 + 1 + 1")
     assert 1 == parse_and_visit("1 + (1 - 1)")
     assert 1 == parse_and_visit("((1 + 1) - 1)")
 

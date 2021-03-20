@@ -33,10 +33,12 @@ NOT         = "not" WS*
 # todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
 # this is not the case in Kusto, I should update it to reflect that.
 
-primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / (LPAR sum RPAR) )
+expressionInParens = LPAR sum RPAR
+primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 factor      = ( PLUS / MINUS / NOT )? primaryExpr
 #prod        = factor ((MUL / DIV) factor )*
-sum         = factor ((PLUS / MINUS) factor )*
+sumPartial  = ((PLUS / MINUS) factor)
+sum         = factor sumPartial*
 
 kustoStatement = WS* sum
 
@@ -126,6 +128,14 @@ class PartialNode:
     def __init__(self, node, children):
         self.node = node
         self.children = children
+    
+    def flatten(self):
+        result = []
+        for c in self.children:
+            if isinstance(c, PartialNode):
+                result += c.flatten()
+            result.append(c)
+        return result
 
 class Visitor(NodeVisitor):
     def __init__(self):
@@ -137,6 +147,8 @@ class Visitor(NodeVisitor):
         self.visit_MUL = self.lift_first_child_of_two
         self.visit_DIV = self.lift_first_child_of_two
         self.visit_NOT = self.lift_first_child_of_two
+
+        self.visit_sumPartial = self._visit_partial_binary_op
     
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
@@ -191,24 +203,55 @@ class Visitor(NodeVisitor):
         # can be "+"
         return children[-1]
     
+    def visit_expressionInParens(self, node, children):
+        # ignore parentheses
+        return children[1]
+    
+    def _visit_partial_binary_op(self, node, children):
+        # visit the right half of a binary operation, e.g "+ 1"
+        opstr, right = children
+        op = all_operators_dict[opstr]
+        if op == AmbiguousMinus or op == AmbiguousStar:
+            op = op.binary
+
+        # I will have to fill in the left operand later
+        return op(None, right)
+
+
+
     def _visit_binary_op(self, node, children):
-        if len(children) == 1:
+        if children[1] == "":
             return children[0]
 
         left = children[0]
 
-        for partial in children[1:]:
-            if isinstance(partial, PartialNode):
-                opstr, right = partial.children
-                op = all_operators_dict[opstr]
-                if op == AmbiguousMinus or op == AmbiguousStar:
-                    op = op.binary
-                
-                operator = op(left, right)
+        if len(children) != 2: raise Exception()
 
-                left = operator
+        if isinstance(children[1], Opp):
+            ops = [children[1]]
+        else:
+            assert isinstance(children[1], PartialNode)
+            ops = children[1].children
+        
+        for op in ops:
+            op.left = left
+            left = op
 
-        return left
+        return op
+
+        # flattened = children[1].flatten()
+        # for i in range(0, len(flattened), 2):
+        #     opstr = flattened[i]
+        #     right = flattened[i+1]
+        #     op = all_operators_dict[opstr]
+        #     if op == AmbiguousMinus or op == AmbiguousStar:
+        #         op = op.binary
+            
+        #     operator = op(left, right)
+
+        #     left = operator
+
+        # return left
     
     def _visit_binary_op_single(self, node, children, op):
         # if there is only one operator, then the op is not in the children list
