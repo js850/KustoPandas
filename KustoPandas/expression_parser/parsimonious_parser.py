@@ -54,6 +54,14 @@ HAS_CS           = "has_cs" WS*
 NOTHAS           = "!has" WS*
 NOTHAS_CS        = "!has_cs" WS*
 
+IN               = "in" WS*
+IN_CIS           = "in~" WS*
+NOTIN            = "!in" WS*
+NOTIN_CIS        = "!in~" WS*
+
+ASSIGNMENT       = "=" WS*
+
+COMMA            = "," WS*
 
 # DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
 # operator precedence is defined by the chaining of the rules together
@@ -61,8 +69,9 @@ NOTHAS_CS        = "!has_cs" WS*
 # todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
 # this is not the case in Kusto, I should update it to reflect that.
 
-expressionInParens = LPAR stringOp RPAR
+expressionInParens = LPAR assignment RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
+
 factor      = ( PLUS / MINUS / NOT )? primaryExpr
 
 prod        = factor ((MUL / DIV) factor )*
@@ -81,7 +90,14 @@ stringOp    = between ((
                     NOTHAS_CS / NOTHAS / HAS_CS / HAS
                     ) between )?
 
-kustoStatement = WS* stringOp
+list        = LPAR assignmentList RPAR
+inList      = stringOp (( NOTIN_CIS / IN_CIS / NOTIN / IN ) (list / stringOp) )?
+
+internalAssignment = identifier ASSIGNMENT inList
+assignment  = internalAssignment / inList
+assignmentList      = assignment (COMMA assignment)*
+
+kustoStatement = WS* assignment
 
 """
 
@@ -210,6 +226,14 @@ class Visitor(NodeVisitor):
         self.visit_HAS_CS = self.lift_first_child_of_two
         self.visit_NOTHAS = self.lift_first_child_of_two
         self.visit_NOTHAS_CS = self.lift_first_child_of_two
+    
+        self.visit_IN = self.lift_first_child_of_two
+        self.visit_IN_CIS = self.lift_first_child_of_two
+        self.visit_NOTIN = self.lift_first_child_of_two
+        self.visit_NOTIN_CIS = self.lift_first_child_of_two
+
+        self.visit_ASSIGNMENT = self.lift_first_child_of_two
+        self.visit_COMMA = self.lift_first_child_of_two
 
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
@@ -240,8 +264,8 @@ class Visitor(NodeVisitor):
         return ColumnNameOrPattern(node.text)
 
     def visit_stringLiteral(self, node, children):
-        # remove the enclosing quotes
-        return StringLiteral(node.text[1:-1])
+        # remove whitespace outside the quotes and the enclosing quotes
+        return StringLiteral(node.text.strip()[1:-1])
 
     def visit_timespanLiteral(self, node, children):
         num = node.text[:-1]
@@ -287,16 +311,16 @@ class Visitor(NodeVisitor):
     def _visit_binary_op_single(self, node, children, op):
         return self._visit_binary_op(node, children)
         # if there is only one operator, then the op is not in the children list
-        if len(children) == 1:
-            return children[0]
+        # if len(children) == 1:
+        #     return children[0]
         
-        left = children[0]
+        # left = children[0]
 
-        for right in children[1:]:
-            operator = op(left, right)
-            left = operator
+        # for right in children[1:]:
+        #     operator = op(left, right)
+        #     left = operator
 
-        return left
+        # return left
         
 
     def visit_sum(self, node, children):
@@ -317,8 +341,10 @@ class Visitor(NodeVisitor):
     def visit_or(self, node, children):
         return self._visit_binary_op_single(node, children, Or)
         
-    def visit_assignment(self, node, children):
-        return self._visit_binary_op_single(node, children, Assignment)
+    def visit_internalAssignment(self, node, children):
+        # if children[0] == "":
+        #     return children[1]
+        return Assignment(children[0], children[2])
     
     def visit_between(self, node, children):
         if children[1] == "":
@@ -333,7 +359,13 @@ class Visitor(NodeVisitor):
         return self._visit_binary_op(node, children)
 
     def visit_assignmentList(self, node, children):
-        return list(children)
+        result = [children[0]]
+        if children[1] == "":
+            return result
+        # children[1] is a list like [",", val1, ",", val2]
+        # take only the values and drop the commas
+        rest = children[1][1::2]
+        return result + rest
 
     def visit_methodCall(self, node, children):
         method = children[0] 
@@ -360,7 +392,7 @@ class Visitor(NodeVisitor):
         return left
     
     def visit_list(self, node, children):
-        return ListExpression(children[0])
+        return ListExpression(children[1])
 
     def visit_inList(self, node, children):
         return self._visit_binary_op(node, children)
