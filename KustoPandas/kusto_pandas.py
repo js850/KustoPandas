@@ -211,12 +211,16 @@ class Wrap:
         return self
     
     def count(self):
-        count = self.df.shape[0]
+        expr = "count"
+        parsed = parse_expression_toplevel(expr)
+        return parsed.evaluate_pipe(self)
 
-        dfnew = pd.DataFrame()
-        dfnew["Count"] = [count]
+        # count = self.df.shape[0]
 
-        return self._copy(dfnew)
+        # dfnew = pd.DataFrame()
+        # dfnew["Count"] = [count]
+
+        # return self._copy(dfnew)
     
     def distinct(self, *args):
         expr = "distinct " + _serialize_expressions(args)

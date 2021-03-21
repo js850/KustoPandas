@@ -6,11 +6,19 @@ from KustoPandas.expression_parser.expression_parser_types import *
 
 from KustoPandas.expression_parser.tabular_operators import *
 
+# Define the grammar of the Kusto language using the PEG format.
+# Then use a PEG parser compiler to parse the kusto language text
+# https://en.wikipedia.org/wiki/Parsing_expression_grammar
+# good tutorial https://tomassetti.me/parsing-in-python/
+# Guido van Rossum's PEG blog https://medium.com/@gvanrossum_83706/peg-parsing-series-de5d41b2ed60
+
 kusto_peg = r"""
 # DEFINE THE TERMINAL rules.
 
+# white space
 WS          = ~' +'
 
+# The core terminal rules
 int         = ~'\d\d*' WS?
 float       = (~'\d+\.\d*' /  ~'\d*\.\d+') WS?
 number      = float / int
@@ -138,8 +146,9 @@ projectKeep = "project-keep" WS columnNameOrPatternList
 projectReorder = "project-reorder" WS columnNameOrPatternList
 projectRename = "project-rename" WS simpleAssignmentList
 distinct    = "distinct" WS (MUL / assignmentList)
+count       = "count" WS?
 
-tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct
+tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count
 
 # use this root rule if you want to parse a full Kusto statement
 kusto       = WS? tabularOperator
@@ -247,8 +256,8 @@ class Visitor(NodeVisitor):
         #   if it does match then it will be PartialNode(["+", expr])
         #   PartialNode will keep the list flat, so if there are multiple matches it will be PartialNode(["+", expr, "+", expr2])
 
-        # here I want to do a few things.
-        # First, ignore whitespace in the terminal rules.  
+        # Remove nulls from the list primarily to simplify whitespace handling
+        # Ignore whitespace in the terminal rules.  
         #   example rule:   `PLUS = "+" WS*`
         #   The children of PLUS is "+" and the non-named rule `WS*` 
         #   I want the output of visit_PLUS to return "+" and completely ignore the WS.
@@ -423,6 +432,9 @@ class Visitor(NodeVisitor):
 
     def visit_distinct(self, node, children):
         return Distinct(children[2])
+    
+    def visit_count(self, node, children):
+        return Count()
 
 _PARSER = dict()
 

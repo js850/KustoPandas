@@ -228,3 +228,11 @@ class Distinct(TabularOperator):
             dfnew[name] = series
         
         return dfnew.drop_duplicates()
+
+class Count(TabularOperator):
+    def _evaluate_top(self, df, variable_map):
+        count = df.shape[0]
+
+        dfnew = pd.DataFrame()
+        dfnew["Count"] = [count]
+        return dfnew
