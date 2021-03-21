@@ -147,8 +147,9 @@ projectReorder = "project-reorder" WS columnNameOrPatternList
 projectRename = "project-rename" WS simpleAssignmentList
 distinct    = "distinct" WS (MUL / assignmentList)
 count       = "count" WS?
+getschema   = "getschema" WS?
 
-tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count
+tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema
 
 # use this root rule if you want to parse a full Kusto statement
 kusto       = WS? tabularOperator
@@ -435,6 +436,9 @@ class Visitor(NodeVisitor):
     
     def visit_count(self, node, children):
         return Count()
+    
+    def visit_getschema(self, node, children):
+        return GetSchema()
 
 _PARSER = dict()
 

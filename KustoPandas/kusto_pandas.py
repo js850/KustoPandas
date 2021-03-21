@@ -215,28 +215,16 @@ class Wrap:
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
 
-        # count = self.df.shape[0]
-
-        # dfnew = pd.DataFrame()
-        # dfnew["Count"] = [count]
-
-        # return self._copy(dfnew)
-    
     def distinct(self, *args):
         expr = "distinct " + _serialize_expressions(args)
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
 
     def getschema(self):
+        expr = "getschema"
+        parsed = parse_expression_toplevel(expr)
+        return parsed.evaluate_pipe(self)
 
-        d2 = pd.DataFrame()
-        d2["ColumnName"] = self.df.columns
-        d2["ColumnOrdinal"] = range(len(self.df.columns))
-        d2["DataType"] = list(self.df.dtypes)
-        d2["ColumnType"] = list(self.df.dtypes)
-
-        return self._copy(d2)
-            
         
 
     

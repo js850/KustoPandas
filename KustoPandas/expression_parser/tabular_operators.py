@@ -236,3 +236,12 @@ class Count(TabularOperator):
         dfnew = pd.DataFrame()
         dfnew["Count"] = [count]
         return dfnew
+
+class GetSchema(TabularOperator):
+    def _evaluate_top(self, df, variable_map):
+        d2 = pd.DataFrame()
+        d2["ColumnName"] = df.columns
+        d2["ColumnOrdinal"] = range(len(df.columns))
+        d2["DataType"] = list(df.dtypes)
+        d2["ColumnType"] = list(df.dtypes)
+        return d2
