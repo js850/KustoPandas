@@ -9,64 +9,64 @@ from KustoPandas.expression_parser.tabular_operators import *
 kusto_peg = r"""
 # DEFINE THE TERMINAL rules.
 
-WS          = " "
+WS          = ~' +'
 
-int         = ~'\d\d*' WS*
-float       = (~'\d+\.\d*' /  ~'\d*\.\d+') WS*
+int         = ~'\d\d*' WS?
+float       = (~'\d+\.\d*' /  ~'\d*\.\d+') WS?
 number      = float / int
-identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*' WS*
-columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS*
-stringLiteral = ( ~'"[^"]*"' / ~'\'[^\']*\'' ) WS*
-timespanLiteral = ~'[1-9]\d*[dhms]' WS*
+identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*' WS?
+columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS?
+stringLiteral = ( ~'"[^"]*"' / ~'\'[^\']*\'' ) WS?
+timespanLiteral = ~'[1-9]\d*[dhms]' WS?
 
 # OPERATORS
-LPAR        = "(" WS*
-RPAR        = ")" WS*
-LBRAK       = "[" WS*
-RBRAK       = "]" WS*
-PLUS        = "+" WS*
-MINUS       = "-" WS*
-MUL         = "*" WS*
-DIV         = "/" WS*
-NOT         = "not" WS*
+LPAR        = "(" WS?
+RPAR        = ")" WS?
+LBRAK       = "[" WS?
+RBRAK       = "]" WS?
+PLUS        = "+" WS?
+MINUS       = "-" WS?
+MUL         = "*" WS?
+DIV         = "/" WS?
+NOT         = "not" WS?
 
-GT         = ">" WS*
-LT         = "<" WS*
-GE         = ">=" WS*
-LE         = "<=" WS*
-EQ         = "==" WS*
-NEQ        = "!=" WS*
-AND        = "and" WS*
-OR         = "or" WS*
+GT         = ">" WS?
+LT         = "<" WS?
+GE         = ">=" WS?
+LE         = "<=" WS?
+EQ         = "==" WS?
+NEQ        = "!=" WS?
+AND        = "and" WS?
+OR         = "or" WS?
 
-BETWEEN    = "between" WS*
-DOTDOT     = ".." WS*
+BETWEEN    = "between" WS?
+DOTDOT     = ".." WS?
 
-CONTAINS         = "contains" WS*
-CONTAINS_CS      = "contains_cs" WS*
-NOTCONTAINS      = "!contains" WS*
-NOTCONTAINS_CS   = "!contains_cs" WS*
+CONTAINS         = "contains" WS?
+CONTAINS_CS      = "contains_cs" WS?
+NOTCONTAINS      = "!contains" WS?
+NOTCONTAINS_CS   = "!contains_cs" WS?
 
-STARTSWITH       = "startswith" WS*
-STARTSWITH_CS    = "startswith_cs" WS*
-NOTSTARTSWITH    = "!startswith" WS*
-NOTSTARTSWITH_CS = "!startswith_cs" WS*
+STARTSWITH       = "startswith" WS?
+STARTSWITH_CS    = "startswith_cs" WS?
+NOTSTARTSWITH    = "!startswith" WS?
+NOTSTARTSWITH_CS = "!startswith_cs" WS?
 
-HAS              = "has" WS*
-HAS_CS           = "has_cs" WS*
-NOTHAS           = "!has" WS*
-NOTHAS_CS        = "!has_cs" WS*
+HAS              = "has" WS?
+HAS_CS           = "has_cs" WS?
+NOTHAS           = "!has" WS?
+NOTHAS_CS        = "!has_cs" WS?
 
-IN               = "in" WS*
-IN_CIS           = "in~" WS*
-NOTIN            = "!in" WS*
-NOTIN_CIS        = "!in~" WS*
+IN               = "in" WS?
+IN_CIS           = "in~" WS?
+NOTIN            = "!in" WS?
+NOTIN_CIS        = "!in~" WS?
 
-ASSIGNMENT       = "=" WS*
+ASSIGNMENT       = "=" WS?
 
-COMMA            = "," WS*
+COMMA            = "," WS?
 
-DOT              = "." WS*
+DOT              = "." WS?
 
 # DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
 # operator precedence is defined by the chaining of the rules together
@@ -104,29 +104,32 @@ stringOp    = between ((
                     NOTHAS_CS / NOTHAS / HAS_CS / HAS
                     ) between )?
 
-list        = LPAR assignmentList RPAR
+list        = LPAR expressionList RPAR
 inList      = stringOp (( NOTIN_CIS / IN_CIS / NOTIN / IN ) (list / stringOp) )?
 
-internalAssignment = identifier ASSIGNMENT inList
-assignment  = internalAssignment / inList
+expression  = inList
+expressionList = expression (COMMA expression)*
+
+internalAssignment = identifier ASSIGNMENT expression
+assignment  = internalAssignment / expression
 assignmentList      = assignment (COMMA assignment)*
 
 # Use this root rule if you just want to parse a simple expression
-kustoStatement = WS* assignment
+kustoStatement = WS? assignment
 
 # DEFINE THE KUSTO TABULAR OPERATORS 
 
 BY          = "by" WS+
-ASC         = ("asc" / "desc") WS*
+ASC         = ("asc" / "desc") WS?
 
-sortColumn  = stringOp ASC?
+sortColumn  = expression ASC?
 sortColumnList = sortColumn (COMMA sortColumn)*
 simpleAssignment = identifier ASSIGNMENT identifier
 simpleAssignmentList = simpleAssignment (COMMA simpleAssignment)*
 columnNameOrPatternList = columnNameOrPattern (COMMA columnNameOrPattern)*
 
 take        = "take" WS+ int
-where       = "where" WS+ inList
+where       = "where" WS+ expression
 extend      = "extend" WS+ assignmentList
 summarize   = "summarize" WS+ assignmentList ( BY assignmentList )?
 sort        = "sort" WS+ BY sortColumnList
@@ -141,7 +144,7 @@ distinct    = "distinct" WS+ (MUL / assignmentList)
 tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct
 
 # use this root rule if you want to parse a full Kusto statement
-kusto       = WS* tabularOperator
+kusto       = WS? tabularOperator
 """
 
 class PartialNode(list):
@@ -202,6 +205,8 @@ class Visitor(NodeVisitor):
 
         self.visit_columnNameOrPatternList = self._visit_list_with_at_least_one
         self.visit_simpleAssignmentList = self._visit_list_with_at_least_one
+        self.visit_expressionList = self._visit_list_with_at_least_one
+        self.visit_assignmentList = self._visit_list_with_at_least_one
 
         self.visit_sum = self._visit_binary_op
         self.visit_prod = self._visit_binary_op
@@ -223,8 +228,8 @@ class Visitor(NodeVisitor):
     def visit_WS(self, node, children):
         return None
 
-    def visit_kustoStatement(self, node, children):
-        return children[1]
+    # def visit_kustoStatement(self, node, children):
+    #     return children[1]
 
     def generic_visit(self, node, children):
         if node.text == "":
@@ -336,9 +341,6 @@ class Visitor(NodeVisitor):
         # take only the values and drop the commas
         rest = children[1][1::2]
         return result + rest
-
-    def visit_assignmentList(self, node, children):
-        return self._visit_list_with_at_least_one(node, children)
 
     def visit_methodCall(self, node, children):
         method = children[0] 

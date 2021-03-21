@@ -24,6 +24,7 @@ def test_int0():
 def test_int_ws():
     assert 10 == parse_and_visit("10 ")
     assert 10 == parse_and_visit(" 10")
+    assert 10 == parse_and_visit("10   ")
 
 def test_int_ws2():
     assert 10 == parse_and_visit("   10   ")
@@ -51,6 +52,7 @@ def test_add():
     assert 2 == parse_and_visit("1+1")
     assert 2 == parse_and_visit(" 1 + 1 ")
     assert 0 == parse_and_visit("1 - 1")
+    assert 0 == parse_and_visit("1    -    1")
 
 def test_add_parens():
     assert 2 == parse_and_visit("1 + (1)")
