@@ -237,30 +237,27 @@ class Visitor(NodeVisitor):
             # pass through node
             return children[0]
         
-        # here I want to do a few things.
-        # First, ignore whitespace in the terminal rules.  
-        #   example rule:   `PLUS = "+" WS*`
-        #   The children of PLUS is ["+", ""] or ["+", [" ", " ", ...]] depending on whether WS matched or not.
-        #   Downstream I only want the "+" without the WS.
-        #   The first option I tried was to make an explicit visitor for all terminal rules with WS.  That quickly got annoying since there were dozens of them
-        #   Instead I have visit_WS return None and remove all None values from children here.
-        # Similarly, non-matching optional nodes will also be removed.  I'm not sure this is actually used.
-
-        # remove whitespace or not matched optional nodes
-        children_new = [c for c in children if c is not None]
-        if len(children_new) != len(children):
-            if len(children_new) == 0:
-                return node.text
-            if len(children_new) == 1:
-                return children_new[0]
-
         # In parsimonius, there is a node in the parse tree for every single node, even non-named nodes.
         #   e.g. the rule `sum = expr (PLUS expr)*` has two children, `expr` and `(PLUS expr)*` where the second is an un-named node
         #   The way I have it set up here
         #   if `(plus expr)*` does not match it will be None
         #   if it does match then it will be PartialNode(["+", expr])
         #   PartialNode will keep the list flat, so if there are multiple matches it will be PartialNode(["+", expr, "+", expr2])
-        return PartialNode(children_new)
+
+        # here I want to do a few things.
+        # First, ignore whitespace in the terminal rules.  
+        #   example rule:   `PLUS = "+" WS*`
+        #   The children of PLUS is "+" and the non-named rule `WS*` 
+        #   I want the output of visit_PLUS to return "+" and completely ignore the WS.
+        #   The first option I tried was to make an explicit visitor for all terminal rules with WS.  That quickly got annoying since there were dozens of them.
+        #   Instead I try to handle the logic here by having visit_WS return None and remove all None values from children here
+        #   I also have to handle the case where `WS*` does not match -- which is why I have non-matching optional nodes also return None
+
+        # remove whitespace and not matched optional nodes
+        if None in children:
+            return self.generic_visit(node, [c for c in children if c is not None])
+
+        return PartialNode(children)
 
     def visit_int(self, node, children):
         return Int(node.text)
