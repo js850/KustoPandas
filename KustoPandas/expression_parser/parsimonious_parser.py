@@ -191,65 +191,80 @@ class PartialNode(list):
 
 class Visitor(NodeVisitor):
     def __init__(self):
+        pass
         # WS is the second child, we should ignore it
-        self.visit_LPAR = self.lift_first_child_of_two
-        self.visit_RPAR = self.lift_first_child_of_two
-        self.visit_PLUS = self.lift_first_child_of_two
-        self.visit_MINUS = self.lift_first_child_of_two
-        self.visit_MUL = self.lift_first_child_of_two
-        self.visit_DIV = self.lift_first_child_of_two
-        self.visit_NOT = self.lift_first_child_of_two
+        # self.visit_LPAR = self.lift_first_child_of_two
+        # self.visit_RPAR = self.lift_first_child_of_two
+        # self.visit_PLUS = self.lift_first_child_of_two
+        # self.visit_MINUS = self.lift_first_child_of_two
+        # self.visit_MUL = self.lift_first_child_of_two
+        # self.visit_DIV = self.lift_first_child_of_two
+        # self.visit_NOT = self.lift_first_child_of_two
 
-        self.visit_GT = self.lift_first_child_of_two
-        self.visit_LT = self.lift_first_child_of_two
-        self.visit_GE = self.lift_first_child_of_two
-        self.visit_LE = self.lift_first_child_of_two
-        self.visit_EQ = self.lift_first_child_of_two
-        self.visit_NEQ = self.lift_first_child_of_two
-        self.visit_AND = self.lift_first_child_of_two
-        self.visit_OR = self.lift_first_child_of_two
+        # self.visit_GT = self.lift_first_child_of_two
+        # self.visit_LT = self.lift_first_child_of_two
+        # self.visit_GE = self.lift_first_child_of_two
+        # self.visit_LE = self.lift_first_child_of_two
+        # self.visit_EQ = self.lift_first_child_of_two
+        # self.visit_NEQ = self.lift_first_child_of_two
+        # self.visit_AND = self.lift_first_child_of_two
+        # self.visit_OR = self.lift_first_child_of_two
 
-        self.visit_BETWEEN = self.lift_first_child_of_two
-        self.visit_DOTDOT = self.lift_first_child_of_two
+        # self.visit_BETWEEN = self.lift_first_child_of_two
+        # self.visit_DOTDOT = self.lift_first_child_of_two
 
-        self.visit_CONTAINS = self.lift_first_child_of_two
-        self.visit_CONTAINS_CS = self.lift_first_child_of_two
-        self.visit_NOTCONTAINS = self.lift_first_child_of_two
-        self.visit_NOTCONTAINS_CS = self.lift_first_child_of_two
+        # self.visit_CONTAINS = self.lift_first_child_of_two
+        # self.visit_CONTAINS_CS = self.lift_first_child_of_two
+        # self.visit_NOTCONTAINS = self.lift_first_child_of_two
+        # self.visit_NOTCONTAINS_CS = self.lift_first_child_of_two
 
-        self.visit_STARTSWITH = self.lift_first_child_of_two
-        self.visit_STARTSWITH_CS = self.lift_first_child_of_two
-        self.visit_NOTSTARTSWITH = self.lift_first_child_of_two
-        self.visit_NOTSTARTSWITH_CS = self.lift_first_child_of_two
+        # self.visit_STARTSWITH = self.lift_first_child_of_two
+        # self.visit_STARTSWITH_CS = self.lift_first_child_of_two
+        # self.visit_NOTSTARTSWITH = self.lift_first_child_of_two
+        # self.visit_NOTSTARTSWITH_CS = self.lift_first_child_of_two
 
-        self.visit_HAS = self.lift_first_child_of_two
-        self.visit_HAS_CS = self.lift_first_child_of_two
-        self.visit_NOTHAS = self.lift_first_child_of_two
-        self.visit_NOTHAS_CS = self.lift_first_child_of_two
+        # self.visit_HAS = self.lift_first_child_of_two
+        # self.visit_HAS_CS = self.lift_first_child_of_two
+        # self.visit_NOTHAS = self.lift_first_child_of_two
+        # self.visit_NOTHAS_CS = self.lift_first_child_of_two
     
-        self.visit_IN = self.lift_first_child_of_two
-        self.visit_IN_CIS = self.lift_first_child_of_two
-        self.visit_NOTIN = self.lift_first_child_of_two
-        self.visit_NOTIN_CIS = self.lift_first_child_of_two
+        # self.visit_IN = self.lift_first_child_of_two
+        # self.visit_IN_CIS = self.lift_first_child_of_two
+        # self.visit_NOTIN = self.lift_first_child_of_two
+        # self.visit_NOTIN_CIS = self.lift_first_child_of_two
 
-        self.visit_ASSIGNMENT = self.lift_first_child_of_two
-        self.visit_COMMA = self.lift_first_child_of_two
+        # self.visit_ASSIGNMENT = self.lift_first_child_of_two
+        # self.visit_COMMA = self.lift_first_child_of_two
 
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
             return children[0]
         raise Exception("Expected two children, got " + len(children))
 
+    def visit_WS(self, node, children):
+        return None
+
     def visit_kustoStatement(self, node, children):
         return children[1]
 
     def generic_visit(self, node, children):
+        if node.text == "":
+            # non-matched optional node
+            return None
         if len(children) == 0:
             return node.text
         if len(children) == 1:
             return children[0]
         
-        return PartialNode(children)
+        # remove whitespace or not matched optional nodes
+        children_new = [c for c in children if c is not None]
+        if len(children_new) != len(children):
+            if len(children_new) == 0:
+                return node.text
+            if len(children_new) == 1:
+                return children_new[0]
+
+        return PartialNode(children_new)
 
     def visit_int(self, node, children):
         return Int(node.text)
@@ -287,7 +302,7 @@ class Visitor(NodeVisitor):
         return children[1]
     
     def _visit_binary_op(self, node, children):
-        if children[1] == "":
+        if children[1] is None:
             return children[0]
 
         if len(children) != 2: raise Exception()
@@ -347,7 +362,7 @@ class Visitor(NodeVisitor):
         return Assignment(children[0], children[2])
     
     def visit_between(self, node, children):
-        if children[1] == "":
+        if children[1] is None:
             return children[0]
         
         # todo: refactor. there is no need for DotDot here
@@ -360,7 +375,7 @@ class Visitor(NodeVisitor):
 
     def visit_assignmentList(self, node, children):
         result = [children[0]]
-        if children[1] == "":
+        if children[1] is None:
             return result
         # children[1] is a list like [",", val1, ",", val2]
         # take only the values and drop the commas

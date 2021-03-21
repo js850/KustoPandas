@@ -20,8 +20,12 @@ def test_int():
 
 def test_int0():
     assert 0 == parse_and_visit("0")
+
+def test_int_ws():
     assert 10 == parse_and_visit("10 ")
     assert 10 == parse_and_visit(" 10")
+
+def test_int_ws2():
     assert 10 == parse_and_visit("   10   ")
 
 def test_number():
