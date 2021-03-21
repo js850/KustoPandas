@@ -146,6 +146,7 @@ kusto       = WS* tabularOperator
 
 class PartialNode(list):
     def __init__(self, children):
+        # keep a single flat list
          for c in children:
             if isinstance(c, PartialNode):
                 self += c
@@ -230,10 +231,21 @@ class Visitor(NodeVisitor):
             # non-matched optional node
             return None
         if len(children) == 0:
+            # raw match, e.g. "+" from  ("+" / "-")
             return node.text
         if len(children) == 1:
+            # pass through node
             return children[0]
         
+        # here I want to do a few things.
+        # First, ignore whitespace in the terminal rules.  
+        #   example rule:   `PLUS = "+" WS*`
+        #   The children of PLUS is ["+", ""] or ["+", [" ", " ", ...]] depending on whether WS matched or not.
+        #   Downstream I only want the "+" without the WS.
+        #   The first option I tried was to make an explicit visitor for all terminal rules with WS.  That quickly got annoying since there were dozens of them
+        #   Instead I have visit_WS return None and remove all None values from children here.
+        # Similarly, non-matching optional nodes will also be removed.  I'm not sure this is actually used.
+
         # remove whitespace or not matched optional nodes
         children_new = [c for c in children if c is not None]
         if len(children_new) != len(children):
@@ -242,6 +254,12 @@ class Visitor(NodeVisitor):
             if len(children_new) == 1:
                 return children_new[0]
 
+        # In parsimonius, there is a node in the parse tree for every single node, even non-named nodes.
+        #   e.g. the rule `sum = expr (PLUS expr)*` has two children, `expr` and `(PLUS expr)*` where the second is an un-named node
+        #   The way I have it set up here
+        #   if `(plus expr)*` does not match it will be None
+        #   if it does match then it will be PartialNode(["+", expr])
+        #   PartialNode will keep the list flat, so if there are multiple matches it will be PartialNode(["+", expr, "+", expr2])
         return PartialNode(children_new)
 
     def visit_int(self, node, children):
@@ -266,8 +284,8 @@ class Visitor(NodeVisitor):
         return TimespanLiteral(Int(num), unit)
 
     def visit_factor(self, node, children):
-        if len(children) == 1: # TODO: not possible
-            return children[0]
+        if children[0] is None:
+            return children[-1]
         if "-" == children[0]:
             return UnaryMinus(children[-1])
         if "not" == children[0]:
