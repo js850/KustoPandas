@@ -259,10 +259,13 @@ class Visitor(NodeVisitor):
         #   I also have to handle the case where `WS*` does not match -- which is why I have non-matching optional nodes also return None
 
         # remove whitespace and not matched optional nodes
-        if None in children:
-            return self.generic_visit(node, [c for c in children if c is not None])
+        good_children = [c for c in children if c is not None]
+        if len(good_children) == 0:
+            return None
+        if len(good_children) == 1:
+            return good_children[0]
 
-        return PartialNode(children)
+        return PartialNode(good_children)
 
     def visit_int(self, node, children):
         return Int(node.text)
