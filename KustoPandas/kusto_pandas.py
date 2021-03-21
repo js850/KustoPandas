@@ -224,7 +224,3 @@ class Wrap:
         expr = "getschema"
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
-
-        
-
-    
