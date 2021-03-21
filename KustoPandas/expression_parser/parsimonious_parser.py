@@ -21,6 +21,8 @@ timespanLiteral = ~'[1-9]\d*[dhms]' WS*
 
 LPAR        = "(" WS*
 RPAR        = ")" WS*
+LBRAK       = "[" WS*
+RBRAK       = "]" WS*
 PLUS        = "+" WS*
 MINUS       = "-" WS*
 MUL         = "*" WS*
@@ -63,6 +65,8 @@ ASSIGNMENT       = "=" WS*
 
 COMMA            = "," WS*
 
+DOT              = "." WS*
+
 # DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
 # operator precedence is defined by the chaining of the rules together
 
@@ -72,7 +76,16 @@ COMMA            = "," WS*
 expressionInParens = LPAR assignment RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 
-factor      = ( PLUS / MINUS / NOT )? primaryExpr
+# todo: you cannot have assignments inside a method call
+# note: generally * is not allowed, but any(*) is an exception.  
+methodCall  = identifier LPAR ( MUL / assignmentList )? RPAR
+squareBrackets  = identifier (LBRAK assignment RBRAK)+
+
+posfixExpr  = methodCall / squareBrackets / primaryExpr
+
+dot         = posfixExpr (DOT posfixExpr)*
+
+factor      = ( PLUS / MINUS / NOT )? dot
 
 prod        = factor ((MUL / DIV) factor )*
 sum         = prod ((PLUS / MINUS) prod)*
@@ -384,23 +397,30 @@ class Visitor(NodeVisitor):
 
     def visit_methodCall(self, node, children):
         method = children[0] 
-            
-        if len(children) < 2:
+        
+        in_parens = children[2]
+
+        if in_parens is None:
             args = Args([])
-        elif children[1] == "*":
+        elif in_parens == "*":
             args = Args([Star()])
         else:
-            args = Args(children[1])
+            args = Args(in_parens)
         
         return Method(method, args)
     
     def visit_squareBrackets(self, node, children):
         left = children[0]
-        for child in children[1:]:
+        # this has the form ["[", value, "]", "[", value2, "]" ]
+        in_brackets = children[1] 
+        for child in in_brackets[1::3]:
             left = SquareBrackets(left, child)
         return left
 
     def visit_dot(self, node, children):
+        if children[1] == None:
+            return children[0]
+
         left = children[0]
         for child in children[1:]:
             left = Dot(left, child)

@@ -197,6 +197,11 @@ def test_method_call2():
         return a - b
     assert -1 == parse_and_visit("y = x(2, 3)", dict(x=x))["y"]
 
+def test_method_call3():
+    def x(a, b, c):
+        return a - b + c
+    assert 6 == parse_and_visit("y = x (2, 3, 7)", dict(x=x))["y"]
+
 def test_method_call0():
     def x():
         return 7
@@ -224,11 +229,18 @@ def test_project_away():
     parsed = parse_expression_toplevel("project-away B")
     assert parsed is not None
 
+def test_square_brackets():
+    assert 7 == parse_and_visit("d['k2']", dict(d={"k2": 7}))
+
 def test_square_brackets_twolevel():
+    d = dict(k1=dict(k2=dict(k3="val")))
+    assert "val" == parse_and_visit("d[ 'k1'] ['k2' ]['k3']", dict(d=d))
+
+def test_square_brackets_extend_twolevel():
     parsed = parse_expression_toplevel("extend D = d['k2']['k3']")
     assert parsed is not None
 
-def test_square_brackets():
+def test_square_brackets_extend():
     parsed = parse_expression_toplevel("extend D = d['k2']")
     assert parsed is not None
 
