@@ -202,7 +202,17 @@ class Visitor(NodeVisitor):
         self.visit_columnNameOrPatternList = self._visit_list_with_at_least_one
         self.visit_simpleAssignmentList = self._visit_list_with_at_least_one
 
+        self.visit_sum = self._visit_binary_op
+        self.visit_prod = self._visit_binary_op
+        self.visit_gt = self._visit_binary_op
+        self.visit_eq = self._visit_binary_op
+        self.visit_and = self._visit_binary_op
+        self.visit_or = self._visit_binary_op
+        self.visit_stringOp = self._visit_binary_op
+        self.visit_inList = self._visit_binary_op
+
         self.visit_dot = self._visit_binary_op
+
 
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
@@ -291,42 +301,7 @@ class Visitor(NodeVisitor):
 
         return left
     
-    def _visit_binary_op_single(self, node, children, op):
-        return self._visit_binary_op(node, children)
-        # if there is only one operator, then the op is not in the children list
-        # if len(children) == 1:
-        #     return children[0]
-        
-        # left = children[0]
-
-        # for right in children[1:]:
-        #     operator = op(left, right)
-        #     left = operator
-
-        # return left
-        
-
-    def visit_sum(self, node, children):
-        return self._visit_binary_op(node, children)
-    
-    def visit_prod(self, node, children):
-        return self._visit_binary_op(node, children)
-    
-    def visit_gt(self, node, children):
-        return self._visit_binary_op(node, children)
-
-    def visit_eq(self, node, children):
-        return self._visit_binary_op(node, children)
-
-    def visit_and(self, node, children):
-        return self._visit_binary_op_single(node, children, And)
-
-    def visit_or(self, node, children):
-        return self._visit_binary_op_single(node, children, Or)
-        
     def visit_internalAssignment(self, node, children):
-        # if children[0] == "":
-        #     return children[1]
         return Assignment(children[0], children[2])
     
     def visit_between(self, node, children):
@@ -337,9 +312,6 @@ class Visitor(NodeVisitor):
         partial = children[1] # this has ["(", left, "..", right, ")"]
         dotdot = DotDot(partial[2], partial[4])
         return Between(children[0], dotdot)
-
-    def visit_stringOp(self, node, children):
-        return self._visit_binary_op(node, children)
 
     def _visit_list_with_at_least_one(self, node, children):
         result = [children[0]]
@@ -375,20 +347,8 @@ class Visitor(NodeVisitor):
             left = SquareBrackets(left, child)
         return left
 
-    def visit_dot(self, node, children):
-        if children[1] == None:
-            return children[0]
-
-        left = children[0]
-        for child in children[1:]:
-            left = Dot(left, child)
-        return left
-    
     def visit_list(self, node, children):
         return ListExpression(children[1])
-
-    def visit_inList(self, node, children):
-        return self._visit_binary_op(node, children)
         
     def visit_take(self, node, children):
         return Take(children[2])
