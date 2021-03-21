@@ -122,6 +122,8 @@ ASC         = ("asc" / "desc") WS*
 sortColumn  = stringOp ASC?
 sortColumnList = sortColumn (COMMA sortColumn)*
 simpleAssignment = identifier ASSIGNMENT identifier
+simpleAssignmentList = simpleAssignment (COMMA simpleAssignment)*
+columnNameOrPatternList = columnNameOrPattern (COMMA columnNameOrPattern)*
 
 take        = "take" WS+ int
 where       = "where" WS+ inList
@@ -130,10 +132,10 @@ summarize   = "summarize" WS+ assignmentList ( BY assignmentList )?
 sort        = "sort" WS+ BY sortColumnList
 top         = "top" WS+ int BY sortColumnList
 project     = "project" WS+ assignmentList
-projectAway = "project-away" WS+ columnNameOrPattern (COMMA columnNameOrPattern)*
-projectKeep = "project-keep" WS+ columnNameOrPattern (COMMA columnNameOrPattern)*
-projectReorder = "project-reorder" WS+ columnNameOrPattern (COMMA columnNameOrPattern)*
-projectRename = "project-rename" WS+ simpleAssignment (COMMA simpleAssignment)*
+projectAway = "project-away" WS+ columnNameOrPatternList
+projectKeep = "project-keep" WS+ columnNameOrPatternList
+projectReorder = "project-reorder" WS+ columnNameOrPatternList
+projectRename = "project-rename" WS+ simpleAssignmentList
 distinct    = "distinct" WS+ (MUL / assignmentList)
 
 tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct
@@ -196,6 +198,9 @@ class Visitor(NodeVisitor):
 
         # self.visit_ASSIGNMENT = self.lift_first_child_of_two
         # self.visit_COMMA = self.lift_first_child_of_two
+
+        self.visit_columnNameOrPatternList = self._visit_list_with_at_least_one
+        self.visit_simpleAssignmentList = self._visit_list_with_at_least_one
 
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
@@ -394,10 +399,11 @@ class Visitor(NodeVisitor):
     
     def visit_summarize(self, node, children):
         aggregates = children[2]
-        if len(children) > 1:
-            by = children[1]
-        else:
+
+        if children[3] is None:
             by = []
+        else:
+            by = children[3][1]
         return Summarize(aggregates, by)
     
     def visit_sortColumn(self, node, children):
@@ -414,26 +420,26 @@ class Visitor(NodeVisitor):
     
     def visit_top(self, node, children):
         n = children[2]
-        sort_columns = children[1:]
+        sort_columns = children[4]
         return Top(n, sort_columns)
     
     def visit_project(self, node, children):
         return Project(children[2])
     
     def visit_projectAway(self, node, children):
-        return ProjectAway(list(children))
+        return ProjectAway(children[2])
 
     def visit_projectKeep(self, node, children):
-        return ProjectKeep(list(children))
+        return ProjectKeep(children[2])
     
     def visit_simpleAssignment(self, node, children):
-        return self.visit_assignment(node, children)
+        return Assignment(children[0], children[2])
     
     def visit_projectRename(self, node, children):
-        return ProjectRename(list(children))
+        return ProjectRename(children[2])
 
     def visit_projectReorder(self, node, children):
-        return ProjectReorder(list(children))
+        return ProjectReorder(children[2])
 
     def visit_distinct(self, node, children):
         return Distinct(children[2])
