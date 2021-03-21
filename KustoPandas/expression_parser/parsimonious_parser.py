@@ -71,16 +71,12 @@ DOT              = "." WS?
 # DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
 # operator precedence is defined by the chaining of the rules together
 
-# todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
-# this is not the case in Kusto, I should update it to reflect that.
-
-expressionInParens = LPAR assignment RPAR
+expressionInParens = LPAR expression RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 
-# todo: you cannot have assignments inside a method call
 # note: generally * is not allowed, but any(*) is an exception.  
-methodCall  = identifier LPAR ( MUL / assignmentList )? RPAR
-squareBrackets  = identifier (LBRAK assignment RBRAK)+
+methodCall  = identifier LPAR ( MUL / expressionList )? RPAR
+squareBrackets  = identifier (LBRAK expression RBRAK)+
 
 posfixExpr  = methodCall / squareBrackets / primaryExpr
 
@@ -93,12 +89,12 @@ sum         = prod ((PLUS / MINUS) prod)*
 
 gt          = sum (( GE / LE / GT / LT ) sum )?
 eq          = gt (( EQ / NEQ ) gt )?
-and         = eq (AND eq )?
-or          = and (OR and )?
+and         = eq ( AND eq )?
+or          = and ( OR and )?
 
 between     = or ( BETWEEN LPAR or DOTDOT or RPAR )?
 
-stringOp    = between (( 
+stringOp     = between (( 
                     NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
                     NOTSTARTSWITH_CS / NOTSTARTSWITH / STARTSWITH_CS / STARTSWITH /
                     NOTHAS_CS / NOTHAS / HAS_CS / HAS
@@ -107,15 +103,15 @@ stringOp    = between ((
 list        = LPAR expressionList RPAR
 inList      = stringOp (( NOTIN_CIS / IN_CIS / NOTIN / IN ) (list / stringOp) )?
 
-expression  = inList
-expressionList = expression (COMMA expression)*
+expression          = inList
+expressionList      = expression (COMMA expression)*
 
-internalAssignment = identifier ASSIGNMENT expression
-assignment  = internalAssignment / expression
+internalAssignment  = identifier ASSIGNMENT expression
+assignment          = internalAssignment / expression
 assignmentList      = assignment (COMMA assignment)*
 
 # Use this root rule if you just want to parse a simple expression
-kustoStatement = WS? assignment
+kustoStatement      = WS? assignment
 
 # DEFINE THE KUSTO TABULAR OPERATORS 
 
