@@ -1,4 +1,4 @@
-from .arpeggio_parser import parse_expression, parse_expression_toplevel
+from .parsimonious_parser import parse_expression, parse_expression_toplevel
 from .expression_parser_types import Assignment, Method, Var, By, Comma, Star, Mul, Asc, Desc
 from .expression_tree import flatten_comma
 

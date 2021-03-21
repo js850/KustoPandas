@@ -19,6 +19,7 @@ columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS*
 stringLiteral = ( ~'"[^"]*"' / ~'\'[^\']*\'' ) WS*
 timespanLiteral = ~'[1-9]\d*[dhms]' WS*
 
+# OPERATORS
 LPAR        = "(" WS*
 RPAR        = ")" WS*
 LBRAK       = "[" WS*
@@ -110,88 +111,35 @@ internalAssignment = identifier ASSIGNMENT inList
 assignment  = internalAssignment / inList
 assignmentList      = assignment (COMMA assignment)*
 
+# Use this root rule if you just want to parse a simple expression
 kustoStatement = WS* assignment
 
-"""
-
-kusto_peg2 = r"""
-
-# DEFINE THE TERMINAL rules.
-
-int         = ~'\d\d*'
-float       = ~'\d+\.\d*' /  ~'\d*\.\d+'
-number      = float / int
-identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*'
-columnNameOrPattern  = ~'[a-zA-Z0-9_*]*'
-stringLiteral = ( ~'"[^"]*"' / ~'\'[^\']*\'' )
-timespanLiteral = ~'[1-9]\d*[dhms]'
-
-# DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
-# operator precedence is defined by the chaining of the rules together
-
-# todo:  in c an assignment returns a value, so you can have them be part of the chain of operations e.g. x = 1 + (y = 5) 
-# this is not the case in Kusto, I should update it to reflect that.
-
-primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / ("(" assignment ")") )
-
-# todo: you cannot have assignments inside a method call
-# generally * is not allowed, but any(*) is an exception.  
-methodCall  = identifier "(" ( "*" / assignmentList )? ")"
-squareBrackets  = identifier ("[" assignment "]")+
-
-posfixExpr  = methodCall / squareBrackets / primaryExpr
-
-dot         = posfixExpr ("." posfixExpr)*
-
-factor      = ( "+" / "-" / "not" )?  dot
-
-prod        = factor  (("*" / "/") factor )*
-sum         = prod  (("+" / "-") prod )*
-
-gt          = sum (( ">=" / "<=" / ">" / "<" ) sum )?
-eq          = gt (( "==" / "!=" ) gt )?
-and         = eq (("and") eq )?
-or          = and ("or" and )?
-
-between     = or ( "between" "(" or ".." or ")" )?
-
-stringOp    = between (( "contains_cs" / "!contains_cs" / "contains" / "!contains" /
-                     "startswith_cs" / "!startswith_cs" / "startswith" / "!startswith" /
-                     "has_cs" / "!has_cs" / "has" / "!has"
-                    ) between )?
-
-list        = "(" assignmentList ")"
-inList      = stringOp ("in~" / "!in~" / "!in" / "in" ) (list / stringOp) / stringOp
-
-assignment  = identifier "=" inList / inList
-assignmentList      = assignment ("," assignment)*
-
-# Use this root rule if you just want to parse a simple expression
-kustoStatement  = assignment
-
 # DEFINE THE KUSTO TABULAR OPERATORS 
-asc         = "asc" / "desc"
-sortColumn  = stringOp asc?
-simpleAssignment = identifier "=" identifier
 
-take        = "take" int
-where       = "where" inList
-extend      = "extend" assignmentList
-summarize   = "summarize" assignmentList ( "by" assignmentList )?
-sort        = "sort" "by" sortColumn ("," sortColumn)*
-top         = "top" int "by" sortColumn ("," sortColumn)*
-project     = "project" assignmentList
-projectAway = "project-away" columnNameOrPattern ("," columnNameOrPattern)*
-projectKeep = "project-keep" columnNameOrPattern ("," columnNameOrPattern)*
-projectReorder = "project-reorder" columnNameOrPattern ("," columnNameOrPattern)*
-projectRename = "project-rename" simpleAssignment ("," simpleAssignment)*
-distinct    = "distinct" ("*" / assignmentList)
+BY          = "by" WS+
+ASC         = ("asc" / "desc") WS*
+
+sortColumn  = stringOp ASC?
+sortColumnList = sortColumn (COMMA sortColumn)*
+simpleAssignment = identifier ASSIGNMENT identifier
+
+take        = "take" WS+ int
+where       = "where" WS+ inList
+extend      = "extend" WS+ assignmentList
+summarize   = "summarize" WS+ assignmentList ( BY assignmentList )?
+sort        = "sort" WS+ BY sortColumnList
+top         = "top" WS+ int BY sortColumnList
+project     = "project" WS+ assignmentList
+projectAway = "project-away" WS+ columnNameOrPattern (COMMA columnNameOrPattern)*
+projectKeep = "project-keep" WS+ columnNameOrPattern (COMMA columnNameOrPattern)*
+projectReorder = "project-reorder" WS+ columnNameOrPattern (COMMA columnNameOrPattern)*
+projectRename = "project-rename" WS+ simpleAssignment (COMMA simpleAssignment)*
+distinct    = "distinct" WS+ (MUL / assignmentList)
 
 tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct
 
 # use this root rule if you want to parse a full Kusto statement
-kusto       = tabularOperator EOF
-
+kusto       = WS* tabularOperator
 """
 
 class PartialNode(list):
@@ -386,7 +334,7 @@ class Visitor(NodeVisitor):
     def visit_stringOp(self, node, children):
         return self._visit_binary_op(node, children)
 
-    def visit_assignmentList(self, node, children):
+    def _visit_list_with_at_least_one(self, node, children):
         result = [children[0]]
         if children[1] is None:
             return result
@@ -394,6 +342,9 @@ class Visitor(NodeVisitor):
         # take only the values and drop the commas
         rest = children[1][1::2]
         return result + rest
+
+    def visit_assignmentList(self, node, children):
+        return self._visit_list_with_at_least_one(node, children)
 
     def visit_methodCall(self, node, children):
         method = children[0] 
@@ -433,16 +384,16 @@ class Visitor(NodeVisitor):
         return self._visit_binary_op(node, children)
         
     def visit_take(self, node, children):
-        return Take(children[0])
+        return Take(children[2])
     
     def visit_where(self, node, children):
-        return Where(children[0])
+        return Where(children[2])
 
     def visit_extend(self, node, children):
-        return Extend(children[0])
+        return Extend(children[2])
     
     def visit_summarize(self, node, children):
-        aggregates = children[0]
+        aggregates = children[2]
         if len(children) > 1:
             by = children[1]
         else:
@@ -451,22 +402,23 @@ class Visitor(NodeVisitor):
     
     def visit_sortColumn(self, node, children):
         var = children[0]
-        if len(children) == 1:
-            return SortColumn(var)
         
         asc = children[1] == "asc"
         return SortColumn(var, asc=asc)
-        
+    
+    def visit_sortColumnList(self, node, children):
+        return self._visit_list_with_at_least_one(node, children)
+
     def visit_sort(self, node, children):
-        return Sort(list(children))
+        return Sort(children[3])
     
     def visit_top(self, node, children):
-        n = children[0]
+        n = children[2]
         sort_columns = children[1:]
         return Top(n, sort_columns)
     
     def visit_project(self, node, children):
-        return Project(children[0])
+        return Project(children[2])
     
     def visit_projectAway(self, node, children):
         return ProjectAway(list(children))
@@ -484,7 +436,7 @@ class Visitor(NodeVisitor):
         return ProjectReorder(list(children))
 
     def visit_distinct(self, node, children):
-        return Distinct(children[0])
+        return Distinct(children[2])
 
 _PARSER = dict()
 
