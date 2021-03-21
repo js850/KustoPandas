@@ -202,6 +202,8 @@ class Visitor(NodeVisitor):
         self.visit_columnNameOrPatternList = self._visit_list_with_at_least_one
         self.visit_simpleAssignmentList = self._visit_list_with_at_least_one
 
+        self.visit_dot = self._visit_binary_op
+
     def lift_first_child_of_two(self, node, children):
         if len(children) == 2:
             return children[0]
