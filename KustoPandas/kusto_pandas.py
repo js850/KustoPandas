@@ -3,7 +3,7 @@ import pandas as pd
 from .expression_parser import parse_expression_toplevel
 from .methods import get_methods
 from ._render import render
-from .expression_parser._input_parsing import replace_temp_column_names
+from .expression_parser._simple_expression import replace_temp_column_names
 
 class MultiDict:
     def __init__(self, dicts):
