@@ -1,15 +1,9 @@
 import pandas as pd
-import re
-from functools import reduce
 
-from .expression_parser import parse_expression, parse_expression_toplevel, Assignment, Var, Method, By, Comma, flatten_comma
-from .expression_parser.aggregates import create_aggregate
+from .expression_parser import parse_expression_toplevel
 from .methods import get_methods
 from ._render import render
-from .expression_parser._input_parsing import (
-    _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by,
-    _parse_inputs_with_by_return_simple_expression, replace_temp_column_names)
-
+from .expression_parser._input_parsing import replace_temp_column_names
 
 class MultiDict:
     def __init__(self, dicts):
@@ -24,9 +18,6 @@ class MultiDict:
         
         raise KeyError(key)
 
-def _serialize_expressions_args(args):
-    return ", ".join([str(a) for a in args])
-
 def _serialize_named_expressions(kwargs):
     if kwargs is None:
         return ""
@@ -34,8 +25,13 @@ def _serialize_named_expressions(kwargs):
     return ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
 
 def _serialize_expressions(args, kwargs = None):
-    expr = ""
-    args_expr = _serialize_expressions_args(args)
+    expr = " "
+
+    if isinstance(args, str):
+        args_expr = args
+    else:
+        args_expr = ", ".join([str(a) for a in args])
+
     kwargs_expr = _serialize_named_expressions(kwargs)
 
     expr += args_expr
@@ -94,12 +90,12 @@ class Wrap:
         return parsed.evaluate_pipe(self)
 
     def project_away(self, *cols):
-        expr = "project-away " + _serialize_expressions_args(cols)
+        expr = "project-away " + _serialize_expressions(cols)
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
 
     def project_keep(self, *cols):
-        expr = "project-keep " + _serialize_expressions_args(cols)
+        expr = "project-keep " + _serialize_expressions(cols)
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
 
@@ -109,7 +105,7 @@ class Wrap:
         return parsed.evaluate_pipe(self)
 
     def project_reorder(self, *cols):
-        expr = "project-reorder " + _serialize_expressions_args(cols)
+        expr = "project-reorder " + _serialize_expressions(cols)
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
 
@@ -127,17 +123,10 @@ class Wrap:
 
 
         """
-        expr = "summarize"
-        if isinstance(aggregates, str):
-            expr += " " + str(aggregates)
-        else:
-            expr += " " + ", ".join(aggregates)
-        
+        expr = "summarize " + _serialize_expressions(aggregates)
+
         if by is not None:
-            if isinstance(by, str):
-                expr += " by " + str(by)
-            else:
-              expr += " by " + ", ".join(by)
+            expr += " by " + _serialize_expressions(by)
 
         parsed = parse_expression_toplevel(expr)
 
@@ -173,11 +162,7 @@ class Wrap:
         by can be a column name, or an expression built from columns e.g. (strlen(country))
             or it can be a list of such expressions
         """
-        expr = "sort by "
-        if isinstance(by, str):
-            expr += by
-        else:
-            expr += ", ".join(by)
+        expr = "sort by " + _serialize_expressions(by)
         
         parsed = parse_expression_toplevel(expr)
         return parsed.evaluate_pipe(self)
@@ -195,11 +180,7 @@ class Wrap:
         """
         expr = "top " + str(n)
         if by is not None:
-            expr += " by "
-            if isinstance(by, str):
-                expr += by
-            else:
-                expr += ", ".join(by)
+            expr += " by " + _serialize_expressions(by)
 
         parsed = parse_expression_toplevel(expr)
         result = parsed.evaluate_pipe(self)

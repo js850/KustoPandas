@@ -118,12 +118,14 @@ kustoStatement      = WS? assignment
 BY          = "by" WS
 ASC         = ("asc" / "desc") WS?
 
+# todo: top supports nulls first / nulls last
 sortColumn  = expression ASC?
 sortColumnList = sortColumn (COMMA sortColumn)*
 simpleAssignment = identifier ASSIGNMENT identifier
 simpleAssignmentList = simpleAssignment (COMMA simpleAssignment)*
 columnNameOrPatternList = columnNameOrPattern (COMMA columnNameOrPattern)*
 
+# tabular operators
 take        = "take" WS int
 where       = "where" WS expression
 extend      = "extend" WS assignmentList
