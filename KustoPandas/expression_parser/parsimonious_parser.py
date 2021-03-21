@@ -115,7 +115,7 @@ kustoStatement      = WS? assignment
 
 # DEFINE THE KUSTO TABULAR OPERATORS 
 
-BY          = "by" WS+
+BY          = "by" WS
 ASC         = ("asc" / "desc") WS?
 
 sortColumn  = expression ASC?
@@ -124,18 +124,18 @@ simpleAssignment = identifier ASSIGNMENT identifier
 simpleAssignmentList = simpleAssignment (COMMA simpleAssignment)*
 columnNameOrPatternList = columnNameOrPattern (COMMA columnNameOrPattern)*
 
-take        = "take" WS+ int
-where       = "where" WS+ expression
-extend      = "extend" WS+ assignmentList
-summarize   = "summarize" WS+ assignmentList ( BY assignmentList )?
-sort        = "sort" WS+ BY sortColumnList
-top         = "top" WS+ int BY sortColumnList
-project     = "project" WS+ assignmentList
-projectAway = "project-away" WS+ columnNameOrPatternList
-projectKeep = "project-keep" WS+ columnNameOrPatternList
-projectReorder = "project-reorder" WS+ columnNameOrPatternList
-projectRename = "project-rename" WS+ simpleAssignmentList
-distinct    = "distinct" WS+ (MUL / assignmentList)
+take        = "take" WS int
+where       = "where" WS expression
+extend      = "extend" WS assignmentList
+summarize   = "summarize" WS assignmentList ( BY assignmentList )?
+sort        = "sort" WS BY sortColumnList
+top         = "top" WS int BY sortColumnList
+project     = "project" WS assignmentList
+projectAway = "project-away" WS columnNameOrPatternList
+projectKeep = "project-keep" WS columnNameOrPatternList
+projectReorder = "project-reorder" WS columnNameOrPatternList
+projectRename = "project-rename" WS simpleAssignmentList
+distinct    = "distinct" WS (MUL / assignmentList)
 
 tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct
 
