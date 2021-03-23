@@ -20,7 +20,9 @@ WS          = ~' +'
 
 # The core terminal rules
 int         = ~'\d\d*' WS?
-float       = (~'\d+\.\d*' /  ~'\d*\.\d+') WS?
+exponent    =  ~'[eE][+\-]?[0-9]+'
+fraction    = (~'\d+\.\d*' /  ~'\d*\.\d+')
+float       = ((fraction exponent?) / (~'[0-9]+' exponent) ) WS?
 number      = float / int
 identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*' WS?
 columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS?

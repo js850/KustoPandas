@@ -29,10 +29,21 @@ def test_int_ws():
 def test_int_ws2():
     assert 10 == parse_and_visit("   10   ")
 
-def test_number():
+def test_float():
     assert 1 == parse_and_visit("1.")
     assert .1 == parse_and_visit(".1")
     assert 1.1 == parse_and_visit("1.1")
+    assert 111.1111 == parse_and_visit("111.1111")
+
+def test_float_exponent():
+    assert 2 == parse_and_visit("2e0")
+    assert 20 == parse_and_visit("2e1")
+    assert 20 == parse_and_visit("2E1")
+    assert 2e10 == parse_and_visit("2E10")
+    assert 2e1 == parse_and_visit("2.E+1")
+    assert 2.1e1 == parse_and_visit("2.1E+1")
+    assert 2.1e-1 == parse_and_visit("   2.1E-1   ")
+    assert .21e2 == parse_and_visit(".21e2")
 
 def test_factor():
     assert -10 == parse_and_visit("-10")
