@@ -8,7 +8,7 @@ def ensure_column_name_unique(df, col):
         col = col + "_"
     return col
 
-SELF = "self"
+TABLE_SELF = "self"
 
 class Pipe:
     def __init__(self, tabular_operators):
@@ -32,7 +32,7 @@ class TableIdentifier(TabularOperator):
         self.identifier = identifier
 
     def evaluate_pipe(self, w):
-        if str(self.identifier) == SELF:
+        if str(self.identifier) == TABLE_SELF:
             return w._copy(w.df)
         else:
             raise NotImplementedError("referencing another table is not implemented yet")

@@ -166,8 +166,7 @@ SEMICOLON   = ";" WS?
 
 pipe        = identifier (PIPE tabularOperator)+
 
-kustoQuery  = WS pipe
-
+kustoQuery  = WS? pipe
 
 """
 
@@ -230,6 +229,7 @@ class Visitor(NodeVisitor):
 
         self.visit_dot = self._visit_binary_op_zero_or_more
 
+        self.visit_kustoQuery = self.lift_second_of_two_children
         self.visit_kustoTabularOperator = self.lift_second_of_two_children
         self.visit_kustoStatement = self.lift_second_of_two_children
 
@@ -477,6 +477,8 @@ def parse_expression(input, debug=True, root="kustoStatement"):
 
     return expression_tree
 
-def parse_expression_toplevel(input, debug=False):
+def parse_expression_tabular_operator(input, debug=False):
     return parse_expression(input, debug=debug, root="kustoTabularOperator")
 
+def parse_expression_query(input, debug=False):
+    return parse_expression(input, debug=debug, root="kustoQuery")

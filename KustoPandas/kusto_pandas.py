@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .expression_parser import parse_expression_toplevel
+from .expression_parser import parse_expression_query, TABLE_SELF
 from .methods import get_methods
 from ._render import render
 from .expression_parser._simple_expression import replace_temp_column_names
@@ -64,7 +64,8 @@ class Wrap:
         return str(self.df)
     
     def _execute_tabular_operator(self, expression):
-        parsed = parse_expression_toplevel(expression)
+        expression = TABLE_SELF + " | " + expression
+        parsed = parse_expression_query(expression)
         return parsed.evaluate_pipe(self)
 
     def let(self, **kwargs):

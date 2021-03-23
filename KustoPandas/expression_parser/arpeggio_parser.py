@@ -297,6 +297,6 @@ def parse_expression(input, debug=True, root="kustoStatement"):
 
     return expression_tree
 
-def parse_expression_toplevel(input, debug=False):
+def parse_expression_tabular_operator(input, debug=False):
     return parse_expression(input, debug=debug, root="kusto")
 

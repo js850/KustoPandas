@@ -6,7 +6,7 @@ import pandas as pd
 # hack to avoid having to add the dependency to the package until it's ready
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../KustoPandas/expression_parser')))
 
-from parsimonious_parser import parse_expression, parse_expression_toplevel
+from parsimonious_parser import parse_expression, parse_expression_tabular_operator
 import KustoPandas.expression_parser.expression_parser_types as ept
 
 def parse_and_visit(input, vars=None):
@@ -243,7 +243,7 @@ def test_in_notcs():
     assert False == parse_and_visit('"hi" !in~ ("Hi", "there")')
 
 def test_project_away():
-    parsed = parse_expression_toplevel("project-away B")
+    parsed = parse_expression_tabular_operator("project-away B")
     assert parsed is not None
 
 def test_square_brackets():
@@ -254,11 +254,11 @@ def test_square_brackets_twolevel():
     assert "val" == parse_and_visit("d[ 'k1'] ['k2' ]['k3']", dict(d=d))
 
 def test_square_brackets_extend_twolevel():
-    parsed = parse_expression_toplevel("extend D = d['k2']['k3']")
+    parsed = parse_expression_tabular_operator("extend D = d['k2']['k3']")
     assert parsed is not None
 
 def test_square_brackets_extend():
-    parsed = parse_expression_toplevel("extend D = d['k2']")
+    parsed = parse_expression_tabular_operator("extend D = d['k2']")
     assert parsed is not None
 
 def test_between():
