@@ -479,4 +479,13 @@ def test_getschema():
     assert [np.float64, np.int64, object, np.dtype("datetime64[ns]"), object] == list(wnew.df["DataType"])
     assert 4 == len(wnew.df.columns)
 
+def test_execute():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("self | where G == 'G1' | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
     

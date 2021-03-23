@@ -65,6 +65,16 @@ class Wrap:
     
     def _execute_tabular_operator(self, expression):
         expression = TABLE_SELF + " | " + expression
+        return self.execute(expression)
+
+    def execute(self, expression):
+        """
+        execute a Kusto query
+        
+        use `self` to refer to the table in this object
+
+        w.execute("self | where A > 5 | take 10")
+        """
         parsed = parse_expression_query(expression)
         return parsed.evaluate_pipe(self)
 
