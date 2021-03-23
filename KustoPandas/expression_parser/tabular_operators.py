@@ -8,6 +8,8 @@ def ensure_column_name_unique(df, col):
         col = col + "_"
     return col
 
+SELF = "self"
+
 class Pipe:
     def __init__(self, tabular_operators):
         self.tabular_operators = tabular_operators
@@ -24,6 +26,16 @@ class TabularOperator:
 
     def _evaluate_top(self, df, vars):
         raise NotImplementedError()
+
+class TableIdentifier(TabularOperator):
+    def __init__(self, identifier):
+        self.identifier = identifier
+
+    def evaluate_pipe(self, w):
+        if str(self.identifier) == SELF:
+            return w._copy(w.df)
+        else:
+            raise NotImplementedError("referencing another table is not implemented yet")
 
 class Take(TabularOperator):
     def __init__(self, n):

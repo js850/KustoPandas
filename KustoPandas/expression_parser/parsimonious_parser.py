@@ -156,7 +156,19 @@ getschema   = "getschema" WS?
 tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema
 
 # use this root rule if you want to parse a full Kusto statement
-kusto       = WS? tabularOperator
+kustoTabularOperator  = WS? tabularOperator
+
+
+# DEFINE KUSTO FULL QUERIES
+
+PIPE        = "|" WS?
+SEMICOLON   = ";" WS?
+
+pipe        = identifier (PIPE tabularOperator)+
+
+kustoQuery  = WS pipe
+
+
 """
 
 class Visitor(NodeVisitor):
@@ -218,7 +230,7 @@ class Visitor(NodeVisitor):
 
         self.visit_dot = self._visit_binary_op_zero_or_more
 
-        self.visit_kusto = self.lift_second_of_two_children
+        self.visit_kustoTabularOperator = self.lift_second_of_two_children
         self.visit_kustoStatement = self.lift_second_of_two_children
 
         self.visit_ASC = self.lift_first_of_two_children
@@ -424,6 +436,15 @@ class Visitor(NodeVisitor):
     
     def visit_getschema(self, node, children):
         return GetSchema()
+    
+    def visit_pipe(self, node, children):
+        start, right_expression = children
+
+        tabular_operators = [TableIdentifier(start)]
+        tabular_operators += [op for _, op in right_expression]
+
+        return Pipe(tabular_operators)
+
 
 _PARSER = dict()
 
@@ -457,5 +478,5 @@ def parse_expression(input, debug=True, root="kustoStatement"):
     return expression_tree
 
 def parse_expression_toplevel(input, debug=False):
-    return parse_expression(input, debug=debug, root="kusto")
+    return parse_expression(input, debug=debug, root="kustoTabularOperator")
 

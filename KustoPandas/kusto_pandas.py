@@ -62,6 +62,10 @@ class Wrap:
     
     def __str__(self):
         return str(self.df)
+    
+    def _execute_tabular_operator(self, expression):
+        parsed = parse_expression_toplevel(expression)
+        return parsed.evaluate_pipe(self)
 
     def let(self, **kwargs):
         w = self._copy(self.df)
@@ -86,28 +90,23 @@ class Wrap:
         """
         expr = "project " + _serialize_expressions(cols, renamed_cols)
 
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def project_away(self, *cols):
         expr = "project-away " + _serialize_expressions(cols)
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def project_keep(self, *cols):
         expr = "project-keep " + _serialize_expressions(cols)
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def project_rename(self, *args, **kwargs):
         expr = "project-rename " + _serialize_expressions(args, kwargs)
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def project_reorder(self, *cols):
         expr = "project-reorder " + _serialize_expressions(cols)
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def summarize(self, aggregates, by=None):
         """
@@ -128,26 +127,19 @@ class Wrap:
         if by is not None:
             expr += " by " + _serialize_expressions(by)
 
-        parsed = parse_expression_toplevel(expr)
-
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def extend(self, *args, **kwargs):
         expr = "extend " + _serialize_expressions(args, kwargs)
-
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
     
     def where(self, condition):
         expr = "where " + condition
-
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
     
     def take(self, n):
         expr = "take " + str(n)
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
     
     def limit(self, n):
         return self.take(n)
@@ -163,9 +155,7 @@ class Wrap:
             or it can be a list of such expressions
         """
         expr = "sort by " + _serialize_expressions(by)
-        
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def top(self, n, by=None):
         """
@@ -181,10 +171,7 @@ class Wrap:
         expr = "top " + str(n)
         if by is not None:
             expr += " by " + _serialize_expressions(by)
-
-        parsed = parse_expression_toplevel(expr)
-        result = parsed.evaluate_pipe(self)
-        return result
+        return self._execute_tabular_operator(expr)
         
     def join(self, right, on=None, left_on=None, right_on=None, kind="inner"):
         if isinstance(right, Wrap):
@@ -212,15 +199,12 @@ class Wrap:
     
     def count(self):
         expr = "count"
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def distinct(self, *args):
         expr = "distinct " + _serialize_expressions(args)
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
 
     def getschema(self):
         expr = "getschema"
-        parsed = parse_expression_toplevel(expr)
-        return parsed.evaluate_pipe(self)
+        return self._execute_tabular_operator(expr)
