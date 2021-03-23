@@ -204,6 +204,10 @@ def test_method_call3():
         return a - b + c
     assert 6 == parse_and_visit("y = x (2, 3, 7)", dict(x=x))["y"]
 
+def test_method_call_any_star():
+    parsed = parse_expression("a = any(* )")
+    assert "(a = any(*))" == str(parsed)
+
 def test_method_call0():
     def x():
         return 7

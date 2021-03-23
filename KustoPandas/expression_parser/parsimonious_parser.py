@@ -83,7 +83,9 @@ expressionInParens = LPAR expression RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 
 # note: generally * is not allowed, but any(*) is an exception.  
-methodCall  = identifier LPAR ( MUL / expressionList )? RPAR
+# I use a new named rule STAR rather than re-using MUL because I need the visitor to do something different (drop the WS)
+STAR        = "*" WS?
+methodCall  = identifier LPAR ( STAR / expressionList )? RPAR
 squareBrackets  = identifier (LBRAK expression RBRAK)+
 
 posfixExpr  = methodCall / squareBrackets / primaryExpr
@@ -145,7 +147,7 @@ projectAway = "project-away" WS columnNameOrPatternList
 projectKeep = "project-keep" WS columnNameOrPatternList
 projectReorder = "project-reorder" WS columnNameOrPatternList
 projectRename = "project-rename" WS simpleAssignmentList
-distinct    = "distinct" WS (MUL / assignmentList)
+distinct    = "distinct" WS (STAR / assignmentList)
 count       = "count" WS?
 getschema   = "getschema" WS?
 
@@ -155,26 +157,16 @@ tabularOperator = take / where / extend / summarize / sort / top / projectAway /
 kusto       = WS? tabularOperator
 """
 
-class PartialNode(list):
-    def __init__(self, children):
-        # keep a single flat list
-         for c in children:
-            if isinstance(c, PartialNode):
-                self += c
-            else:
-                self.append(c)
-
 class Visitor(NodeVisitor):
     def __init__(self):
-        pass
         # WS is the second child, we should ignore it
-        # self.visit_LPAR = self.lift_first_child_of_two
-        # self.visit_RPAR = self.lift_first_child_of_two
-        # self.visit_PLUS = self.lift_first_child_of_two
-        # self.visit_MINUS = self.lift_first_child_of_two
-        # self.visit_MUL = self.lift_first_child_of_two
-        # self.visit_DIV = self.lift_first_child_of_two
-        # self.visit_NOT = self.lift_first_child_of_two
+        # self.visit_LPAR = self.lift_first_of_two_children
+        # self.visit_RPAR = self.lift_first_of_two_children
+        # self.visit_PLUS = self.lift_first_of_two_children
+        # self.visit_MINUS = self.lift_first_of_two_children
+        # self.visit_MUL = self.lift_first_of_two_children
+        # self.visit_DIV = self.lift_first_of_two_children
+        # self.visit_NOT = self.lift_first_of_two_children
 
         # self.visit_GT = self.lift_first_child_of_two
         # self.visit_LT = self.lift_first_child_of_two
@@ -184,9 +176,6 @@ class Visitor(NodeVisitor):
         # self.visit_NEQ = self.lift_first_child_of_two
         # self.visit_AND = self.lift_first_child_of_two
         # self.visit_OR = self.lift_first_child_of_two
-
-        # self.visit_BETWEEN = self.lift_first_child_of_two
-        # self.visit_DOTDOT = self.lift_first_child_of_two
 
         # self.visit_CONTAINS = self.lift_first_child_of_two
         # self.visit_CONTAINS_CS = self.lift_first_child_of_two
@@ -216,28 +205,25 @@ class Visitor(NodeVisitor):
         self.visit_expressionList = self._visit_list_with_at_least_one
         self.visit_assignmentList = self._visit_list_with_at_least_one
 
-        self.visit_sum = self._visit_binary_op
-        self.visit_prod = self._visit_binary_op
-        self.visit_gt = self._visit_binary_op
-        self.visit_eq = self._visit_binary_op
-        self.visit_and = self._visit_binary_op
-        self.visit_or = self._visit_binary_op
-        self.visit_stringOp = self._visit_binary_op
-        self.visit_inList = self._visit_binary_op
+        self.visit_sum = self._visit_binary_op_zero_or_more
+        self.visit_prod = self._visit_binary_op_zero_or_more
+        self.visit_gt = self._visit_binary_op_optional
+        self.visit_eq = self._visit_binary_op_optional
+        self.visit_and = self._visit_binary_op_optional
+        self.visit_or = self._visit_binary_op_optional
+        self.visit_stringOp = self._visit_binary_op_optional
+        self.visit_inList = self._visit_binary_op_optional
 
-        self.visit_dot = self._visit_binary_op
+        self.visit_dot = self._visit_binary_op_zero_or_more
 
+        self.visit_kusto = self.lift_second_of_two_children
+        self.visit_kustoStatement = self.lift_second_of_two_children
 
-    def lift_first_child_of_two(self, node, children):
-        if len(children) == 2:
-            return children[0]
-        raise Exception("Expected two children, got " + len(children))
+        self.visit_ASC = self.lift_first_of_two_children
+        self.visit_STAR = self.lift_first_of_two_children
 
     def visit_WS(self, node, children):
         return None
-
-    # def visit_kustoStatement(self, node, children):
-    #     return children[1]
 
     def generic_visit(self, node, children):
         if node.text == "":
@@ -247,33 +233,21 @@ class Visitor(NodeVisitor):
             # raw match, e.g. "+" from  ("+" / "-")
             return node.text
         if len(children) == 1:
+            if isinstance(node.expr, parsimonious.expressions.ZeroOrMore) or isinstance(node.expr, parsimonious.expressions.OneOrMore):
+                # for consistency this should always return a list even if there was only one match
+                return children
             # pass through node
             return children[0]
         
-        # In parsimonius, there is a node in the parse tree for every single node, even non-named nodes.
-        #   e.g. the rule `sum = expr (PLUS expr)*` has two children, `expr` and `(PLUS expr)*` where the second is an un-named node
-        #   The way I have it set up here
-        #   if `(plus expr)*` does not match it will be None
-        #   if it does match then it will be PartialNode(["+", expr])
-        #   PartialNode will keep the list flat, so if there are multiple matches it will be PartialNode(["+", expr, "+", expr2])
+        return children
 
-        # Remove nulls from the list primarily to simplify whitespace handling
-        # Ignore whitespace in the terminal rules.  
-        #   example rule:   `PLUS = "+" WS*`
-        #   The children of PLUS is "+" and the non-named rule `WS*` 
-        #   I want the output of visit_PLUS to return "+" and completely ignore the WS.
-        #   The first option I tried was to make an explicit visitor for all terminal rules with WS.  That quickly got annoying since there were dozens of them.
-        #   Instead I try to handle the logic here by having visit_WS return None and remove all None values from children here
-        #   I also have to handle the case where `WS*` does not match -- which is why I have non-matching optional nodes also return None
-
-        # remove whitespace and not matched optional nodes
-        good_children = [c for c in children if c is not None]
-        if len(good_children) == 0:
-            return None
-        if len(good_children) == 1:
-            return good_children[0]
-
-        return PartialNode(good_children)
+    def lift_second_of_two_children(self, node, children):
+        _, child = children
+        return child
+    
+    def lift_first_of_two_children(self, node, children):
+        child, _ = children
+        return child
 
     def visit_int(self, node, children):
         return Int(node.text)
@@ -299,30 +273,30 @@ class Visitor(NodeVisitor):
     def visit_factor(self, node, children):
         if children[0] is None:
             return children[-1]
-        if "-" == children[0]:
-            return UnaryMinus(children[-1])
-        if "not" == children[0]:
-            return UnaryNot(children[-1])
+        (unary_op, _), right = children
+        if "-" == unary_op:
+            return UnaryMinus(right)
+        if "not" == unary_op:
+            return UnaryNot(right)
         # can be "+"
-        return children[-1]
+        return right
     
     def visit_expressionInParens(self, node, children):
         # ignore parentheses at index 0 and 2
         return children[1]
     
-    def _visit_binary_op(self, node, children):
-        if children[1] is None:
-            return children[0]
+    def _visit_binary_op_generic(self, node, children, zero_or_more):
+        left, optional_part = children
+        if optional_part is None:
+            return left
 
-        if len(children) != 2: raise Exception()
+        if not zero_or_more:
+            optional_part = [optional_part]
 
-        left = children[0]
-
-        flattened = children[1]
-        for i in range(0, len(flattened), 2):
-            opstr = flattened[i]
-            right = flattened[i+1]
+        for match in optional_part:
+            (opstr, _), right = match
             op = all_operators_dict[opstr]
+            # todo: refactor this.  ambiguous operators were only necessary with the custom parser
             if op == AmbiguousMinus or op == AmbiguousStar:
                 op = op.binary
             
@@ -331,27 +305,37 @@ class Visitor(NodeVisitor):
             left = operator
 
         return left
+
+    def _visit_binary_op_optional(self, node, children):
+        # gt (( EQ / NEQ ) gt )?
+        return self._visit_binary_op_generic(node, children, False)
+
+    def _visit_binary_op_zero_or_more(self, node, children):
+        # prod ((PLUS / MINUS) prod)*
+        return self._visit_binary_op_generic(node, children, True)
     
     def visit_internalAssignment(self, node, children):
         return Assignment(children[0], children[2])
     
     def visit_between(self, node, children):
-        if children[1] is None:
-            return children[0]
+        left, optional = children
+        if optional is None:
+            return left
+
+        # optional:   BETWEEN LPAR or DOTDOT or RPAR
+        _, _, first, _, second, _ = optional
         
         # todo: refactor. there is no need for DotDot here
-        partial = children[1] # this has ["(", left, "..", right, ")"]
-        dotdot = DotDot(partial[2], partial[4])
-        return Between(children[0], dotdot)
+        dotdot = DotDot(first, second)
+        return Between(left, dotdot)
 
     def _visit_list_with_at_least_one(self, node, children):
-        result = [children[0]]
-        if children[1] is None:
-            return result
-        # children[1] is a list like [",", val1, ",", val2]
-        # take only the values and drop the commas
-        rest = children[1][1::2]
-        return result + rest
+        first, rest = children
+        result = [first]
+        if rest is not None:
+            # take only the values and drop the commas
+            result += [value for (_, value) in rest]
+        return result
 
     def visit_methodCall(self, node, children):
         method = children[0] 
@@ -368,11 +352,10 @@ class Visitor(NodeVisitor):
         return Method(method, args)
     
     def visit_squareBrackets(self, node, children):
-        left = children[0]
-        # this has the form ["[", value, "]", "[", value2, "]" ]
-        in_brackets = children[1] 
-        for child in in_brackets[1::3]:
-            left = SquareBrackets(left, child)
+        left, in_brackets = children
+        for match in in_brackets:
+            _, right, _ = match
+            left = SquareBrackets(left, right)
         return left
 
     def visit_list(self, node, children):
@@ -397,9 +380,9 @@ class Visitor(NodeVisitor):
         return Summarize(aggregates, by)
     
     def visit_sortColumn(self, node, children):
-        var = children[0]
+        var, optional_asc = children
         
-        asc = children[1] == "asc"
+        asc = optional_asc == "asc"
         return SortColumn(var, asc=asc)
     
     def visit_sortColumnList(self, node, children):
@@ -453,19 +436,20 @@ def parse_expression(input, debug=True, root="kustoStatement"):
     parser = get_parser(root, debug=False)
 
     if debug:
-        print ("---------------------- INPUT -----------------------------")
-        print(input)
+        print("input string: ", input)
 
     parse_tree = parser.parse(input)
 
     if debug:
+        print()
+        print("Printing the parse tree")
         print(str(parse_tree))
-        print(parse_tree.__repr__())
-        # print(parse_tree.tree_str())
 
     visitor = Visitor()
     expression_tree = visitor.visit(parse_tree)
     if debug:
+        print()
+        print("The parsed expression")
         print(str(expression_tree))
 
     return expression_tree
