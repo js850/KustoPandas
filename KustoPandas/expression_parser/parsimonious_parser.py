@@ -152,22 +152,25 @@ projectRename = "project-rename" WS simpleAssignmentList
 distinct    = "distinct" WS (STAR / assignmentList)
 count       = "count" WS?
 getschema   = "getschema" WS?
+as          = "as" WS identifier
 
-tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema
+tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema / as
 
 # use this root rule if you want to parse a full Kusto statement
 kustoTabularOperator  = WS? tabularOperator
-
 
 # DEFINE KUSTO FULL QUERIES
 
 PIPE        = "|" WS?
 SEMICOLON   = ";" WS?
+LET         = "let" WS
 
 pipe        = identifier (PIPE tabularOperator)+
-let         = "let" WS identifier ASSIGNMENT expression
+table = pipe
+let         = LET identifier ASSIGNMENT expression
+letTable    = LET identifier ASSIGNMENT table
 
-queryStatement = let / pipe
+queryStatement = letTable / let / pipe
 queryStatements = queryStatement (SEMICOLON queryStatement)* 
 
 kustoQuery  = WS? queryStatements SEMICOLON?
@@ -453,10 +456,20 @@ class Visitor(NodeVisitor):
 
         return Pipe(tabular_operators)
     
+    def visit_as(self, node, children):
+        # "as" WS identifier
+        _, _, identifier = children
+        return As(identifier)
+    
     def visit_let(self, node, children):
-        # "let" WS identifier ASSIGNMENT expression
-        _, _, left, _, right = children
+        # LET identifier ASSIGNMENT expression
+        _, left, _, right = children
         return Let(left, right)
+    
+    def visit_letTable(self, node, children):
+        # LET identifier ASSIGNMENT table
+        _, left, _, right = children
+        return LetTable(left, right)
     
     def visit_queryStatements(self, node, children):
         first, rest = children

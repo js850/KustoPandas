@@ -522,4 +522,32 @@ def test_execute_let_pipe():
     assert ["C"] == list(wnew.df.columns)
     assert ["foo2", "foo4"] == list(wnew.df["C"])
 
+def test_execute_let_dataframe():
+    df = create_df()
+    df2 = pd.DataFrame()
+
+    w = Wrap(df2).let(D=df)
+    wnew = w.execute("let a = 'G1'; D | where G == a | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_let_dataframe2():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("let a = self | where G == 'G1' | where A >= 1; a | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_as():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("self | where G == 'G1' | as table | take 1; table | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
     

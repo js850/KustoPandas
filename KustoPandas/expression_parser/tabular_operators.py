@@ -41,8 +41,19 @@ class Let(QueryStatement):
         left = str(self.left)
         right = self.right.evaluate(w._get_var_map())
         wnew = w.let(**{left: right})
-        return wnew     
+        return wnew   
 
+class LetTable(QueryStatement):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    
+    def evaluate_query(self, w):
+        left = str(self.left)
+        right = self.right.evaluate_query(w)
+        # right is an instance of Wrap.  keep only the dataframe
+        wnew = w.let(**{left: right.df})
+        return wnew
 
 class TabularOperator:
     def evaluate_query(self, w):
@@ -58,6 +69,15 @@ class TableIdentifier(TabularOperator):
 
     def evaluate_query(self, w):
         wnew = w._set_active_table(str(self.identifier))
+        return wnew
+
+class As(TabularOperator):
+    def __init__(self, identifier):
+        self.identifier = identifier
+    
+    def evaluate_query(self, w):
+        identifier = str(self.identifier)
+        wnew = w.let(**{identifier: w.df})
         return wnew
 
 class Take(TabularOperator):
