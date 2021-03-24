@@ -137,6 +137,13 @@ simpleAssignment = identifier ASSIGNMENT identifier
 simpleAssignmentList = simpleAssignment (COMMA simpleAssignment)*
 columnNameOrPatternList = columnNameOrPattern (COMMA columnNameOrPattern)*
 
+table       = pipe / identifier
+joinParameters = "kind" WS? ASSIGNMENT identifier
+LEFT        = "$left."
+RIGHT       = "$right."
+joinAttribute  = (LEFT identifier EQ RIGHT identifier) / (RIGHT identifier EQ LEFT identifier)  / identifier
+joinAttributes = joinAttribute (COMMA joinAttribute)*
+
 # tabular operators
 take        = "take" WS int
 where       = "where" WS expression
@@ -153,8 +160,10 @@ distinct    = "distinct" WS (STAR / assignmentList)
 count       = "count" WS?
 getschema   = "getschema" WS?
 as          = "as" WS identifier
+join        = "join" WS joinParameters? LPAR table RPAR "on" WS joinAttributes
 
-tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema / as
+
+tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema / as / join
 
 # use this root rule if you want to parse a full Kusto statement
 kustoTabularOperator  = WS? tabularOperator
@@ -166,9 +175,9 @@ SEMICOLON   = ";" WS?
 LET         = "let" WS
 
 pipe        = identifier (PIPE tabularOperator)+
-table = pipe
 let         = LET identifier ASSIGNMENT expression
 letTable    = LET identifier ASSIGNMENT table
+
 
 queryStatement = letTable / let / pipe
 queryStatements = queryStatement (SEMICOLON queryStatement)* 
@@ -461,11 +470,55 @@ class Visitor(NodeVisitor):
         _, _, identifier = children
         return As(identifier)
     
+    def visit_joinParameters(self, node, children):
+        #= "kind" WS ASSIGNMENT identifier
+        _, _, _, joinKind = children
+        return dict(kind=str(joinKind))
+
+    def visit_joinAttribute(self, node, children):
+        # (LEFT identifier EQ RIGHT identifier) / (RIGHT identifier EQ LEFT identifier)  / identifier
+        val, = children
+        attributes = dict()
+        if isinstance(val, Var):
+            attributes["on"] = str(val)
+        else:
+            lr1, var1, _, lr2, var2 = children
+            if "left" in str(lr1):
+                attributes["left_on"] = var1
+                attributes["right_on"] = var2
+            else:
+                attributes["left_on"] = var2
+                attributes["right_on"] = var1
+        return attributes
+
+    def visit_joinAttributes(self, node, children):
+        # joinAttribute (COMMA joinAttribute)*
+        a1, rest = children
+        attributes = a1.copy()
+        if rest is not None:
+            for _, more in rest:
+                attributes.update(more)
+        return attributes
+    
+    def visit_table(self, node, children):
+        table, = children
+        if isinstance(table, Var):
+            return TableIdentifier(str(table))
+        return table
+
+    def visit_join(self, node, children):
+        # "join" WS joinParameters? LPAR table RPAR "on" WS joinAttributes
+        _, _, params, _, right, _, _, _, attributes = children
+        kwargs = attributes.copy()
+        if params is not None:
+            kwargs.update(params)
+        return Join(right, kwargs)
+
     def visit_let(self, node, children):
         # LET identifier ASSIGNMENT expression
         _, left, _, right = children
         return Let(left, right)
-    
+
     def visit_letTable(self, node, children):
         # LET identifier ASSIGNMENT table
         _, left, _, right = children

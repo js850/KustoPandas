@@ -300,3 +300,12 @@ class GetSchema(TabularOperator):
         d2["DataType"] = list(df.dtypes)
         d2["ColumnType"] = list(df.dtypes)
         return d2
+
+class Join(TabularOperator):
+    def __init__(self, right, kwargs):
+        self.right = right
+        self.kwargs = kwargs
+    
+    def evaluate_query(self, w):
+        right = self.right.evaluate_query(w)
+        return w.join(right, **self.kwargs)

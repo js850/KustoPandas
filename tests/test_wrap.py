@@ -550,4 +550,12 @@ def test_execute_as():
     assert ["C"] == list(wnew.df.columns)
     assert ["foo2", "foo4"] == list(wnew.df["C"])
 
+def test_execute_join():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("self | where G == 'G1' | project G | as T1; self | join kind=inner (T1) on G | project A, G")
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
     
