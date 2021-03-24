@@ -165,8 +165,12 @@ PIPE        = "|" WS?
 SEMICOLON   = ";" WS?
 
 pipe        = identifier (PIPE tabularOperator)+
+let         = "let" WS identifier ASSIGNMENT expression
 
-kustoQuery  = WS? pipe
+queryStatement = let / pipe
+queryStatements = queryStatement (SEMICOLON queryStatement)* 
+
+kustoQuery  = WS? queryStatements SEMICOLON?
 
 """
 
@@ -229,7 +233,7 @@ class Visitor(NodeVisitor):
 
         self.visit_dot = self._visit_binary_op_zero_or_more
 
-        self.visit_kustoQuery = self.lift_second_of_two_children
+        self.visit_kustoQuery = self.lift_second_of_three_children
         self.visit_kustoTabularOperator = self.lift_second_of_two_children
         self.visit_kustoStatement = self.lift_second_of_two_children
 
@@ -254,6 +258,10 @@ class Visitor(NodeVisitor):
             return children[0]
         
         return children
+
+    def lift_second_of_three_children(self, node, children):
+        _, child, _ = children
+        return child
 
     def lift_second_of_two_children(self, node, children):
         _, child = children
@@ -444,6 +452,20 @@ class Visitor(NodeVisitor):
         tabular_operators += [op for _, op in right_expression]
 
         return Pipe(tabular_operators)
+    
+    def visit_let(self, node, children):
+        # "let" WS identifier ASSIGNMENT expression
+        _, _, left, _, right = children
+        return Let(left, right)
+    
+    def visit_queryStatements(self, node, children):
+        first, rest = children
+        statements = [first]
+        if rest is not None:
+            for _, right in rest:
+                statements.append(right)
+        
+        return Query(statements)
 
 
 _PARSER = dict()

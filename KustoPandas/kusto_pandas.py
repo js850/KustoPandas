@@ -46,7 +46,9 @@ def _serialize_expressions(args, kwargs = None):
 class Wrap:
     def __init__(self, df):
         self.df = df
+        # let_statements is a list of dictionaries
         self.let_statements = []
+        self._self_table = None
     
     def _repr_html_(self):
         return self.df._repr_html_()
@@ -66,6 +68,17 @@ class Wrap:
     def _execute_tabular_operator(self, expression):
         expression = TABLE_SELF + " | " + expression
         return self.execute(expression)
+    
+    def _set_active_table(self, identifier):
+        # todo: don't look at column names
+        df = self._get_var_map()[identifier]
+        assert isinstance(df, pd.DataFrame)
+        return self._copy(df)
+    
+    def _remove_self_from_let_statements(self):
+        for d in self.let_statements:
+            if TABLE_SELF in d:
+                del d[TABLE_SELF]
 
     def execute(self, expression):
         """
@@ -75,10 +88,20 @@ class Wrap:
 
         w.execute("self | where A > 5 | take 10")
         """
+        if TABLE_SELF in self.df.columns:
+            raise Exception("{} is not allowed as a column name because it is a reserved keyword (sorry. this can be imroved I'm sure)".format(TABLE_SELF))
+        
+        w = self._copy(self.df)
+        w.let_statements.append({TABLE_SELF: self.df})
+
         parsed = parse_expression_query(expression)
-        return parsed.evaluate_pipe(self)
+        result = parsed.evaluate_pipe(w)
+        result._remove_self_from_let_statements()
+        return result
 
     def let(self, **kwargs):
+        # note: this supports passing in arbitrary python functions, functionality which goes beyond pure Kusto.
+        # For that reason we can't implement it using _execute_tabular_operator because the functions can't be serialized to a string
         w = self._copy(self.df)
         w.let_statements.append(kwargs)
         return w

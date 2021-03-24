@@ -488,4 +488,38 @@ def test_execute():
     assert ["C"] == list(wnew.df.columns)
     assert ["foo2", "foo4"] == list(wnew.df["C"])
 
+def test_execute_let():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("let a = 'G2'")
+
+    assert "G2" == wnew._get_var_map()["a"]
+
+def test_execute_let_semicolon():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("let a = 'G2';")
+
+    assert "G2" == wnew._get_var_map()["a"]
+
+def test_execute_let2_pipe():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.let(a='G1').execute("self | where G == a | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_let_pipe():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("let a = 'G1'; self | where G == a | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
     

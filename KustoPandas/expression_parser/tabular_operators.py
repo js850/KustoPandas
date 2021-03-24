@@ -10,7 +10,20 @@ def ensure_column_name_unique(df, col):
 
 TABLE_SELF = "self"
 
-class Pipe:
+class Query:
+    def __init__(self, query_statements):
+        self.query_statements = query_statements
+    
+    def evaluate_pipe(self, w):
+        wnew = w
+        for s in self.query_statements:
+            wnew = s.evaluate_pipe(wnew)
+        return wnew
+
+class QueryStatement:
+    pass
+
+class Pipe(QueryStatement):
     def __init__(self, tabular_operators):
         self.tabular_operators = tabular_operators
     
@@ -18,6 +31,18 @@ class Pipe:
         for op in self.tabular_operators:
             w = op.evaluate_pipe(w)
         return w
+
+class Let(QueryStatement):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+    
+    def evaluate_pipe(self, w):
+        left = str(self.left)
+        right = self.right.evaluate(w._get_var_map())
+        wnew = w.let(**{left: right})
+        return wnew     
+
 
 class TabularOperator:
     def evaluate_pipe(self, w):
@@ -32,10 +57,8 @@ class TableIdentifier(TabularOperator):
         self.identifier = identifier
 
     def evaluate_pipe(self, w):
-        if str(self.identifier) == TABLE_SELF:
-            return w._copy(w.df)
-        else:
-            raise NotImplementedError("referencing another table is not implemented yet")
+        wnew = w._set_active_table(str(self.identifier))
+        return wnew
 
 class Take(TabularOperator):
     def __init__(self, n):
