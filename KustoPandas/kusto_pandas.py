@@ -95,7 +95,7 @@ class Wrap:
         w.let_statements.append({TABLE_SELF: self.df})
 
         parsed = parse_expression_query(expression)
-        result = parsed.evaluate_pipe(w)
+        result = parsed.evaluate_query(w)
         result._remove_self_from_let_statements()
         return result
 

@@ -14,10 +14,10 @@ class Query:
     def __init__(self, query_statements):
         self.query_statements = query_statements
     
-    def evaluate_pipe(self, w):
+    def evaluate_query(self, w):
         wnew = w
         for s in self.query_statements:
-            wnew = s.evaluate_pipe(wnew)
+            wnew = s.evaluate_query(wnew)
         return wnew
 
 class QueryStatement:
@@ -27,9 +27,9 @@ class Pipe(QueryStatement):
     def __init__(self, tabular_operators):
         self.tabular_operators = tabular_operators
     
-    def evaluate_pipe(self, w):
+    def evaluate_query(self, w):
         for op in self.tabular_operators:
-            w = op.evaluate_pipe(w)
+            w = op.evaluate_query(w)
         return w
 
 class Let(QueryStatement):
@@ -37,7 +37,7 @@ class Let(QueryStatement):
         self.left = left
         self.right = right
     
-    def evaluate_pipe(self, w):
+    def evaluate_query(self, w):
         left = str(self.left)
         right = self.right.evaluate(w._get_var_map())
         wnew = w.let(**{left: right})
@@ -45,7 +45,7 @@ class Let(QueryStatement):
 
 
 class TabularOperator:
-    def evaluate_pipe(self, w):
+    def evaluate_query(self, w):
         newdf = self._evaluate_top(w.df, w._get_var_map())
         return w._copy(newdf)
 
@@ -56,7 +56,7 @@ class TableIdentifier(TabularOperator):
     def __init__(self, identifier):
         self.identifier = identifier
 
-    def evaluate_pipe(self, w):
+    def evaluate_query(self, w):
         wnew = w._set_active_table(str(self.identifier))
         return wnew
 
@@ -170,9 +170,9 @@ class Top(TabularOperator):
         self.n = n
         self.sort_columns = sort_columns
     
-    def evaluate_pipe(self, w):
+    def evaluate_query(self, w):
         pipe = Pipe([Sort(self.sort_columns), Take(self.n)])
-        return pipe.evaluate_pipe(w)
+        return pipe.evaluate_query(w)
 
 class Project(TabularOperator):
     def __init__(self, columns):
