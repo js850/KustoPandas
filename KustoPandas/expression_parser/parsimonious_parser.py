@@ -16,7 +16,7 @@ kusto_peg = r"""
 # DEFINE THE TERMINAL rules.
 
 # white space
-WS          = ~' +'
+WS          = ~'[ \n\r\t]+'
 
 # The core terminal rules
 int         = ~'\d\d*' WS?
@@ -480,16 +480,25 @@ class Visitor(NodeVisitor):
         val, = children
         attributes = dict()
         if isinstance(val, Var):
-            attributes["on"] = str(val)
+            # I could also use just the "on" parameter, but this is more convenient for merging multiple join conditions because of
+            # pandas.errors.MergeError: Can only pass argument "on" OR "left_on" and "right_on", not a combination of both 
+            attributes["left_on"] = [str(val)]
+            attributes["right_on"] = [str(val)]
         else:
-            lr1, var1, _, lr2, var2 = children
+            lr1, var1, _, lr2, var2 = val
             if "left" in str(lr1):
-                attributes["left_on"] = var1
-                attributes["right_on"] = var2
+                attributes["left_on"] = [str(var1)]
+                attributes["right_on"] = [str(var2)]
             else:
-                attributes["left_on"] = var2
-                attributes["right_on"] = var1
+                attributes["left_on"] = [str(var2)]
+                attributes["right_on"] = [str(var1)]
         return attributes
+
+    def _merge_join_on_dicts(self, a1, a2):
+        for k, v in a2.items():
+            # the key should always be there
+            a1[k] += v
+        return a1
 
     def visit_joinAttributes(self, node, children):
         # joinAttribute (COMMA joinAttribute)*
@@ -497,7 +506,7 @@ class Visitor(NodeVisitor):
         attributes = a1.copy()
         if rest is not None:
             for _, more in rest:
-                attributes.update(more)
+                attributes = self._merge_join_on_dicts(attributes, more)
         return attributes
     
     def visit_table(self, node, children):

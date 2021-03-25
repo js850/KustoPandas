@@ -559,3 +559,94 @@ def test_execute_join():
     assert ["A", "G"] == list(wnew.df.columns)
     assert ["G1"] * 9 == list(wnew.df["G"])
     
+def test_execute_join_right_in_parens():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join kind=inner ( 
+        self 
+        | where G == 'G1' 
+        | project G ) 
+        on G 
+    | project A, G
+    """)
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+
+def test_execute_join_nokind():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join ( 
+        self 
+        | where G == 'G1' 
+        | project G ) 
+        on G 
+    | project A, G
+    """)
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+
+def test_execute_join_left_on_right_on():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join ( 
+        self 
+        | where G == 'G1' 
+        | project GG=G ) 
+        on $left.G == $right.GG 
+    | project A, G
+    """)
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+
+def test_execute_join_right_on_left_on():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join ( 
+        self 
+        | where G == 'G1' 
+        | project GG=G ) 
+        on $right.GG ==  $left.G
+    | project A, G
+    """)
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+
+def test_execute_join_multiple_join_conditions():
+    df = pd.DataFrame()
+    df["A"] = [1, 1]
+    df["B"] = [1, 2]
+    df["C"] = [10, 20]
+    df["D"] = [100, 200]
+
+    df2 = pd.DataFrame()
+    df2["A"] = [1, 1]
+    df2["B2"] = [1, 0]
+    df2["C2"] = [10, 0]
+
+    w = Wrap(df)
+    w = w.let(df2=df2)
+
+    wnew = w.execute("""
+    self 
+    | join ( df2 ) 
+        on A, $right.B2 ==  $left.B, $left.C == $right.C2
+    """)
+    
+    assert ["A", "B", "C", "D", "B2", "C2"] == list(wnew.df.columns)
+    assert [100] == list(wnew.df["D"])
