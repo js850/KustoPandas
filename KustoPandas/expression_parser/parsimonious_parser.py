@@ -79,7 +79,7 @@ COMMA            = "," WS?
 DOT              = "." WS?
 
 # DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
-# operator precedence is defined by the chaining of the rules together
+# operator precedence is defined by how the rules are chained together
 
 expressionInParens = LPAR expression RPAR
 primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
@@ -165,7 +165,7 @@ join        = "join" WS joinParameters? LPAR table RPAR "on" WS joinAttributes
 
 tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema / as / join
 
-# use this root rule if you want to parse a full Kusto statement
+# use this root rule if you want to parse a single kusto tabular operator
 kustoTabularOperator  = WS? tabularOperator
 
 # DEFINE KUSTO FULL QUERIES
