@@ -100,11 +100,30 @@ class Wrap:
         return result
 
     def let(self, **kwargs):
+        """
+        define variables or methods to be used in kusto expressions
+
+        Methods defined here will act on the entire series.  If you want them to act elementwise
+        then use let_elementwise
+        """
         # note: this supports passing in arbitrary python functions, functionality which goes beyond pure Kusto.
         # For that reason we can't implement it using _execute_tabular_operator because the functions can't be serialized to a string
         w = self._copy(self.df)
         w.let_statements.append(kwargs)
         return w
+    
+    def let_elementwise(self, **kwargs):
+        """
+        methods passed in here will act on the elements of the series rather than on the entire series
+        """
+        wrapped_methods = dict()
+        for name, method in kwargs.items():
+            if not callable(method):
+                raise Exception(name + " is not callable.  let_elementwise only accepts methods")
+            def elementwise(series):
+                return series.apply(method)
+            wrapped_methods[name] = elementwise
+        return self.let(**wrapped_methods)        
 
     def project(self, *cols, **renamed_cols):
         """

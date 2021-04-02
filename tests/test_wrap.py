@@ -650,3 +650,18 @@ def test_execute_join_multiple_join_conditions():
     
     assert ["A", "B", "C", "D", "B2", "C2"] == list(wnew.df.columns)
     assert [100] == list(wnew.df["D"])
+
+def test_let_elementwise():
+    df = pd.DataFrame()
+    df["A"] = ["hello", "alice", "bob"]
+
+    w = Wrap(df)
+    
+    def first(s):
+        return s[0]
+    
+    w = w.let_elementwise(first1=first)
+    wnew = w.extend("B = first1(A)")
+
+    assert ["A", "B"] == list(wnew.df.columns)
+    assert ["h", "a", "b"] == list(wnew.df["B"])
