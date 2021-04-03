@@ -109,6 +109,11 @@ class Div(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return left / right
 
+class Mod(Opp):
+    op = "%"
+    def evaluate_internal(self, left, right, **kwargs):
+        return left % right
+
 class Eq(Opp):
     op = "=="
     def evaluate_internal(self, left, right, **kwargs):
@@ -391,7 +396,7 @@ generic_expression_operators = [
     In, NotIn, InCis, NotInCis, 
     Has, NotHas, HasCs, NotHasCs,
     Between, DotDot,
-    Comma, Dot,
+    Comma, Dot, Mod
     ]
 
 assignment = [Assignment]

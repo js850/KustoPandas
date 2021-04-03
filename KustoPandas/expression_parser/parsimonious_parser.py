@@ -42,6 +42,7 @@ PLUS        = "+" WS?
 MINUS       = "-" WS?
 MUL         = "*" WS?
 DIV         = "/" WS?
+MOD         = "%" WS?
 
 GT         = ">" WS?
 LT         = "<" WS?
@@ -101,7 +102,7 @@ dot         = posfixExpr (DOT posfixExpr)*
 
 factor      = ( PLUS / MINUS )? dot
 
-prod        = factor ((MUL / DIV) factor )*
+prod        = factor ((MUL / DIV / MOD) factor )*
 sum         = prod ((PLUS / MINUS) prod)*
 
 gt          = sum (( GE / LE / GT / LT ) sum )?

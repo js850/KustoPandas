@@ -274,3 +274,16 @@ def test_datetime_literal():
 
 def test_datetime_literal_in_method():
     assert "2014-11-08 00:00:00" == parse_and_visit('str(datetime(2014-11-08))', vars={"str": str})
+
+def test_mod():
+    assert 1 == parse_and_visit("7 % 3")
+
+def test_mod_series():
+    a = pd.Series([7, 7])
+    b = pd.Series([3, 6])
+    s = parse_and_visit("a % b", vars=dict(a=a, b=b))
+    assert [1, 1] == list(s)
+
+def test_mod_series_dt():
+    # todo
+    assert 1 == 2
