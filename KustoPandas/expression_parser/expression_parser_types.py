@@ -559,6 +559,19 @@ class TimespanLiteral(Expression):
     def evaluate(self, vals):
         return pd.Timedelta(self.count.evaluate(None), unit=self.unit)
 
+class DateTimeLiteral(Expression):
+    # e.g. 4d resolves to timespan 4 days
+    def __init__(self, datetime):
+        # this should already be a proper datetime objects
+        self.datetime = datetime
+        self.descendents = []
+    def __str__(self):
+        return "datetime({0})".format(self.datetime)
+    def __repr__(self):
+        return str(self) #"DaysLiteral({0})".format(self.value)
+    def evaluate(self, vals):
+        return self.datetime
+
 class ListExpression(Expression):
     def __init__(self, items):
         self.items = items

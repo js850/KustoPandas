@@ -28,6 +28,10 @@ identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*' WS?
 columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS?
 stringLiteral = ( ~'"[^"]*"' / ~'\'[^\']*\'' ) WS?
 timespanLiteral = ~'[1-9]\d*[dhms]' WS?
+# this datetime definition can be improved.  Hopefully it is good enough
+# todo: support other datetime formats
+datetimeIso6801 = ~'\d\d\d\d-\d\d-\d\d[\da-zA-Z ,\-:\.]*' WS?
+datetimeLiteral = "datetime" WS? LPAR datetimeIso6801 RPAR
 
 # OPERATORS
 LPAR        = "(" WS?
@@ -82,7 +86,7 @@ DOT              = "." WS?
 # operator precedence is defined by how the rules are chained together
 
 expressionInParens = LPAR expression RPAR
-primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
+primaryExpr = ( datetimeLiteral / timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 
 # note: generally * is not allowed, but any(*) is an exception.  
 # I use a new named rule STAR rather than re-using MUL because I need the visitor to do something different (drop the WS)
@@ -90,7 +94,9 @@ STAR        = "*" WS?
 methodCall  = identifier LPAR ( STAR / expressionList )? RPAR
 squareBrackets  = identifier (LBRAK expression RBRAK)+
 
-posfixExpr  = methodCall / squareBrackets / primaryExpr
+# note: datetimeLiteral is listed here again to avoid ambiguity with methodCall.
+# e.g. for datetime(2014-10-03), the stuff inside the parentheses is not integer subtraction 
+posfixExpr  = datetimeLiteral / methodCall / squareBrackets / primaryExpr
 
 dot         = posfixExpr (DOT posfixExpr)*
 
@@ -291,6 +297,12 @@ class Visitor(NodeVisitor):
 
     def visit_identifier(self, node, children):
         return Var(node.text)
+    
+    def visit_datetimeLiteral(self, node, children):
+        # "datetime" WS? LPAR datetimeIso6801 RPAR
+        _, _, _, (dt, _), _ = children
+        datetime = pd.to_datetime(dt)
+        return DateTimeLiteral(datetime)
     
     def visit_columnNameOrPattern(self, node, children):
         return ColumnNameOrPattern(node.text)
