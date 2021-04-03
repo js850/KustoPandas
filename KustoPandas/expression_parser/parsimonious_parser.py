@@ -42,7 +42,6 @@ PLUS        = "+" WS?
 MINUS       = "-" WS?
 MUL         = "*" WS?
 DIV         = "/" WS?
-NOT         = "not" WS?
 
 GT         = ">" WS?
 LT         = "<" WS?
@@ -100,7 +99,7 @@ posfixExpr  = datetimeLiteral / methodCall / squareBrackets / primaryExpr
 
 dot         = posfixExpr (DOT posfixExpr)*
 
-factor      = ( PLUS / MINUS / NOT )? dot
+factor      = ( PLUS / MINUS )? dot
 
 prod        = factor ((MUL / DIV) factor )*
 sum         = prod ((PLUS / MINUS) prod)*
@@ -322,8 +321,8 @@ class Visitor(NodeVisitor):
         (unary_op, _), right = children
         if "-" == unary_op:
             return UnaryMinus(right)
-        if "not" == unary_op:
-            return UnaryNot(right)
+        # if "not" == unary_op:
+        #     return UnaryNot(right)
         # can be "+"
         return right
     

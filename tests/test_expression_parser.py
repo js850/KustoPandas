@@ -228,21 +228,21 @@ class TestExpressionParser(unittest.TestCase):
         result = parsed.evaluate({"C": pd.to_datetime("2020-01-02")})
         self.assertEqual(result["y"], pd.to_datetime("2020-01-03"))
 
-    def test_unary_not(self):
-        x = "y = not x"
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (not x))")
+    # def test_unary_not(self):
+    #     x = "y = not x"
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), "(y = (not x))")
 
-        result = parsed.evaluate({"x": False})
-        self.assertEqual(result["y"], True)
+    #     result = parsed.evaluate({"x": False})
+    #     self.assertEqual(result["y"], True)
     
-    def test_unary_not_series(self):
-        x = "y = not x"
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (not x))")
-        s = pd.Series([True, False])
-        result = parsed.evaluate({"x": s})
-        self.assertListEqual(list(result["y"]), [False, True])
+    # def test_unary_not_series(self):
+    #     x = "y = not x"
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), "(y = (not x))")
+    #     s = pd.Series([True, False])
+    #     result = parsed.evaluate({"x": s})
+    #     self.assertListEqual(list(result["y"]), [False, True])
     
     # def test_list_expression(self):
     #     x = "y = (1, 2, 3)"

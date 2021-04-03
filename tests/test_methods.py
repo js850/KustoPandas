@@ -297,3 +297,11 @@ def test_exp10():
     c = w.extend("F = exp10(A)")
 
     assert list(np.power(10, [0, 1, 2, 3, 4])) == list(c.df["F"])
+
+def test_not():
+    df = pd.DataFrame()
+    df["A"] = [True, False, False]
+    w = Wrap(df)
+    wnew = w.extend("B = not(A)")
+    assert ["A", "B"] == list(wnew.df.columns)
+    assert [False, True, True] == list(wnew.df["B"])
