@@ -3,9 +3,7 @@ import pandas as pd
 
 from KustoPandas import dynamic_methods
 from KustoPandas.expression_parser.expression_parser_types import _not
-
-def _is_datetime(series):
-    return pd.api.types.is_datetime64_any_dtype(series)
+from KustoPandas.expression_parser.utils import _is_datetime
 
 def iff(condition, a, b):
     return np.where(condition, a, b)

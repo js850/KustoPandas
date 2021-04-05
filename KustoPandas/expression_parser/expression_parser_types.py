@@ -5,8 +5,7 @@ import fnmatch
 import pandas as pd
 import inspect 
 
-def are_all_series(*args):
-    return all((isinstance(a, pd.Series) for a in args))
+from .utils import _is_datetime, are_all_series
 
 match_az = re.compile("[a-zA-Z]")
 
@@ -109,9 +108,18 @@ class Div(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return left / right
 
+_DATETIME_BASE = pd.to_datetime("1990")
+
 class Mod(Opp):
     op = "%"
     def evaluate_internal(self, left, right, **kwargs):
+        if _is_datetime(left):
+            raise NotImplementedError("Modular operators are not supported with datetime objects because Pandas doesn't support it.  Todo: Figure out a workaround")
+            # I tried the below as a workaround, but it only sometimes worked.  I kept running into timezone issues
+            # if are_all_series(left):
+            #     left = left.dt
+            # left = (left.tz_convert(None) - _DATETIME_BASE)
+
         return left % right
 
 class Eq(Opp):

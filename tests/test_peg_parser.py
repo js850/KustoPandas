@@ -279,11 +279,23 @@ def test_mod():
     assert 1 == parse_and_visit("7 % 3")
 
 def test_mod_series():
-    a = pd.Series([7, 7])
-    b = pd.Series([3, 6])
+    a = pd.Series([7, 7, 11])
+    b = pd.Series([3, 6, 4])
     s = parse_and_visit("a % b", vars=dict(a=a, b=b))
-    assert [1, 1] == list(s)
+    assert [1, 1, 3] == list(s)
 
-def test_mod_series_dt():
-    # todo
-    assert 1 == 2
+# def test_mod_series_dt():
+#     a = pd.to_datetime(pd.Series(["2021-04-04T09:43:37.2284308Z", "2021-04-04T09:44:37.2284308Z"]))
+#     s = parse_and_visit("a % 1h", vars=dict(a=a))
+#     assert [pd.Timedelta("00:43:37.228430800"), pd.Timedelta("00:44:37.228430800")] == list(s)
+
+# def test_mod_dt():
+#     a = pd.to_datetime("2021-04-04T09:43:37.2284308Z")
+#     assert pd.Timedelta("00:43:37.228430800") == parse_and_visit("a % 1h", vars=dict(a=a))
+
+# def test_mod_dt2():
+#     assert pd.Timedelta("00:43:37") == parse_and_visit("datetime(2021-04-04T09:43:37) % 1h")
+
+def test_mod_timedelta():
+    a = pd.to_timedelta("00:43:37.228430800")
+    assert pd.Timedelta("00:03:37.228430800") == parse_and_visit("a % 10m", vars=dict(a=a))
