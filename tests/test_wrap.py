@@ -665,3 +665,47 @@ def test_let_elementwise():
 
     assert ["A", "B"] == list(wnew.df.columns)
     assert ["h", "a", "b"] == list(wnew.df["B"])
+
+def test_let_elementwise_multiple_params():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+
+    w = Wrap(df)
+
+    def x(a, b):
+        # add assertion to ensure the function is called elementwise
+        assert a == 1 or a == 2
+        return a + b
+    w = w.let_elementwise(x=x)
+    
+    wnew = w.extend("B = x(A, A + 1)")
+
+    assert [3, 5] == list(wnew.df["B"])
+
+def test_let_no_params():
+    df = pd.DataFrame()
+    df["A"] = [1, 1]
+
+    w = Wrap(df)
+
+    def x():
+        return 3
+    w = w.let(x=x)
+    
+    wnew = w.extend("B = A + x()")
+
+    assert [4, 4] == list(wnew.df["B"])
+
+
+
+def test_let_new_method_overrides_old_one():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+
+    w = Wrap(df)
+    w = w.let(b=1)
+    w = w.let(b=2)
+
+    wnew = w.extend("B = A + b")
+    assert ["A", "B"] == list(wnew.df.columns)
+    assert [3, 4] == list(wnew.df["B"])

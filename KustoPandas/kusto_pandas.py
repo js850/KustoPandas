@@ -92,7 +92,8 @@ class Wrap:
             raise Exception("{} is not allowed as a column name because it is a reserved keyword (sorry. this can be imroved I'm sure)".format(TABLE_SELF))
         
         w = self._copy(self.df)
-        w.let_statements.append({TABLE_SELF: self.df})
+        # use insert instead of append so new additions overwrite old ones
+        w.let_statements.insert(0, {TABLE_SELF: self.df})
 
         parsed = parse_expression_query(expression)
         result = parsed.evaluate_query(w)
@@ -109,7 +110,7 @@ class Wrap:
         # note: this supports passing in arbitrary python functions, functionality which goes beyond pure Kusto.
         # For that reason we can't implement it using _execute_tabular_operator because the functions can't be serialized to a string
         w = self._copy(self.df)
-        w.let_statements.append(kwargs)
+        w.let_statements.insert(0, (kwargs))
         return w
     
     def let_elementwise(self, **kwargs):
@@ -120,8 +121,25 @@ class Wrap:
         for name, method in kwargs.items():
             if not callable(method):
                 raise Exception(name + " is not callable.  let_elementwise only accepts methods")
-            def elementwise(series):
-                return series.apply(method)
+            def elementwise(*args):
+                if len(args) == 0:
+                    # we could just return method() here, but that is identical to let
+                    # I think this should be called separately for every element.  It would allow someone to
+                    # return a new value for every row.  
+                    # TODO
+                    raise NotImplementedError()
+                elif len(args) == 1:
+                    return args[0].apply(method)
+                else:
+                    dftemp = pd.DataFrame()
+                    for i, x in enumerate(args):
+                        dftemp[str(i)] = x
+                    
+                    def wrap(x):
+                        return method(*x)
+                    result = dftemp.apply(wrap, axis=1)
+                    return result
+
             wrapped_methods[name] = elementwise
         return self.let(**wrapped_methods)        
 
