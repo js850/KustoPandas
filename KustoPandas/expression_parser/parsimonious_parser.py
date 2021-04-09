@@ -105,12 +105,7 @@ factor      = ( PLUS / MINUS )? dot
 prod        = factor ((MUL / DIV / MOD) factor )*
 sum         = prod ((PLUS / MINUS) prod)*
 
-gt          = sum (( GE / LE / GT / LT ) sum )?
-eq          = gt (( EQ / NEQ ) gt )?
-and         = eq ( AND eq )?
-or          = and ( OR and )?
-
-between     = or ( BETWEEN LPAR or DOTDOT or RPAR )?
+between     = sum ( BETWEEN LPAR sum DOTDOT sum RPAR )?
 
 stringOp     = between (( 
                     NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
@@ -121,7 +116,12 @@ stringOp     = between ((
 list        = LPAR expressionList RPAR
 inList      = stringOp (( NOTIN_CIS / IN_CIS / NOTIN / IN ) (list / stringOp) )?
 
-expression          = inList
+gt          = inList (( GE / LE / GT / LT ) inList )?
+eq          = gt (( EQ / NEQ ) gt )?
+and         = eq ( AND eq )?
+or          = and ( OR and )?
+
+expression          = or
 expressionList      = expression (COMMA expression)*
 
 internalAssignment  = identifier ASSIGNMENT expression

@@ -299,3 +299,7 @@ def test_mod_series():
 def test_mod_timedelta():
     a = pd.to_timedelta("00:43:37.228430800")
     assert pd.Timedelta("00:03:37.228430800") == parse_and_visit("a % 10m", vars=dict(a=a))
+
+def test_contains_or():
+    # TODO; this fails to parse, I think because contains and or do not have the right priority
+    assert True == parse_and_visit("'cppt' contains 'ppt' or 'asdf' contains 'docx'")
