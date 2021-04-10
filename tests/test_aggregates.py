@@ -879,3 +879,26 @@ def test_summarize_make_bag_no_by():
 
     assert ["make_bag_A"] == list(wnew.df.columns)
     assert set([4, 5, 6]) == wnew.df["make_bag_A"][0]
+
+def test_summarize_make_list():
+    df = pd.DataFrame()
+    df["G"] = [1, 1, 1, 2, 2]
+    df["A"] = [4, 4, 5, 6, 6]
+
+    w = Wrap(df)
+    wnew = w.summarize("make_list(A) by G")
+
+    assert ["G", "make_list_A"] == list(wnew.df.columns)
+    assert [4, 4, 5] == wnew.df["make_list_A"][0]
+    assert [6, 6] == wnew.df["make_list_A"][1]
+
+def test_summarize_make_list_no_by():
+    df = pd.DataFrame()
+    df["G"] = [1, 1, 1, 2, 2]
+    df["A"] = [4, 4, 5, 6, 6]
+
+    w = Wrap(df)
+    wnew = w.summarize("make_list(A)")
+
+    assert ["make_list_A"] == list(wnew.df.columns)
+    assert [4, 4, 5, 6, 6] == wnew.df["make_list_A"][0]
