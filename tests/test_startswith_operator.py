@@ -38,3 +38,24 @@ class TestStartsWithOperator(unittest.TestCase):
 
         result = parsed.evaluate({"A": "Hello there"})
         self.assertEqual(result, True)
+
+    def test_startswith_both_series(self):
+        x = 'A startswith B'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '(A startswith B)')
+
+        A = pd.Series(["Hello", "there"])
+        B = pd.Series(["He", "Th"])
+
+        result = parsed.evaluate(dict(A=A, B=B))
+        assert [True, True] == list(result)
+
+    def test_startswith_right_series(self):
+        x = '"hello" startswith B'
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), '("hello" startswith B)')
+
+        B = pd.Series(["He", "he", " he", "th"])
+
+        result = parsed.evaluate(dict(B=B))
+        assert [True, True, False, False] == list(result)

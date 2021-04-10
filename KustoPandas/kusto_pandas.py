@@ -4,6 +4,7 @@ from .expression_parser import parse_expression_query, TABLE_SELF
 from .methods import get_methods
 from ._render import render
 from .expression_parser._simple_expression import replace_temp_column_names
+from .expression_parser.utils import get_apply_elementwise_method
 
 class MultiDict:
     def __init__(self, dicts):
@@ -121,26 +122,8 @@ class Wrap:
         for name, method in kwargs.items():
             if not callable(method):
                 raise Exception(name + " is not callable.  let_elementwise only accepts methods")
-            def elementwise(*args):
-                if len(args) == 0:
-                    # we could just return method() here, but that is identical to let
-                    # I think this should be called separately for every element.  It would allow someone to
-                    # return a new value for every row.  
-                    # TODO
-                    raise NotImplementedError()
-                elif len(args) == 1:
-                    return args[0].apply(method)
-                else:
-                    dftemp = pd.DataFrame()
-                    for i, x in enumerate(args):
-                        dftemp[str(i)] = x
-                    
-                    def wrap(x):
-                        return method(*x)
-                    result = dftemp.apply(wrap, axis=1)
-                    return result
 
-            wrapped_methods[name] = elementwise
+            wrapped_methods[name] = get_apply_elementwise_method(method)
         return self.let(**wrapped_methods)        
 
     def project(self, *cols, **renamed_cols):

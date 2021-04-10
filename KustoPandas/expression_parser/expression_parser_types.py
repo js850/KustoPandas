@@ -5,7 +5,7 @@ import fnmatch
 import pandas as pd
 import inspect 
 
-from .utils import _is_datetime, are_all_series
+from .utils import _is_datetime, are_all_series, get_apply_elementwise_method
 
 match_az = re.compile("[a-zA-Z]")
 
@@ -205,18 +205,37 @@ class NotContainsCs(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return _not(_contains(left, right, True))   
 
+def _lower(x, is_series=None):
+    if is_series is None:
+        is_series = are_all_series(x)
+    
+    if is_series:
+        return x.str.lower()
+    return x.lower()
+
 def _starts_with(left, right, case_sensitive):
-    # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
-    if are_all_series(left):
-        # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
-        if not case_sensitive:
-            left = left.str.lower()
-            right = right.lower()
-        return left.str.startswith(right)
+    left_is_series = are_all_series(left)
+    right_is_series = are_all_series(right)
+
     if not case_sensitive:
-        left = left.lower()
-        right = right.lower()
-    return left.startswith(right) 
+        # Neither Pandas nor python support case insensitive startswith.  can we do better than lowercasing everything?
+        left = _lower(left, is_series=left_is_series)
+        right = _lower(right, is_series=right_is_series)
+    
+    if left_is_series and right_is_series:
+        # Pandas doesn't suppot series to series starts with.  Can we do better than doing this elementwise?
+        def elementwise_lower(l, r):
+            return l.startswith(r)
+        method = get_apply_elementwise_method(elementwise_lower)
+        return method(left, right)
+    
+    if left_is_series:
+        return left.str.startswith(right)
+    
+    if right_is_series:
+        return right.apply(lambda r: left.startswith(r))
+    
+    return left.startswith(right)
 
 class StartsWith(Opp):
     op = "startswith"
