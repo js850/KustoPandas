@@ -14,26 +14,14 @@ def iff(condition, a, b):
 def datetime(val):
     return pd.to_datetime(val)
 
-def todatetime(val):
-    return datetime(val)
-
 def toint(val):
     return val.astype(int)
 
 def todouble(val):
     return pd.to_numeric(val)
 
-def toreal(val):
-    return todouble(val)
-
 def tobool(series):
     raise NotImplementedError("tobool is not implemented because series.astype(bool) converts all strings to bools.  Doing it properly will take some effort")
-
-def double(val):
-    return todouble(val)
-
-def real(val):
-    return todouble(val)
 
 def bin(series, round_to):
     if _is_datetime(series):
@@ -138,8 +126,8 @@ def base64_encode_tostring(series):
         return series.apply(_encode_base64)
     return _encode_base64(series)
 
-all_methods = [iff, datetime, todatetime, bin, floor, ceiling, extract, toint, 
-               todouble, toreal, double, real, tobool,
+all_methods = [iff, datetime, bin, floor, ceiling, extract, toint, 
+               todouble, tobool,
                isnull, isnan, isempty,
                isnotnull, isnotnan, isnotempty,
                isfinite, isinf,
@@ -154,6 +142,12 @@ method_map = dict(((m.__name__, m) for m in all_methods))
 
 # not is a reserved keywork in python.  I can't have a method called not
 method_map["not"] = _not
+
+# aliases
+method_map["todatetime"] = datetime
+method_map["toreal"] = todouble
+method_map["real"] = todouble
+method_map["double"] = todouble
 
 def get_methods():
     return method_map

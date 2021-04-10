@@ -856,3 +856,26 @@ def test_summarize_default_name_conflicts():
     print()
     print(wnew)
     assert ["Column1", "Column2_1", "count_", "Column3", "Column2" ] == list(wnew.df.columns)
+
+def test_summarize_make_bag():
+    df = pd.DataFrame()
+    df["G"] = [1, 1, 1, 2, 2]
+    df["A"] = [4, 4, 5, 6, 6]
+
+    w = Wrap(df)
+    wnew = w.summarize("make_bag(A) by G")
+
+    assert ["G", "make_bag_A"] == list(wnew.df.columns)
+    assert set([4, 5]) == wnew.df["make_bag_A"][0]
+    assert set([6]) == wnew.df["make_bag_A"][1]
+
+def test_summarize_make_bag_no_by():
+    df = pd.DataFrame()
+    df["G"] = [1, 1, 1, 2, 2]
+    df["A"] = [4, 4, 5, 6, 6]
+
+    w = Wrap(df)
+    wnew = w.summarize("make_bag(A)")
+
+    assert ["make_bag_A"] == list(wnew.df.columns)
+    assert set([4, 5, 6]) == wnew.df["make_bag_A"][0]
