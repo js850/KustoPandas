@@ -5,4 +5,7 @@ import json
 def todynamic(s):
     return s.apply(json.loads)
 
-_all_methods = [todynamic]
+def parse_json(s):
+    return todynamic(s)
+
+_all_methods = [todynamic, parse_json]

@@ -1,18 +1,10 @@
 import pandas as pd
-import re
-from functools import reduce
 
-from .expression_parser import parse_expression, Assignment, Var, Method, By, Comma, flatten_comma
-from .aggregates import create_aggregate
+from .expression_parser import parse_expression_query, TABLE_SELF
 from .methods import get_methods
 from ._render import render
-from ._input_parsing import _split_if_comma, _split_by_operator, _evaluate_and_get_name, Inputs, remove_duplicates_maintain_order, _parse_inputs_with_by, _parse_inputs_with_by_return_simple_expression, replace_temp_column_names
-
-
-def ensure_column_name_unique(df, col):
-    while col in df.columns:
-        col = col + "_"
-    return col
+from .expression_parser._simple_expression import replace_temp_column_names
+from .expression_parser.utils import get_apply_elementwise_method
 
 class MultiDict:
     def __init__(self, dicts):
@@ -27,10 +19,37 @@ class MultiDict:
         
         raise KeyError(key)
 
+def _serialize_named_expressions(kwargs):
+    if kwargs is None:
+        return ""
+
+    return ", ".join([str(k) + " = " + str(v) for k, v in kwargs.items()])
+
+def _serialize_expressions(args, kwargs = None):
+    expr = " "
+
+    if isinstance(args, str):
+        args_expr = args
+    else:
+        args_expr = ", ".join([str(a) for a in args])
+
+    kwargs_expr = _serialize_named_expressions(kwargs)
+
+    expr += args_expr
+
+    if args_expr and kwargs_expr:
+        expr += ", "
+    
+    expr += kwargs_expr
+    return expr
+
+
 class Wrap:
     def __init__(self, df):
         self.df = df
+        # let_statements is a list of dictionaries
         self.let_statements = []
+        self._self_table = None
     
     def _repr_html_(self):
         return self.df._repr_html_()
@@ -46,11 +65,66 @@ class Wrap:
     
     def __str__(self):
         return str(self.df)
+    
+    def _execute_tabular_operator(self, expression):
+        expression = TABLE_SELF + " | " + expression
+        return self.execute(expression)
+    
+    def _set_active_table(self, identifier):
+        # todo: don't look at column names
+        df = self._get_var_map()[identifier]
+        assert isinstance(df, pd.DataFrame)
+        return self._copy(df)
+    
+    def _remove_self_from_let_statements(self):
+        for d in self.let_statements:
+            if TABLE_SELF in d:
+                del d[TABLE_SELF]
+
+    def execute(self, expression):
+        """
+        execute a Kusto query
+        
+        use `self` to refer to the table in this object
+
+        w.execute("self | where A > 5 | take 10")
+        """
+        if TABLE_SELF in self.df.columns:
+            raise Exception("{} is not allowed as a column name because it is a reserved keyword (sorry. this can be imroved I'm sure)".format(TABLE_SELF))
+        
+        w = self._copy(self.df)
+        # use insert instead of append so new additions overwrite old ones
+        w.let_statements.insert(0, {TABLE_SELF: self.df})
+
+        parsed = parse_expression_query(expression)
+        result = parsed.evaluate_query(w)
+        result._remove_self_from_let_statements()
+        return result
 
     def let(self, **kwargs):
+        """
+        define variables or methods to be used in kusto expressions
+
+        Methods defined here will act on the entire series.  If you want them to act elementwise
+        then use let_elementwise
+        """
+        # note: this supports passing in arbitrary python functions, functionality which goes beyond pure Kusto.
+        # For that reason we can't implement it using _execute_tabular_operator because the functions can't be serialized to a string
         w = self._copy(self.df)
-        w.let_statements.append(kwargs)
+        w.let_statements.insert(0, (kwargs))
         return w
+    
+    def let_elementwise(self, **kwargs):
+        """
+        methods passed in here will act on the elements of the series rather than on the entire series
+        """
+        wrapped_methods = dict()
+        for name, method in kwargs.items():
+            if not callable(method):
+                raise Exception(name + " is not callable.  let_elementwise only accepts methods")
+
+            wrapped_methods[name] = get_apply_elementwise_method(method)
+        return self.let(**wrapped_methods)        
 
     def project(self, *cols, **renamed_cols):
         """
@@ -68,56 +142,25 @@ class Wrap:
         
         w.project("A, Bnew = B+A")
         """
-        inputs = Inputs(*cols, **renamed_cols)
+        expr = "project " + _serialize_expressions(cols, renamed_cols)
 
-        dfnew = pd.DataFrame()
-        var_map = self._get_var_map()
-
-        for parsed in inputs.parsed_inputs:
-            result = parsed.evaluate(var_map)
-            dfnew[parsed.get_name()] = result
-        
-        return self._copy(dfnew)
+        return self._execute_tabular_operator(expr)
 
     def project_away(self, *cols):
-        inputs = Inputs(*cols)
-        dfnew = self.df.copy()
-        for column in inputs.parse_as_column_name_or_pattern(dfnew):
-            del dfnew[column]
-
-        return self._copy(dfnew)
+        expr = "project-away " + _serialize_expressions(cols)
+        return self._execute_tabular_operator(expr)
 
     def project_keep(self, *cols):
-        inputs = Inputs(*cols)
-        columns_to_keep = set(inputs.parse_as_column_name_or_pattern(self.df))
-
-        # maintain the original orderin of the columns
-        columns = [c for c in self.df.columns if c in columns_to_keep]
-
-        dfnew = self.df[columns].copy()
-        return self._copy(dfnew)
+        expr = "project-keep " + _serialize_expressions(cols)
+        return self._execute_tabular_operator(expr)
 
     def project_rename(self, *args, **kwargs):
-        inputs = Inputs(*args, **kwargs)
+        expr = "project-rename " + _serialize_expressions(args, kwargs)
+        return self._execute_tabular_operator(expr)
 
-        col_map = dict()
-        for newcol, oldcol in inputs.parse_as_simple_assigments():
-            col_map[oldcol] = newcol
-            if oldcol not in self.df.columns:
-                raise KeyError("Could not find column: " + oldcol)
-        
-        dfnew = self.df.rename(columns=col_map).copy()
-
-        return self._copy(dfnew)
-    
     def project_reorder(self, *cols):
-        inputs = Inputs(*cols)
-
-        specified_cols = inputs.parse_as_column_name_or_pattern(self.df)
-        # unspecified columns should be put at the back of the list
-        new_cols = remove_duplicates_maintain_order(specified_cols + list(self.df.columns))
-        dfnew = self.df[new_cols].copy()
-        return self._copy(dfnew)
+        expr = "project-reorder " + _serialize_expressions(cols)
+        return self._execute_tabular_operator(expr)
 
     def summarize(self, aggregates, by=None):
         """
@@ -133,123 +176,42 @@ class Wrap:
 
 
         """
-        aggregates_parsed, by_parsed = _parse_inputs_with_by(aggregates, by=by)
-        return self._summarize(aggregates_parsed, by_parsed)
+        expr = "summarize " + _serialize_expressions(aggregates)
 
-    def _summarize(self, aggregates, by):
-        dftemp = pd.DataFrame(index=self.df.index.copy())
+        if by is not None:
+            expr += " by " + _serialize_expressions(by)
 
-        group_by_col_names = []
-        variable_map = self._get_var_map()
-        for parsed in by:
-            col_name, series = _evaluate_and_get_name(parsed, variable_map)
-            if col_name in group_by_col_names:
-                raise Exception("Column can only appear once in group by expression " + col_name)
+        return self._execute_tabular_operator(expr)
 
-            group_by_col_names.append(col_name)
-            dftemp[col_name] = series
-        
-        all_columns = set(self.df.columns) - set(group_by_col_names)
-
-        args = [create_aggregate(a, all_columns) for a in aggregates]
-
-        for arg in args:
-            for col_name, col_value in arg.evaluate_column_inputs(variable_map):
-                if col_name not in dftemp.columns:
-                    dftemp[col_name] = col_value
-
-        if len(group_by_col_names) > 0:
-            grouped = dftemp.groupby(group_by_col_names)
-        else:
-            # it's allowed to pass nothing as group by.  In which case the aggregate will 
-            # operate on the entire series
-            grouped = dftemp
-        dfnew = pd.DataFrame()
-
-        for arg in args:
-            result = arg.apply(grouped, variable_map)
-            for col, series in result:
-                col = ensure_column_name_unique(dfnew, col)
-                dfnew[col] = series
-        
-        if len(group_by_col_names) > 0:
-            dfnew = dfnew.reset_index()
-
-        return self._copy(dfnew)
-    
     def extend(self, *args, **kwargs):
-        inputs = Inputs(*args, **kwargs)
-
-        dfnew = self.df.copy(deep=False)
-        var_map = self._get_var_map()
-        for parsed in inputs.parsed_inputs:
-            name = parsed.get_name()
-            result = parsed.evaluate(var_map)
-            dfnew[name] = result
-
-        return self._copy(dfnew)
+        expr = "extend " + _serialize_expressions(args, kwargs)
+        return self._execute_tabular_operator(expr)
     
     def where(self, condition):
-        parsed = parse_expression(condition)
-        if isinstance(parsed, Assignment):
-            raise Exception("where cannot have assignment: " + str(parsed))
-
-        result = parsed.evaluate(self._get_var_map())
-
-        newdf = self.df[result].copy()
-        return self._copy(newdf)
+        expr = "where " + condition
+        return self._execute_tabular_operator(expr)
     
     def take(self, n):
-        newdf = self.df.head(n)
-        return self._copy(newdf)
+        expr = "take " + str(n)
+        return self._execute_tabular_operator(expr)
     
     def limit(self, n):
         return self.take(n)
     
-    def order(self, *args, **kwargs):
-        return self.sort(*args, **kwargs)
+    def order(self, by):
+        return self.sort(by)
 
-    def sort(self, by, asc=False):
+    def sort(self, by):
         """
         sort by strlen(country) asc, price desc
 
         by can be a column name, or an expression built from columns e.g. (strlen(country))
             or it can be a list of such expressions
-        asc (if true, sort by ascending order) can be a bool
-            or list of bools.  If it's a list, it must be equal in length to the list of expressions 
         """
-        inputs = Inputs(by)
-        parsed_inputs = inputs.parsed_inputs
-        return self._sort(parsed_inputs, asc=asc)
+        expr = "sort by " + _serialize_expressions(by)
+        return self._execute_tabular_operator(expr)
 
-    def _sort(self, by_parsed, asc=False):
-        if isinstance(asc, bool):
-            asc = [asc] * len(by_parsed)
-        elif len(by_parsed) != len(asc):
-            raise Exception("the length of lists by and asc must be equal")
-
-        dfnew = self.df.copy(deep=False)
-
-        col_names = ["__tempcol_" + str(i) for i in range(len(by_parsed))]
-
-        var_map = self._get_var_map()
-        for i, expr in enumerate(by_parsed):
-            col = col_names[i]
-            series = expr.evaluate(var_map)
-            dfnew[col] = series
-            if expr.is_asc():
-                asc[i] = True
-            if expr.is_desc():
-                asc[i] = False
-        
-        dfnew = dfnew.sort_values(col_names, ascending=asc)
-
-        for c in col_names:
-            del dfnew[c]
-
-        return self._copy(dfnew)
-
-    def top(self, n, by=None, asc=False):
+    def top(self, n, by=None):
         """
 
         w.top(5, "A")
@@ -260,17 +222,11 @@ class Wrap:
 
         w.top("5 by A asc")
         """
-        n_parsed, by_parsed = _parse_inputs_with_by_return_simple_expression(n, by=by)
-
-        if not len(n_parsed) == 1:
-            raise Exception("Top expects exactly one n")
-        n_value = n_parsed[0].evaluate(self._get_var_map())
-
-        if not isinstance(n_value, int):
-            raise Exception("n must be an integer")
-
-        return self._sort(by_parsed, asc=asc).take(n_value)
-    
+        expr = "top " + str(n)
+        if by is not None:
+            expr += " by " + _serialize_expressions(by)
+        return self._execute_tabular_operator(expr)
+        
     def join(self, right, on=None, left_on=None, right_on=None, kind="inner"):
         if isinstance(right, Wrap):
             right = right.df
@@ -296,41 +252,13 @@ class Wrap:
         return self
     
     def count(self):
-        count = self.df.shape[0]
+        expr = "count"
+        return self._execute_tabular_operator(expr)
 
-        dfnew = pd.DataFrame()
-        dfnew["Count"] = [count]
-
-        return self._copy(dfnew)
-    
     def distinct(self, *args):
-        if args[0] == "*":
-            return self._copy(self.df.drop_duplicates())
-        
-        # note: the arguments to kusto distinct must be either "*" or a list of column names.
-        # Here we support an arbitrary expression.  e.g. distinct("A + B")
-        # It would be extra work to limit it to only column names, and supporting arbitrary expressions seems nice, so I will leave it
-        inputs = Inputs(*args)
+        expr = "distinct " + _serialize_expressions(args)
+        return self._execute_tabular_operator(expr)
 
-        var_map = self._get_var_map()
-        dfnew = pd.DataFrame()
-        for parsed in inputs.parsed_inputs:
-            name = parsed.get_name()
-            series = parsed.evaluate(var_map)
-            dfnew[name] = series
-        
-        return self._copy(dfnew.drop_duplicates())
-    
     def getschema(self):
-
-        d2 = pd.DataFrame()
-        d2["ColumnName"] = self.df.columns
-        d2["ColumnOrdinal"] = range(len(self.df.columns))
-        d2["DataType"] = list(self.df.dtypes)
-        d2["ColumnType"] = list(self.df.dtypes)
-
-        return self._copy(d2)
-            
-        
-
-    
+        expr = "getschema"
+        return self._execute_tabular_operator(expr)

@@ -36,9 +36,9 @@ class TestWrap(unittest.TestCase):
     def test_project_kwargs2(self):
         df = create_df()
         w = Wrap(df)
-        wnew = w.project("A", **{"Z col": "B * 2"})
-        self.assertListEqual(["A", "Z col"], list(wnew.df.columns))
-        self.assertListEqual([0, 2, 4, 6, 8], list(wnew.df["Z col"]))
+        wnew = w.project("A", **{"Z_col": "B * 2"})
+        self.assertListEqual(["A", "Z_col"], list(wnew.df.columns))
+        self.assertListEqual([0, 2, 4, 6, 8], list(wnew.df["Z_col"]))
         self.assertGreater(len(w.df.columns), 2)
 
     def test_extend(self):
@@ -178,7 +178,7 @@ class TestWrap(unittest.TestCase):
         df["U"] = [9, 1, 7, 1, 2]
         expected = [1, 3, 4, 2, 0]
         w = Wrap(df)
-        wnew = w.sort(["U + 1", "B"], [True, True])
+        wnew = w.sort(["U + 1 asc", "B asc"])
         self.assertListEqual([1, 1, 2, 7, 9], list(wnew.df["U"]))
         self.assertListEqual(expected, list(wnew.df["B"]))
         self.assertListEqual(list(range(5)), list(w.df["B"]))
@@ -208,7 +208,7 @@ class TestWrap(unittest.TestCase):
         df["U"] = [9, 1, 7, 1, 2]
         expected = [1, 3, 4, 2, 0]
         w = Wrap(df)
-        wnew = w.order(["U + 1", "B"], [True, True])
+        wnew = w.order(["U + 1 asc", "B asc"])
         self.assertListEqual(expected, list(wnew.df["B"]))
         self.assertListEqual(list(range(5)), list(w.df["B"]))
 
@@ -230,12 +230,12 @@ class TestWrap(unittest.TestCase):
         df = create_df()
         df["U"] = [9, 8, 7, 1, 2]
         w = Wrap(df)
-        wnew = w.top(4, "U + 1", asc=True)
+        wnew = w.top(4, "U + 1 asc")
 
         assert [1, 2, 7, 8] == list(wnew.df["U"])
         assert 6 == len(wnew.df.columns)
 
-        wexpected = w.sort("U", asc=True).take(4)
+        wexpected = w.sort("U asc").take(4)
         pd.testing.assert_frame_equal(wnew.df, wexpected.df)
 
 
@@ -254,7 +254,7 @@ class TestWrap(unittest.TestCase):
         df["U"] = [9, 8, 7, 1, 2]
         w = Wrap(df)
 
-        wexpected = w.top(4, "U + 1", asc=True)
+        wexpected = w.top(4, "U + 1 asc")
         wnew = w.top("4 by U + 1 asc")
 
         assert [1, 2, 7, 8] == list(wnew.df["U"])
@@ -479,4 +479,233 @@ def test_getschema():
     assert [np.float64, np.int64, object, np.dtype("datetime64[ns]"), object] == list(wnew.df["DataType"])
     assert 4 == len(wnew.df.columns)
 
+def test_execute():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("self | where G == 'G1' | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_let():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("let a = 'G2'")
+
+    assert "G2" == wnew._get_var_map()["a"]
+
+def test_execute_let_semicolon():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("let a = 'G2';")
+
+    assert "G2" == wnew._get_var_map()["a"]
+
+def test_execute_let2_pipe():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.let(a='G1').execute("self | where G == a | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_let_pipe():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("let a = 'G1'; self | where G == a | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_let_dataframe():
+    df = create_df()
+    df2 = pd.DataFrame()
+
+    w = Wrap(df2).let(D=df)
+    wnew = w.execute("let a = 'G1'; D | where G == a | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_let_dataframe2():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("let a = self | where G == 'G1' | where A >= 1; a | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_as():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("self | where G == 'G1' | as table | take 1; table | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
+
+def test_execute_join():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("self | where G == 'G1' | project G | as T1; self | join kind=inner (T1) on G | project A, G")
     
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+    
+def test_execute_join_right_in_parens():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join kind=inner ( 
+        self 
+        | where G == 'G1' 
+        | project G ) 
+        on G 
+    | project A, G
+    """)
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+
+def test_execute_join_nokind():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join ( 
+        self 
+        | where G == 'G1' 
+        | project G ) 
+        on G 
+    | project A, G
+    """)
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+
+def test_execute_join_left_on_right_on():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join ( 
+        self 
+        | where G == 'G1' 
+        | project GG=G ) 
+        on $left.G == $right.GG 
+    | project A, G
+    """)
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+
+def test_execute_join_right_on_left_on():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join ( 
+        self 
+        | where G == 'G1' 
+        | project GG=G ) 
+        on $right.GG ==  $left.G
+    | project A, G
+    """)
+    
+    assert ["A", "G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["G"])
+
+def test_execute_join_multiple_join_conditions():
+    df = pd.DataFrame()
+    df["A"] = [1, 1]
+    df["B"] = [1, 2]
+    df["C"] = [10, 20]
+    df["D"] = [100, 200]
+
+    df2 = pd.DataFrame()
+    df2["A"] = [1, 1]
+    df2["B2"] = [1, 0]
+    df2["C2"] = [10, 0]
+
+    w = Wrap(df)
+    w = w.let(df2=df2)
+
+    wnew = w.execute("""
+    self 
+    | join ( df2 ) 
+        on A, $right.B2 ==  $left.B, $left.C == $right.C2
+    """)
+    
+    assert ["A", "B", "C", "D", "B2", "C2"] == list(wnew.df.columns)
+    assert [100] == list(wnew.df["D"])
+
+def test_let_elementwise():
+    df = pd.DataFrame()
+    df["A"] = ["hello", "alice", "bob"]
+
+    w = Wrap(df)
+    
+    def first(s):
+        return s[0]
+    
+    w = w.let_elementwise(first1=first)
+    wnew = w.extend("B = first1(A)")
+
+    assert ["A", "B"] == list(wnew.df.columns)
+    assert ["h", "a", "b"] == list(wnew.df["B"])
+
+def test_let_elementwise_multiple_params():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+
+    w = Wrap(df)
+
+    def x(a, b):
+        # add assertion to ensure the function is called elementwise
+        assert a == 1 or a == 2
+        return a + b
+    w = w.let_elementwise(x=x)
+    
+    wnew = w.extend("B = x(A, A + 1)")
+
+    assert [3, 5] == list(wnew.df["B"])
+
+def test_let_no_params():
+    df = pd.DataFrame()
+    df["A"] = [1, 1]
+
+    w = Wrap(df)
+
+    def x():
+        return 3
+    w = w.let(x=x)
+    
+    wnew = w.extend("B = A + x()")
+
+    assert [4, 4] == list(wnew.df["B"])
+
+
+
+def test_let_new_method_overrides_old_one():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+
+    w = Wrap(df)
+    w = w.let(b=1)
+    w = w.let(b=2)
+
+    wnew = w.extend("B = A + b")
+    assert ["A", "B"] == list(wnew.df.columns)
+    assert [3, 4] == list(wnew.df["B"])

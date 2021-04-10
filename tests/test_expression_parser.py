@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from context import expression_parser as ep
 
-from KustoPandas.expression_parser.expression_parser import parse_expression
+from KustoPandas.expression_parser import parse_expression
 from KustoPandas.expression_parser.expression_tree import find_matching_parentheses
 
 class TestExpressionParser(unittest.TestCase):
@@ -79,10 +79,16 @@ class TestExpressionParser(unittest.TestCase):
         self.assertEqual(str(parsed), "(a = (x[(y(2) + (4 - 1))] - 1))")
         #self.assertEqual(True, parsed.evaluate(None))
 
-    def test_parse_square_brackets_applied_to_non_var_throws(self):
-        x = "a = 4[5]"
-        with self.assertRaises(Exception) as context:
-            parse_expression(x)
+    # def test_parse_square_brackets_applied_to_non_var_throws(self):
+    #     x = "a = 4[5]"
+    #     with self.assertRaises(Exception) as context:
+    #         parse_expression(x)
+
+    def test_parse_square_brackets_negative_index(self):
+        x = "x[-2]"
+        parsed = parse_expression(x)
+        self.assertEqual(str(parsed), "x[(-2)]")
+        self.assertEqual(1, parsed.evaluate({"x": [1, 2]}))
 
     def test_parse_expression_Or(self):
         x = "1 > 1 or 3 > 2"
@@ -134,12 +140,12 @@ class TestExpressionParser(unittest.TestCase):
                 return c
         self.assertEqual(2, parsed.evaluate({"W": 1, "B": 2, "C": 3, "iff": iff}))
 
-    def test_method_expression(self):
-        x = "y = (1, 2, 3)"
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (1, 2, 3))")
-        result = parsed.evaluate(None)
-        self.assertListEqual(list(result["y"]), [1, 2, 3])
+    # def test_method_expression(self):
+    #     x = "y = (1, 2, 3)"
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), "(y = (1, 2, 3))")
+    #     result = parsed.evaluate(None)
+    #     self.assertListEqual(list(result["y"]), [1, 2, 3])
 
     def test_parse_methods_sub_method(self):
         x = "1 + z(a(), b(3))"
@@ -222,86 +228,101 @@ class TestExpressionParser(unittest.TestCase):
         result = parsed.evaluate({"C": pd.to_datetime("2020-01-02")})
         self.assertEqual(result["y"], pd.to_datetime("2020-01-03"))
 
-    def test_unary_not(self):
-        x = "y = not x"
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (not x))")
+    # def test_unary_not(self):
+    #     x = "y = not x"
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), "(y = (not x))")
 
-        result = parsed.evaluate({"x": False})
-        self.assertEqual(result["y"], True)
+    #     result = parsed.evaluate({"x": False})
+    #     self.assertEqual(result["y"], True)
     
-    def test_unary_not_series(self):
-        x = "y = not x"
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (not x))")
-        s = pd.Series([True, False])
-        result = parsed.evaluate({"x": s})
-        self.assertListEqual(list(result["y"]), [False, True])
+    # def test_unary_not_series(self):
+    #     x = "y = not x"
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), "(y = (not x))")
+    #     s = pd.Series([True, False])
+    #     result = parsed.evaluate({"x": s})
+    #     self.assertListEqual(list(result["y"]), [False, True])
     
-    def test_list_expression(self):
-        x = "y = (1, 2, 3)"
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(y = (1, 2, 3))")
-        result = parsed.evaluate(None)
-        self.assertListEqual(list(result["y"]), [1, 2, 3])
+    # def test_list_expression(self):
+    #     x = "y = (1, 2, 3)"
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), "(y = (1, 2, 3))")
+    #     result = parsed.evaluate(None)
+    #     self.assertListEqual(list(result["y"]), [1, 2, 3])
 
-    def test_by(self):
-        x = "A, count(B) by bin(C, 1h), D"
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "((A, count(B)) by (bin(C, 1h), D))")
+    # def test_by(self):
+    #     x = "A, count(B) by bin(C, 1h), D"
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), "((A, count(B)) by (bin(C, 1h), D))")
 
-    def test_comma_evaluate(self):
-        x = "1, 2, 3, A"
-        parsed = parse_expression(x)
-        self.assertEqual(str(parsed), "(1, 2, 3, A)")
+    # def test_comma_evaluate(self):
+    #     x = "1, 2, 3, A"
+    #     parsed = parse_expression(x)
+    #     self.assertEqual(str(parsed), "(1, 2, 3, A)")
 
-        result = parsed.evaluate({"A": 4})
-        self.assertListEqual([1, 2, 3, 4], result)
+    #     result = parsed.evaluate({"A": 4})
+    #     self.assertListEqual([1, 2, 3, 4], result)
 
 def test_star():
     x = "any(*)"
     parsed = parse_expression(x)
     assert str(parsed) == "any(*)"
 
-def test_asc():
-    x = "A asc"
+# def test_asc():
+#     x = "A asc"
+#     parsed = parse_expression(x)
+#     assert str(parsed) == "(A asc)"
+
+#     assert isinstance(parsed, ep.Asc)
+
+# def test_desc():
+#     x = "A desc"
+#     parsed = parse_expression(x)
+#     assert str(parsed) == "(A desc)"
+
+#     assert isinstance(parsed, ep.Desc)
+
+# def test_asc_desc():
+#     x = "A desc, B asc, C"
+#     parsed = parse_expression(x)
+#     assert str(parsed) == "((A desc), (B asc), C)"
+
+# def test_desc_evaluate():
+#     x = "y = A desc"
+#     parsed = parse_expression(x)
+#     assert str(parsed) == "(y = (A desc))"
+
+#     result = parsed.evaluate({"A": 4})
+#     assert 4 == result["y"] 
+
+# def test_asc_evaluate():
+#     x = "y = A asc"
+#     parsed = parse_expression(x)
+#     assert str(parsed) == "(y = (A asc))"
+
+#     result = parsed.evaluate({"A": 4})
+#     assert 4 == result["y"] 
+
+# def test_asc_with_math_evaluate():
+#     x = "y = A + 1 asc"
+#     parsed = parse_expression(x)
+#     assert str(parsed) == "(y = ((A + 1) asc))"
+
+#     result = parsed.evaluate({"A": 4})
+#     assert 5 == result["y"] 
+
+def test_dot():
+    x = "y = A.b"
     parsed = parse_expression(x)
-    assert str(parsed) == "(A asc)"
+    assert str(parsed) == "(y = (A.b))"
 
-    assert isinstance(parsed, ep.Asc)
-
-def test_desc():
-    x = "A desc"
+def test_dot_with_math():
+    x = "y = 1 + A.b * 2"
     parsed = parse_expression(x)
-    assert str(parsed) == "(A desc)"
+    assert str(parsed) == "(y = (1 + ((A.b) * 2)))"
 
-    assert isinstance(parsed, ep.Desc)
-
-def test_asc_desc():
-    x = "A desc, B asc, C"
+def test_dot_left_to_right():
+    x = "y = A.b.c"
     parsed = parse_expression(x)
-    assert str(parsed) == "((A desc), (B asc), C)"
-
-def test_desc_evaluate():
-    x = "y = A desc"
-    parsed = parse_expression(x)
-    assert str(parsed) == "(y = (A desc))"
-
-    result = parsed.evaluate({"A": 4})
-    assert 4 == result["y"] 
-
-def test_asc_evaluate():
-    x = "y = A asc"
-    parsed = parse_expression(x)
-    assert str(parsed) == "(y = (A asc))"
-
-    result = parsed.evaluate({"A": 4})
-    assert 4 == result["y"] 
-
-def test_asc_with_math_evaluate():
-    x = "y = A + 1 asc"
-    parsed = parse_expression(x)
-    assert str(parsed) == "(y = ((A + 1) asc))"
-
-    result = parsed.evaluate({"A": 4})
-    assert 5 == result["y"] 
+    assert str(parsed) == "(y = ((A.b).c))"

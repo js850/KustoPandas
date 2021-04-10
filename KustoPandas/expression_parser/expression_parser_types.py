@@ -1,10 +1,11 @@
 import numpy as np
 import re
+import fnmatch
+
 import pandas as pd
 import inspect 
 
-def are_all_series(*args):
-    return all((isinstance(a, pd.Series) for a in args))
+from .utils import _is_datetime, are_all_series, get_apply_elementwise_method
 
 match_az = re.compile("[a-zA-Z]")
 
@@ -107,6 +108,20 @@ class Div(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return left / right
 
+_DATETIME_BASE = pd.to_datetime("1990")
+
+class Mod(Opp):
+    op = "%"
+    def evaluate_internal(self, left, right, **kwargs):
+        if _is_datetime(left):
+            raise NotImplementedError("Modular operators are not supported with datetime objects because Pandas doesn't support it.  Todo: Figure out a workaround")
+            # I tried the below as a workaround, but it only sometimes worked.  I kept running into timezone issues
+            # if are_all_series(left):
+            #     left = left.dt
+            # left = (left.tz_convert(None) - _DATETIME_BASE)
+
+        return left % right
+
 class Eq(Opp):
     op = "=="
     def evaluate_internal(self, left, right, **kwargs):
@@ -165,7 +180,10 @@ class Or(Opp):
 def _contains(left, right, case_sensitive):
     if are_all_series(left):
         return left.str.contains(right, case=case_sensitive, na=False)
-    return right.lower() in left.lower() 
+    if case_sensitive:
+        return right in left
+    else:
+        return right.lower() in left.lower() 
 
 class Contains(Opp):
     op = "contains"
@@ -187,18 +205,37 @@ class NotContainsCs(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return _not(_contains(left, right, True))   
 
+def _lower(x, is_series=None):
+    if is_series is None:
+        is_series = are_all_series(x)
+    
+    if is_series:
+        return x.str.lower()
+    return x.lower()
+
 def _starts_with(left, right, case_sensitive):
-    # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
-    if are_all_series(left):
-        # Pandas doesn't support case insensitive startswith.  can we do better than lowercasing everything?
-        if not case_sensitive:
-            left = left.str.lower()
-            right = right.lower()
-        return left.str.startswith(right)
+    left_is_series = are_all_series(left)
+    right_is_series = are_all_series(right)
+
     if not case_sensitive:
-        left = left.lower()
-        right = right.lower()
-    return left.startswith(right) 
+        # Neither Pandas nor python support case insensitive startswith.  can we do better than lowercasing everything?
+        left = _lower(left, is_series=left_is_series)
+        right = _lower(right, is_series=right_is_series)
+    
+    if left_is_series and right_is_series:
+        # Pandas doesn't suppot series to series starts with.  Can we do better than doing this elementwise?
+        def elementwise_lower(l, r):
+            return l.startswith(r)
+        method = get_apply_elementwise_method(elementwise_lower)
+        return method(left, right)
+    
+    if left_is_series:
+        return left.str.startswith(right)
+    
+    if right_is_series:
+        return right.apply(lambda r: left.startswith(r))
+    
+    return left.startswith(right)
 
 class StartsWith(Opp):
     op = "startswith"
@@ -328,11 +365,33 @@ class Asc(UnaryOppLeft):
     op = "asc"
     def evaluate_internal(self, left):
         return left
-
+    
 class Desc(UnaryOppLeft):
     op = "desc"
     def evaluate_internal(self, left):
         return left
+
+class SortColumn(Expression):
+    op = ""
+    def __init__(self, left, asc=False):
+        self.left = left
+        self.descendents = [left]
+        self.asc = asc
+    
+    def __str__(self):
+        ascstr = "desc"
+        if self.asc:
+            ascstr = "asc"
+        return "({0} {1})".format(self.left, ascstr)
+
+    def __repr__(self):
+        return str(self)
+
+    def is_asc(self):
+        return self.asc
+
+    def evaluate(self, vals):
+        return self.left.evaluate(vals)
 
 class AmbiguousMinus(Opp):
     # - can be either unary or binary op
@@ -345,6 +404,17 @@ class AmbiguousStar(Expression):
     binary = Mul
     nullary = Star
 
+class Dot(Opp):
+    op = "."
+    def __str__(self):
+        return "({0}{1}{2})".format(self.left, self.op, self.right)
+    def evaluate(self, vals):
+        # D.k is equivalent to D["k"]
+        left = self.left.evaluate(vals)
+        # The right value should not be evaluated
+        right = str(self.right)
+        return _square_brackets_evaluate(left, right)
+
 generic_expression_operators = [
     Add, AmbiguousMinus, AmbiguousStar, Div, Eq, NEq, Gt, Lt, Ge, Le,
     UnaryNot, And, Or,
@@ -353,7 +423,7 @@ generic_expression_operators = [
     In, NotIn, InCis, NotInCis, 
     Has, NotHas, HasCs, NotHasCs,
     Between, DotDot,
-    Comma,
+    Comma, Dot, Mod
     ]
 
 assignment = [Assignment]
@@ -367,6 +437,8 @@ all_generic_operators = generic_expression_operators + assignment
 specialty_operators = [By, Asc, Desc] # Star
 
 all_operators = all_generic_operators + specialty_operators
+
+all_operators_dict = dict((o.op, o) for o in all_operators)
 
 def get_symbol_operators():
     return [o for o in all_operators if not op_is_not_special_chars(o.op)]
@@ -409,6 +481,17 @@ class Var(NumOrVar):
         return "Var({})".format(self.value)
     def evaluate(self, vals):
         return vals[self.value]
+
+class ColumnNameOrPattern(Var):
+    def get_matching_columns(self, df):
+        pattern = self.value
+
+        matching_columns = [c for c in df.columns if fnmatch.fnmatchcase(c, pattern)]
+
+        if len(matching_columns) == 0:
+            raise KeyError("Could not find a column which matches: " + pattern)
+
+        return matching_columns
 
 class StringLiteral(NumOrVar):
     def __init__(self, value):
@@ -461,7 +544,8 @@ class Method(Expression):
 def _square_brackets_apply(v, k):
     try:
         return v[k]
-    except KeyError:
+    except:
+        # dynamic objects just return null for failure
         return None
 
 def _square_brackets_two_series(variables, keys):
@@ -471,6 +555,13 @@ def _square_brackets_two_series(variables, keys):
     
     df = pd.DataFrame({"k" : keys, "v" : variables})
     return df.apply(eval_row, axis=1)
+
+def _square_brackets_evaluate(variable, value):
+    if are_all_series(variable):
+        if are_all_series(value):
+            return _square_brackets_two_series(variable, value)
+        return variable.apply(lambda v: _square_brackets_apply(v, value))
+    return _square_brackets_apply(variable, value)
 
 class SquareBrackets(Expression):
     def __init__(self, variable, value):
@@ -485,12 +576,7 @@ class SquareBrackets(Expression):
     def evaluate(self, vals):
         variable = self.variable.evaluate(vals)
         value = self.value.evaluate(vals)
-
-        if are_all_series(variable):
-            if are_all_series(value):
-                return _square_brackets_two_series(variable, value)
-            return variable.apply(lambda v: _square_brackets_apply(v, value))
-        return _square_brackets_apply(variable, value)
+        return _square_brackets_evaluate(variable, value)
 
 class TimespanLiteral(Expression):
     # e.g. 4d resolves to timespan 4 days
@@ -504,6 +590,19 @@ class TimespanLiteral(Expression):
         return str(self) #"DaysLiteral({0})".format(self.value)
     def evaluate(self, vals):
         return pd.Timedelta(self.count.evaluate(None), unit=self.unit)
+
+class DateTimeLiteral(Expression):
+    # e.g. 4d resolves to timespan 4 days
+    def __init__(self, datetime):
+        # this should already be a proper datetime objects
+        self.datetime = datetime
+        self.descendents = []
+    def __str__(self):
+        return "datetime({0})".format(self.datetime)
+    def __repr__(self):
+        return str(self) #"DaysLiteral({0})".format(self.value)
+    def evaluate(self, vals):
+        return self.datetime
 
 class ListExpression(Expression):
     def __init__(self, items):

@@ -5,7 +5,7 @@ import numpy as np
 
 from . import expression_parser as ep
 
-from ._input_parsing import _generate_temp_column_name
+from ._simple_expression import _generate_temp_column_name
 
 def _is_groupby(g):
     return isinstance(g, pd.core.groupby.SeriesGroupBy) or isinstance(g, pd.core.groupby.DataFrameGroupBy )

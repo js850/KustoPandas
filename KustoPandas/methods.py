@@ -2,9 +2,8 @@ import numpy as np
 import pandas as pd
 
 from KustoPandas import dynamic_methods
-
-def _is_datetime(series):
-    return pd.api.types.is_datetime64_any_dtype(series)
+from KustoPandas.expression_parser.expression_parser_types import _not
+from KustoPandas.expression_parser.utils import _is_datetime
 
 def iff(condition, a, b):
     return np.where(condition, a, b)
@@ -128,6 +127,9 @@ all_methods = [iff, datetime, todatetime, bin, floor, ceiling, extract, toint,
                ] + dynamic_methods._all_methods
 
 method_map = dict(((m.__name__, m) for m in all_methods))
+
+# not is a reserved keywork in python.  I can't have a method called not
+method_map["not"] = _not
 
 def get_methods():
     return method_map

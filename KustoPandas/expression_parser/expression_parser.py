@@ -78,6 +78,13 @@ def is_whole_word_match(word, line, i):
         return False
     return True
 
+def is_dot_operator(line, i):
+    try:
+        f = float(line)
+        return False
+    except:
+        return True
+
 def get_matching_op(line, i, operators):
     matched_ops = [o for o in operators if op_matches_start(line[i:], o)]
     for op in matched_ops:
@@ -86,6 +93,9 @@ def get_matching_op(line, i, operators):
             # assert that it has to have whitespace before and after
             if is_whole_word_match(op.op, line, i):
                 return op
+        elif op == Dot and not is_dot_operator(line, i):
+            # have to avoid false matches in e.g. "1.0"
+            return None
         else:
             return op
     return None
@@ -96,7 +106,7 @@ def is_op(c):
 def is_unary_operator(tokens, i):
     if i >= len(tokens):
         raise Exception("can't have operator at end of line: " + str(tokens))
-    if i == 0 or is_op(tokens[i-1]) or tokens[i-1] == "(":
+    if i == 0 or is_op(tokens[i-1]) or tokens[i-1] == "(" or tokens[i-1] == "[":
         return True
     return False
 
