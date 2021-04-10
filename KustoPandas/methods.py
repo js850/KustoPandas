@@ -1,9 +1,12 @@
 import numpy as np
 import pandas as pd
+import base64
 
 from KustoPandas import dynamic_methods
 from KustoPandas.expression_parser.expression_parser_types import _not
 from KustoPandas.expression_parser.utils import _is_datetime
+
+from KustoPandas.expression_parser.utils import are_all_series
 
 def iff(condition, a, b):
     return np.where(condition, a, b)
@@ -115,6 +118,26 @@ def extract(regex, capture_group, text):
     else:
         raise Exception("capture_group must be a non-negative integer: " + str(capture_group))
 
+def _encode_base64(s):
+    str_bytes = bytes(s, "utf-8")
+    encoded_bytes = base64.b64encode(str_bytes)
+    return encoded_bytes.decode("utf-8")
+
+def _decode_base64(s):
+    message_bytes = base64.b64decode(s)
+    message = message_bytes.decode('utf-8')
+    return message
+
+def base64_decode_tostring(series):
+    if are_all_series(series):
+        return series.apply(_decode_base64)
+    return _decode_base64(series)
+
+def base64_encode_tostring(series):
+    if are_all_series(series):
+        return series.apply(_encode_base64)
+    return _encode_base64(series)
+
 all_methods = [iff, datetime, todatetime, bin, floor, ceiling, extract, toint, 
                todouble, toreal, double, real, tobool,
                isnull, isnan, isempty,
@@ -123,7 +146,8 @@ all_methods = [iff, datetime, todatetime, bin, floor, ceiling, extract, toint,
                tolower, toupper, tostring,
                log, log10, log2, sqrt,
                exp, exp2, exp10,
-               strlen
+               strlen,
+               base64_decode_tostring, base64_encode_tostring
                ] + dynamic_methods._all_methods
 
 method_map = dict(((m.__name__, m) for m in all_methods))

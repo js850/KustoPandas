@@ -2,6 +2,7 @@ import unittest
 import pandas as pd
 import numpy as np
 from context import Wrap
+import base64
 
 def create_df():
     df = pd.DataFrame(index=range(5))
@@ -305,3 +306,51 @@ def test_not():
     wnew = w.extend("B = not(A)")
     assert ["A", "B"] == list(wnew.df.columns)
     assert [False, True, True] == list(wnew.df["B"])
+
+def _encode_base64(s):
+    str_bytes = bytes(s, "utf-8")
+    encoded_bytes = base64.b64encode(str_bytes)
+    return encoded_bytes.decode("utf-8")
+
+def _decode_base64(s):
+    message_bytes = base64.b64decode(s)
+    message = message_bytes.decode('utf-8')
+    return message
+
+def test_base64_decode_tostring_series():
+    df = pd.DataFrame()
+    df["A"] = [_encode_base64("hello"), _encode_base64("There ")]
+
+    w = Wrap(df)
+    
+    w = w.extend("B = base64_decode_tostring(A)")
+    assert ["hello", "There "] == list(w.df["B"])
+
+def test_base64_decode_tostring():
+    df = pd.DataFrame()
+    df["A"] = ["hello", "There "]
+    h = _encode_base64("hello")
+    w = Wrap(df)
+    
+    w = w.let(h=h).extend("B = A == base64_decode_tostring(h)")
+    assert [True, False] == list(w.df["B"])
+
+def test_base64_encode_tostring_series():
+    df = pd.DataFrame()
+    df["A"] = ["hello", "There "]
+
+    w = Wrap(df)
+    
+    w = w.extend("B = base64_encode_tostring(A)")
+    assert [_encode_base64("hello"), _encode_base64("There ")] == list(w.df["B"])
+
+def test_base64_encode_tostring():
+    df = pd.DataFrame()
+    df["A"] = [_encode_base64("hello"), _encode_base64("There ")]
+    h = "hello"
+    w = Wrap(df)
+    
+    w = w.let(h=h).extend("B = A == base64_encode_tostring(h)")
+    assert [True, False] == list(w.df["B"])
+
+
