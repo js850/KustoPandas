@@ -429,7 +429,11 @@ class Make_Bag(AggOneArg):
     def apply_aggregate_series(self, series):
         # should I convert this to a json set first?
         return set(series)
-    
+
+class Make_Bag_If(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return set(series)
+
 class Make_List(AggOneArg):
     def apply_aggregate(self, grouped):
         series = grouped.apply(self.apply_aggregate_series)
@@ -439,6 +443,10 @@ class Make_List(AggOneArg):
         # should I convert this to a json set first?
         return list(series)
 
+class Make_List_If(SimpleIfAgg):
+    def _apply_aggregate_series(self, series):
+        return list(series)
+
 def get_method_name(type):
     return type.__name__.lower()
 
@@ -446,7 +454,7 @@ aggregate_methods = [Count, DCount, DCountIf, CountIf,
                      Sum, SumIf, Avg, AvgIf, StDev, StDevIf, Variance, VarianceIf, 
                      Min, MinIf, Max, MaxIf,
                      ArgMin, ArgMax, Any, AnyIf, Percentiles,
-                     Make_Bag, Make_List]
+                     Make_Bag, Make_Bag_If, Make_List, Make_List_If]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 

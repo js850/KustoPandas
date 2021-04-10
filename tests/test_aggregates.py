@@ -880,6 +880,19 @@ def test_summarize_make_bag_no_by():
     assert ["make_bag_A"] == list(wnew.df.columns)
     assert set([4, 5, 6]) == wnew.df["make_bag_A"][0]
 
+def test_summarize_make_bag_if():
+    df = pd.DataFrame()
+    df["G"] = [1, 1, 1, 2, 2]
+    df["A"] = [3, 4, 5, 6, 6]
+    df["B"] = [True, True, False, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("make_bag_if(A, B) by G")
+
+    assert ["G", "make_bag_if_A_B"] == list(wnew.df.columns)
+    assert set([3, 4]) == wnew.df["make_bag_if_A_B"][0]
+    assert set([6]) == wnew.df["make_bag_if_A_B"][1]
+
 def test_summarize_make_list():
     df = pd.DataFrame()
     df["G"] = [1, 1, 1, 2, 2]
@@ -891,6 +904,19 @@ def test_summarize_make_list():
     assert ["G", "make_list_A"] == list(wnew.df.columns)
     assert [4, 4, 5] == wnew.df["make_list_A"][0]
     assert [6, 6] == wnew.df["make_list_A"][1]
+
+def test_summarize_make_list_if():
+    df = pd.DataFrame()
+    df["G"] = [1, 1, 1, 2, 2]
+    df["A"] = [4, 4, 5, 6, 6]
+    df["B"] = [False, True, True, True, True]
+
+    w = Wrap(df)
+    wnew = w.summarize("make_list_if(A, B) by G")
+
+    assert ["G", "make_list_if_A_B"] == list(wnew.df.columns)
+    assert [4, 5] == wnew.df["make_list_if_A_B"][0]
+    assert [6, 6] == wnew.df["make_list_if_A_B"][1]
 
 def test_summarize_make_list_no_by():
     df = pd.DataFrame()
