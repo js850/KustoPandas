@@ -6,7 +6,7 @@ from KustoPandas import dynamic_methods
 from KustoPandas.expression_parser.expression_parser_types import _not
 from KustoPandas.expression_parser.utils import _is_datetime
 
-from KustoPandas.expression_parser.utils import are_all_series
+from KustoPandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
 
 def iff(condition, a, b):
     return np.where(condition, a, b)
@@ -126,6 +126,18 @@ def base64_encode_tostring(series):
         return series.apply(_encode_base64)
     return _encode_base64(series)
 
+def _pack_strings(*args):
+    d = dict()
+    for k, v in zip(args, args[1:]):
+        d[k] = v
+    return d
+
+def pack(*args):
+    wrapped = get_apply_elementwise_method(_pack_strings)
+    return wrapped(*args)
+
+
+
 all_methods = [iff, datetime, bin, floor, ceiling, extract, toint, 
                todouble, tobool,
                isnull, isnan, isempty,
@@ -135,7 +147,8 @@ all_methods = [iff, datetime, bin, floor, ceiling, extract, toint,
                log, log10, log2, sqrt,
                exp, exp2, exp10,
                strlen,
-               base64_decode_tostring, base64_encode_tostring
+               base64_decode_tostring, base64_encode_tostring,
+               pack
                ] + dynamic_methods._all_methods
 
 method_map = dict(((m.__name__, m) for m in all_methods))
@@ -148,6 +161,9 @@ method_map["todatetime"] = datetime
 method_map["toreal"] = todouble
 method_map["real"] = todouble
 method_map["double"] = todouble
+method_map["pack_dictionary"] = pack
+
+
 
 def get_methods():
     return method_map

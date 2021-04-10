@@ -1,7 +1,20 @@
 import pandas as pd
 
+def is_series(s):
+    return isinstance(s, pd.Series)
+
 def are_all_series(*args):
-    return all((isinstance(a, pd.Series) for a in args))
+    return all((is_series(a) for a in args))
+
+def any_are_series(*args):
+    return any((is_series(a) for a in args))
+
+def first_series_or_none(args):
+    for a in args:
+        if is_series(a):
+            return a
+
+    return None
 
 def _is_datetime(series):
     if not are_all_series(series):
@@ -12,15 +25,19 @@ def _is_datetime(series):
 def get_apply_elementwise_method(method):
     def apply_elementwise(*args):
         if len(args) == 0:
-            # we could just return method() here, but that is identical to let
-            # I think this should be called separately for every element.  It would allow someone to
-            # return a new value for every row.  
-            # TODO
-            raise NotImplementedError()
+            return method(*args)
         elif len(args) == 1:
             return args[0].apply(method)
         else:
-            dftemp = pd.DataFrame()
+            # If the first argument is not a series, then we have to manually specify the number of expected elements
+            first_series = first_series_or_none(args)
+
+            if first_series is None:
+                return method(*args)
+
+            index_len = len(first_series)
+
+            dftemp = pd.DataFrame(index=range(index_len))
             for i, x in enumerate(args):
                 dftemp[str(i)] = x
             

@@ -353,4 +353,13 @@ def test_base64_encode_tostring():
     w = w.let(h=h).extend("B = A == base64_encode_tostring(h)")
     assert [True, False] == list(w.df["B"])
 
+def test_pack():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
 
+    w = Wrap(df)
+    w = w.extend("B = pack('a', A)")
+    w = w.extend("C = B['a']")
+    assert 1 == w.df["B"][0]["a"]
+    assert 2 == w.df["B"][1]["a"]
+    assert [1, 2] == list(w.df["C"])
