@@ -857,41 +857,41 @@ def test_summarize_default_name_conflicts():
     print(wnew)
     assert ["Column1", "Column2_1", "count_", "Column3", "Column2" ] == list(wnew.df.columns)
 
-def test_summarize_make_bag():
+def test_summarize_make_set():
     df = pd.DataFrame()
     df["G"] = [1, 1, 1, 2, 2]
     df["A"] = [4, 4, 5, 6, 6]
 
     w = Wrap(df)
-    wnew = w.summarize("make_bag(A) by G")
+    wnew = w.summarize("make_set(A) by G")
 
-    assert ["G", "make_bag_A"] == list(wnew.df.columns)
-    assert set([4, 5]) == wnew.df["make_bag_A"][0]
-    assert set([6]) == wnew.df["make_bag_A"][1]
+    assert ["G", "make_set_A"] == list(wnew.df.columns)
+    assert set([4, 5]) == wnew.df["make_set_A"][0]
+    assert set([6]) == wnew.df["make_set_A"][1]
 
-def test_summarize_make_bag_no_by():
+def test_summarize_make_set_no_by():
     df = pd.DataFrame()
     df["G"] = [1, 1, 1, 2, 2]
     df["A"] = [4, 4, 5, 6, 6]
 
     w = Wrap(df)
-    wnew = w.summarize("make_bag(A)")
+    wnew = w.summarize("make_set(A)")
 
-    assert ["make_bag_A"] == list(wnew.df.columns)
-    assert set([4, 5, 6]) == wnew.df["make_bag_A"][0]
+    assert ["make_set_A"] == list(wnew.df.columns)
+    assert set([4, 5, 6]) == wnew.df["make_set_A"][0]
 
-def test_summarize_make_bag_if():
+def test_summarize_make_set_if():
     df = pd.DataFrame()
     df["G"] = [1, 1, 1, 2, 2]
     df["A"] = [3, 4, 5, 6, 6]
     df["B"] = [True, True, False, True, True]
 
     w = Wrap(df)
-    wnew = w.summarize("make_bag_if(A, B) by G")
+    wnew = w.summarize("make_set_if(A, B) by G")
 
-    assert ["G", "make_bag_if_A_B"] == list(wnew.df.columns)
-    assert set([3, 4]) == wnew.df["make_bag_if_A_B"][0]
-    assert set([6]) == wnew.df["make_bag_if_A_B"][1]
+    assert ["G", "make_set_if_A_B"] == list(wnew.df.columns)
+    assert set([3, 4]) == wnew.df["make_set_if_A_B"][0]
+    assert set([6]) == wnew.df["make_set_if_A_B"][1]
 
 def test_summarize_make_list():
     df = pd.DataFrame()

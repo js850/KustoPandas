@@ -421,7 +421,7 @@ class Percentiles(SimpleAgg):
 
         return flattened
 
-class Make_Bag(AggOneArg):
+class Make_Set(AggOneArg):
     def apply_aggregate(self, grouped):
         series = grouped.apply(self.apply_aggregate_series)
         return series
@@ -430,7 +430,7 @@ class Make_Bag(AggOneArg):
         # should I convert this to a json set first?
         return set(series)
 
-class Make_Bag_If(SimpleIfAgg):
+class Make_Set_If(SimpleIfAgg):
     def _apply_aggregate_series(self, series):
         return set(series)
 
@@ -454,7 +454,7 @@ aggregate_methods = [Count, DCount, DCountIf, CountIf,
                      Sum, SumIf, Avg, AvgIf, StDev, StDevIf, Variance, VarianceIf, 
                      Min, MinIf, Max, MaxIf,
                      ArgMin, ArgMax, Any, AnyIf, Percentiles,
-                     Make_Bag, Make_Bag_If, Make_List, Make_List_If]
+                     Make_Set, Make_Set_If, Make_List, Make_List_If]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 
