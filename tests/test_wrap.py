@@ -6,6 +6,8 @@ import pytest
 from context import Wrap
 from context import expression_parser as ep
 
+from test_utils import replace_nan
+
 def create_df():
     df = pd.DataFrame(index=range(5))
     df["A"] = [0.0, 1.0, 2.0, 3.0, 4.0]
@@ -709,3 +711,82 @@ def test_let_new_method_overrides_old_one():
     wnew = w.extend("B = A + b")
     assert ["A", "B"] == list(wnew.df.columns)
     assert [3, 4] == list(wnew.df["B"])
+
+def test_union():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["B"] = [10, 20]
+
+    df2 = pd.DataFrame()
+    df2["A"] = [3, 4]
+    df2["C"] = 30, 40
+
+    w = Wrap(df)
+    wnew = w.union([df2])
+
+    assert ["A", "B", "C"] == list(wnew.df.columns)
+    assert [1, 2, 3, 4] == list(wnew.df["A"])
+    assert [10, 20, -1, -1] == replace_nan(wnew.df["B"], -1)
+    assert [-1, -1, 30, 40] == replace_nan(wnew.df["C"], -1)
+
+def test_union_inner():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["B"] = [10, 20]
+
+    df2 = pd.DataFrame()
+    df2["A"] = [3, 4]
+    df2["C"] = 30, 40
+
+    w = Wrap(df)
+    wnew = w.union([df2], kind="inner")
+
+    assert ["A"] == list(wnew.df.columns)
+    assert [1, 2, 3, 4] == list(wnew.df["A"])
+
+def test_union_execute():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["B"] = [10, 20]
+
+    df2 = pd.DataFrame()
+    df2["A"] = [3, 4]
+    df2["C"] = [30, 40]
+
+    w = Wrap(df)
+    w = w.let(df2=df2)
+    wnew = w.execute("""
+    self 
+    | union kind=outer df2
+    """)
+
+    assert ["A", "B", "C"] == list(wnew.df.columns)
+    assert [1, 2, 3, 4] == list(wnew.df["A"])
+    assert [10, 20, -1, -1] == replace_nan(wnew.df["B"], -1)
+    assert [-1, -1, 30, 40] == replace_nan(wnew.df["C"], -1)
+
+def test_union_execute_multiple_tables():
+    df = pd.DataFrame()
+    df["A"] = [1, 2]
+    df["B"] = [10, 20]
+
+    df2 = pd.DataFrame()
+    df2["A"] = [3, 4]
+    df2["C"] = [30, 40]
+
+    df3 = pd.DataFrame()
+    df3["A"] = [5, 6]
+    df3["D"] = [50, 60]
+
+    w = Wrap(df)
+    w = w.let(df2=df2, df3=df3)
+    wnew = w.execute("""
+    self 
+    | union kind=outer df2, df3
+    """)
+
+    assert ["A", "B", "C", "D"] == list(wnew.df.columns)
+    assert [1, 2, 3, 4, 5, 6] == list(wnew.df["A"])
+    assert [10, 20, -1, -1, -1, -1] == replace_nan(wnew.df["B"], -1)
+    assert [-1, -1, 30, 40, -1, -1] == replace_nan(wnew.df["C"], -1)
+    assert [-1, -1, -1, -1, 50, 60] == replace_nan(wnew.df["D"], -1)

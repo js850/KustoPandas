@@ -236,6 +236,18 @@ class Wrap:
 
         return self._copy(dfnew)
     
+    def union(self, tables, kind="outer"):
+        right = [self.df]
+        for t in tables:
+            if isinstance(t, Wrap):
+                right.append(t.df)
+            else:
+                right.append(t)
+        
+        dfnew = pd.concat(right, join=kind)
+
+        return self._copy(dfnew)
+    
     def render(self, visualization=None, **kwargs):
         return render(self, visualization=visualization, **kwargs) 
 

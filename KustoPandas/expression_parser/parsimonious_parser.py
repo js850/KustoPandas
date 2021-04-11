@@ -167,9 +167,10 @@ count       = "count" WS?
 getschema   = "getschema" WS?
 as          = "as" WS identifier
 join        = "join" WS joinParameters? LPAR table RPAR "on" WS joinAttributes
+# TODO: union should support withSource and isFuzzy
+union       = "union" WS joinParameters? table (COMMA table)*
 
-
-tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema / as / join
+tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema / as / join / union
 
 # use this root rule if you want to parse a single kusto tabular operator
 kustoTabularOperator  = WS? tabularOperator
@@ -534,6 +535,22 @@ class Visitor(NodeVisitor):
         if params is not None:
             kwargs.update(params)
         return Join(right, kwargs)
+    
+    def visit_union(self, node, children):
+        #"union" WS joinParameters? table (COMMA table)*
+        _, _, params, table1, other_tables = children
+        kwargs = dict()
+        if params is not None:
+            kwargs.update(params)
+        
+        tables = [table1]
+        
+        if other_tables is not None:
+            for _, t in other_tables:
+                tables.append(t)
+        
+        return Union(tables, kwargs)
+
 
     def visit_let(self, node, children):
         # LET identifier ASSIGNMENT expression
@@ -553,6 +570,7 @@ class Visitor(NodeVisitor):
                 statements.append(right)
         
         return Query(statements)
+    
 
 
 _PARSER = dict()

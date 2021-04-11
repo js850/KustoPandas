@@ -3,8 +3,7 @@ import pandas as pd
 import numpy as np
 from context import Wrap
 
-def replace_nan(array, val):
-    return list(np.where(np.isnan(array), val, array))
+from test_utils import replace_nan
 
 def create_df():
     df = pd.DataFrame(index=range(5))

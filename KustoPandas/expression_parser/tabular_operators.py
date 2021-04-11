@@ -309,3 +309,15 @@ class Join(TabularOperator):
     def evaluate_query(self, w):
         right = self.right.evaluate_query(w)
         return w.join(right, **self.kwargs)
+
+class Union(TabularOperator):
+    def __init__(self, right_tables, kwargs):
+        self.right_tables = right_tables
+        self.kwargs = kwargs
+    
+    def evaluate_query(self, w):
+        tables = []
+        for t in self.right_tables:
+            t = t.evaluate_query(w)
+            tables.append(t)
+        return w.union(tables, **self.kwargs)
