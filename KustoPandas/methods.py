@@ -126,17 +126,6 @@ def base64_encode_tostring(series):
         return series.apply(_encode_base64)
     return _encode_base64(series)
 
-def _pack_strings(*args):
-    d = dict()
-    for k, v in zip(args, args[1:]):
-        d[k] = v
-    return d
-
-def pack(*args):
-    wrapped = get_apply_elementwise_method(_pack_strings)
-    return wrapped(*args)
-
-
 
 all_methods = [iff, datetime, bin, floor, ceiling, extract, toint, 
                todouble, tobool,
@@ -147,9 +136,8 @@ all_methods = [iff, datetime, bin, floor, ceiling, extract, toint,
                log, log10, log2, sqrt,
                exp, exp2, exp10,
                strlen,
-               base64_decode_tostring, base64_encode_tostring,
-               pack
-               ] + dynamic_methods._all_methods
+               base64_decode_tostring, base64_encode_tostring
+               ] 
 
 method_map = dict(((m.__name__, m) for m in all_methods))
 
@@ -161,8 +149,8 @@ method_map["todatetime"] = datetime
 method_map["toreal"] = todouble
 method_map["real"] = todouble
 method_map["double"] = todouble
-method_map["pack_dictionary"] = pack
 
+method_map.update(dynamic_methods._method_map)
 
 
 def get_methods():
