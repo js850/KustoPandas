@@ -447,6 +447,35 @@ class Make_List_If(SimpleIfAgg):
     def _apply_aggregate_series(self, series):
         return list(series)
 
+class Camoflage:
+    def __init__(self, value):
+        self.value = value
+
+class Make_Bag(AggOneArg):
+    def apply_aggregate(self, grouped):
+        camo_series = grouped.apply(self.apply_aggregate_series)
+        series = camo_series.apply(lambda x: x.value)
+        return series
+    
+    def apply_aggregate_series(self, series):
+        # should I convert this to a json set first?
+        bag = dict()
+        for s in series:
+            try: 
+                items = s.items()
+            except:
+                # skip the item if it is not a dictionary type
+                continue
+
+            for k, v in items:
+                # overwrite old values
+                bag[k] = v
+
+        # If I return a dict here then the internals of pandas disassemble the dict 
+        # and turn it into a multi-index Series.  
+        # A simple workaround is to camoflage it as something else and then extract it later
+        return Camoflage(bag)
+
 def get_method_name(type):
     return type.__name__.lower()
 
@@ -454,7 +483,8 @@ aggregate_methods = [Count, DCount, DCountIf, CountIf,
                      Sum, SumIf, Avg, AvgIf, StDev, StDevIf, Variance, VarianceIf, 
                      Min, MinIf, Max, MaxIf,
                      ArgMin, ArgMax, Any, AnyIf, Percentiles,
-                     Make_Set, Make_Set_If, Make_List, Make_List_If]
+                     Make_Set, Make_Set_If, Make_List, Make_List_If, Make_Bag
+                     ]
 
 aggregate_map = dict([(get_method_name(t), t) for t in aggregate_methods])
 

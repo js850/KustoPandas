@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from context import Wrap
 
+import json
+
 def create_df():
     df = pd.DataFrame(index=range(5))
     df["A"] = [0.0, 1.0, 2.0, 3.0, 4.0]
@@ -928,3 +930,27 @@ def test_summarize_make_list_no_by():
 
     assert ["make_list_A"] == list(wnew.df.columns)
     assert [4, 4, 5, 6, 6] == wnew.df["make_list_A"][0]
+
+def test_summarize_make_bag():
+    df = pd.DataFrame()
+    df["G"] = [1, 1, 1, 1, 1, 2, 2]
+    df["A"] = [
+        json.loads('{"k": 1}'),
+        dict(k2=2),
+        json.loads('{"k2": 2}'),
+        "hi",
+        None,
+        dict(k2=2),
+        dict(k3=3, k4=4),
+        ]
+
+    w = Wrap(df)
+    wnew = w.summarize("make_bag(A) by G")
+    print(wnew)
+
+    assert ["G", "make_bag_A"] == list(wnew.df.columns)
+    assert dict(k=1, k2=2) == wnew.df["make_bag_A"][0]
+    assert dict(k2=2, k3=3, k4=4) == wnew.df["make_bag_A"][1]
+
+def test_summarize_make_bag_noby():
+    assert False
