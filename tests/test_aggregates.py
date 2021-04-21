@@ -953,4 +953,21 @@ def test_summarize_make_bag():
     assert dict(k2=2, k3=3, k4=4) == wnew.df["make_bag_A"][1]
 
 def test_summarize_make_bag_noby():
-    assert False
+    df = pd.DataFrame()
+    df["G"] = [1, 1, 1, 1, 1, 2, 2]
+    df["A"] = [
+        json.loads('{"k": 1}'),
+        dict(k2=2),
+        json.loads('{"k2": 2}'),
+        "hi",
+        None,
+        dict(k2=2),
+        dict(k3=3, k4=4),
+        ]
+
+    w = Wrap(df)
+    wnew = w.summarize("make_bag(A)")
+    print(wnew)
+
+    assert ["make_bag_A"] == list(wnew.df.columns)
+    assert dict(k=1, k2=2, k3=3, k4=4) == wnew.df["make_bag_A"][0]

@@ -453,11 +453,11 @@ class Camoflage:
 
 class Make_Bag(AggOneArg):
     def apply_aggregate(self, grouped):
-        camo_series = grouped.apply(self.apply_aggregate_series)
+        camo_series = grouped.apply(lambda x: self.apply_aggregate_series(x, leave_as_dict=False))
         series = camo_series.apply(lambda x: x.value)
         return series
     
-    def apply_aggregate_series(self, series):
+    def apply_aggregate_series(self, series, leave_as_dict=True):
         # should I convert this to a json set first?
         bag = dict()
         for s in series:
@@ -470,6 +470,9 @@ class Make_Bag(AggOneArg):
             for k, v in items:
                 # overwrite old values
                 bag[k] = v
+
+        if leave_as_dict:
+            return bag
 
         # If I return a dict here then the internals of pandas disassemble the dict 
         # and turn it into a multi-index Series.  
