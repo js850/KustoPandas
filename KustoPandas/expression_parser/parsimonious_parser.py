@@ -1,3 +1,5 @@
+import json
+
 import parsimonious
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
@@ -28,10 +30,16 @@ identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*' WS?
 columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS?
 stringLiteral = ( ~'"[^"]*"' / ~'\'[^\']*\'' ) WS?
 timespanLiteral = ~'[1-9]\d*[dhms]' WS?
+
 # this datetime definition can be improved.  Hopefully it is good enough
 # todo: support other datetime formats
 datetimeIso6801 = ~'\d\d\d\d-\d\d-\d\d[\da-zA-Z ,\-:\.]*' WS?
 datetimeLiteral = "datetime" WS? LPAR datetimeIso6801 RPAR
+
+# dynamic literal
+# todo: support dynamic primitives, e.g. dynamic(4).  How would I do that in python?
+dynamicInternal = ( stringLiteral / number / ~"[:\[\],{}]+" / WS )+
+dynamicLiteral  = "dynamic" WS? LPAR dynamicInternal RPAR
 
 # OPERATORS
 LPAR        = "(" WS?
@@ -86,7 +94,7 @@ DOT              = "." WS?
 # operator precedence is defined by how the rules are chained together
 
 expressionInParens = LPAR expression RPAR
-primaryExpr = ( datetimeLiteral / timespanLiteral / number / identifier / stringLiteral / expressionInParens )
+primaryExpr = ( datetimeLiteral / dynamicLiteral / timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 
 # note: generally * is not allowed, but any(*) is an exception.  
 # I use a new named rule STAR rather than re-using MUL because I need the visitor to do something different (drop the WS)
@@ -407,6 +415,15 @@ class Visitor(NodeVisitor):
 
     def visit_list(self, node, children):
         return ListExpression(children[1])
+    
+    def visit_dynamicInternal(self, node, children):
+        return node.text
+    
+    def visit_dynamicLiteral(self, node, children):
+        # "dynamic" WS? LPAR dynamicInternal RPAR
+        _, _, _, internal, _ = children
+        parsed = json.loads(internal)
+        return DynamicLiteral(parsed)
         
     def visit_take(self, node, children):
         return Take(children[2])

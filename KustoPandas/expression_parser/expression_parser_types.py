@@ -604,6 +604,18 @@ class DateTimeLiteral(Expression):
     def evaluate(self, vals):
         return self.datetime
 
+class DynamicLiteral(Expression):
+    def __init__(self, json):
+        # this should already be a proper json object
+        self.json = json
+        self.descendents = []
+    def __str__(self):
+        return "dynamic({0})".format(self.json)
+    def __repr__(self):
+        return str(self)
+    def evaluate(self, vals):
+        return self.json
+
 class ListExpression(Expression):
     def __init__(self, items):
         self.items = items

@@ -303,3 +303,10 @@ def test_mod_timedelta():
 def test_contains_or():
     # TODO; this fails to parse, I think because contains and or do not have the right priority
     assert True == parse_and_visit("'cppt' contains 'ppt' or 'asdf' contains 'docx'")
+
+def test_dynamic_literal_list():
+    assert [1, 2] == parse_and_visit("dynamic([1, 2])")
+
+def test_dynamic_literal_bag():
+    assert dict(k=1, k2=2, k3="hello", k4=[1, 2]) == parse_and_visit("""dynamic({"k": 1, "k2":2, "k3": "hello", "k4": [1, 2]})""")
+
