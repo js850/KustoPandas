@@ -167,6 +167,13 @@ class TestWrap(unittest.TestCase):
         wnew = w.take(2)
         self.assertListEqual([0, 1], list(wnew.df["B"]))
         self.assertEqual(5, len(w.df["B"]))
+
+    def test_take_expression(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.execute("self | take 1+1")
+        self.assertListEqual([0, 1], list(wnew.df["B"]))
+        self.assertEqual(5, len(w.df["B"]))
     
     def test_limit(self):
         df = create_df()

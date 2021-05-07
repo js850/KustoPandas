@@ -159,7 +159,7 @@ joinAttribute  = (LEFT identifier EQ RIGHT identifier) / (RIGHT identifier EQ LE
 joinAttributes = joinAttribute (COMMA joinAttribute)*
 
 # tabular operators
-take        = "take" WS int
+take        = "take" WS expression
 where       = "where" WS expression
 extend      = "extend" WS assignmentList
 summarize   = "summarize" WS assignmentList ( BY assignmentList )?
