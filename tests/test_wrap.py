@@ -809,3 +809,18 @@ def test_union_execute_multiple_tables():
     assert [10, 20, -1, -1, -1, -1] == replace_nan(wnew.df["B"], -1)
     assert [-1, -1, 30, 40, -1, -1] == replace_nan(wnew.df["C"], -1)
     assert [-1, -1, -1, -1, 50, 60] == replace_nan(wnew.df["D"], -1)
+
+def test_execute_comment():
+    df = create_df()
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self #c0
+    | where G == 'G1' # c1
+    # comment
+    | where A >= 1 #c3
+    | project C # another comment
+    """)
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])

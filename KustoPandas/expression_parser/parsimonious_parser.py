@@ -18,7 +18,9 @@ kusto_peg = r"""
 # DEFINE THE TERMINAL rules.
 
 # white space
-WS          = ~'[ \n\r\t]+'
+whitespace  = ~'[ \n\r\t]+'
+COMMENT     = ~"#.*(\n|\r\n|$)"
+WS          = (COMMENT / whitespace)+
 
 # The core terminal rules
 int         = ~'\d\d*' WS?
@@ -299,13 +301,13 @@ class Visitor(NodeVisitor):
         return child
 
     def visit_int(self, node, children):
-        return Int(node.text)
+        return Int(node.children[0].text)
         
     def visit_float(self, node, children):
-        return Float(node.text)
+        return Float(node.children[0].text)
 
     def visit_identifier(self, node, children):
-        return Var(node.text)
+        return Var(node.children[0].text)
     
     def visit_datetimeLiteral(self, node, children):
         # "datetime" WS? LPAR datetimeIso6801 RPAR
@@ -314,15 +316,17 @@ class Visitor(NodeVisitor):
         return DateTimeLiteral(datetime)
     
     def visit_columnNameOrPattern(self, node, children):
-        return ColumnNameOrPattern(node.text)
+        return ColumnNameOrPattern(node.children[0].text)
 
     def visit_stringLiteral(self, node, children):
         # remove whitespace outside the quotes and the enclosing quotes
-        return StringLiteral(node.text.strip()[1:-1])
+        stringLiteral = node.children[0].text
+        return StringLiteral(stringLiteral.strip()[1:-1])
 
     def visit_timespanLiteral(self, node, children):
-        num = node.text[:-1]
-        unit = node.text[-1]
+        text = node.children[0].text
+        num = text[:-1]
+        unit = text[-1]
         return TimespanLiteral(Int(num), unit)
 
     def visit_factor(self, node, children):
@@ -592,7 +596,7 @@ class Visitor(NodeVisitor):
 
 _PARSER = dict()
 
-def get_parser(root, debug=False):
+def get_parser(root):
     if not root in _PARSER:
         g = Grammar(kusto_peg)
         _PARSER[root] = g.default(root)
@@ -600,7 +604,7 @@ def get_parser(root, debug=False):
     return _PARSER[root]
 
 def parse_expression(input, debug=True, root="kustoStatement"):
-    parser = get_parser(root, debug=False)
+    parser = get_parser(root)
 
     if debug:
         print("input string: ", input)

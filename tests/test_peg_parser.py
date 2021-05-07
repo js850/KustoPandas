@@ -310,3 +310,26 @@ def test_dynamic_literal_list():
 def test_dynamic_literal_bag():
     assert dict(k=1, k2=2, k3="hello", k4=[1, 2]) == parse_and_visit("""dynamic({"k": 1, "k2":2, "k3": "hello", "k4": [1, 2]})""")
 
+def test_comment_int():
+    assert 1 == parse_and_visit("1 # comment ")
+
+def test_comment_multiline():
+    assert 2 == parse_and_visit("""
+    1 
+    # comment
+    + # c2 
+    1 #c3
+    # endc 
+    """)
+
+def test_comment_float():
+    assert 1.1 == parse_and_visit("1.1# comment # se")
+
+def test_comment_identifier():
+    assert True == parse_and_visit("1 == x# comment", dict(x=1))
+
+def test_comment_stringLiteral():
+    assert True == parse_and_visit("x == 'hi'# comment", dict(x='hi'))
+
+def test_comment_timespaneLiteral():
+    assert pd.to_timedelta("1d") == parse_and_visit("1d# comment")
