@@ -221,6 +221,18 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual(expected, list(wnew.df["B"]))
         self.assertListEqual(list(range(5)), list(w.df["B"]))
 
+    def test_order_execute(self):
+        df = create_df()
+        df["U"] = [9, 1, 7, 1, 2]
+        expected = [1, 3, 4, 2, 0]
+        w = Wrap(df)
+        wnew = w.execute("self | order by U + 1 asc, B asc")
+        self.assertListEqual([1, 1, 2, 7, 9], list(wnew.df["U"]))
+        self.assertListEqual(expected, list(wnew.df["B"]))
+        self.assertListEqual(list(range(5)), list(w.df["B"]))
+
+        assert 6 == len(wnew.df.columns)
+
     def test_top(self):
         df = create_df()
         df["U"] = [9, 8, 7, 1, 2]
