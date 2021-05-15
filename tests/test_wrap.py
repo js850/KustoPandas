@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 import numpy as np
+from pandas.core.frame import DataFrame
 import pytest
 
 from context import Wrap
@@ -671,6 +672,16 @@ def test_execute_join_multiple_join_conditions():
     
     assert ["A", "B", "C", "D", "B2", "C2"] == list(wnew.df.columns)
     assert [100] == list(wnew.df["D"])
+
+def test_execute_wrap_object():
+    df = create_df()
+
+    w = Wrap(df)
+    w2 = Wrap(pd.DataFrame()).let(w=w)
+    wnew = w2.execute("w | where G == 'G1' | where A >= 1 | project C")
+
+    assert ["C"] == list(wnew.df.columns)
+    assert ["foo2", "foo4"] == list(wnew.df["C"])
 
 def test_let_elementwise():
     df = pd.DataFrame()

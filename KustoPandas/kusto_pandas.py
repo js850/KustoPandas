@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas.core.frame import DataFrame
 
 from .expression_parser import parse_expression_query, TABLE_SELF
 from .methods import get_methods
@@ -49,7 +50,6 @@ class Wrap:
         self.df = df
         # let_statements is a list of dictionaries
         self.let_statements = []
-        self._self_table = None
     
     def _repr_html_(self):
         return self.df._repr_html_()
@@ -72,9 +72,17 @@ class Wrap:
     
     def _set_active_table(self, identifier):
         # todo: don't look at column names
-        df = self._get_var_map()[identifier]
-        assert isinstance(df, pd.DataFrame)
-        return self._copy(df)
+        active_table = self._get_var_map()[identifier]
+        
+        if isinstance(active_table, pd.DataFrame):
+            active_table = Wrap(active_table)
+        elif isinstance(active_table, Wrap):
+            active_table = active_table._copy(active_table.df)
+        else:
+            raise Exception("expected table but got " + str(active_table))
+
+        active_table.let_statements += self.let_statements
+        return active_table
     
     def _remove_self_from_let_statements(self):
         for d in self.let_statements:
