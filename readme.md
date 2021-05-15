@@ -32,7 +32,7 @@ w
 
 If you are working in a Jupyter notebook, then you may find it more convenient to use an IPython magic
 
-![alt text](KustoMagic.png)
+![Kusto magic impage](KustoMagic.png)
 
 Dependencies
 ------------
