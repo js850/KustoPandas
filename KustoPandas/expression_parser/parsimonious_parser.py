@@ -122,24 +122,24 @@ dot         = posfixExpr (DOT posfixExpr)*
 
 factor      = ( PLUS / MINUS )? dot
 
-prod        = factor ((MUL / DIV / MOD) factor )*
-sum         = prod ((PLUS / MINUS) prod)*
-
-betweenOperand = LPAR posfixExpr DOTDOT posfixExpr RPAR
-
-stringOp    = sum (( 
+stringOp    = factor (( 
                     EQTILDE / NOTEQTILDE /
                     NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
                     NOTSTARTSWITH_CS / NOTSTARTSWITH / STARTSWITH_CS / STARTSWITH /
                     NOTHAS_CS / NOTHAS / HAS_CS / HAS
-                    ) sum )?
+                    ) factor )?
+
+prod        = stringOp ((MUL / DIV / MOD) stringOp )*
+sum         = prod ((PLUS / MINUS) prod)*
+
+betweenOperand = LPAR posfixExpr DOTDOT posfixExpr RPAR
 
 list        = LPAR expressionList RPAR
 # note: allow the in operator to work on arbitrary expression.  This is not allowed in Kusto
 # for instance it permits the in operator to operate on lists passed in with let.
-inOperand   = (list / stringOp)
+inOperand   = (list / sum)
 
-gt          = stringOp (( GE / LE / GT / LT ) stringOp )?
+gt          = sum (( GE / LE / GT / LT ) sum )?
 eq          = gt (
     ( ( EQ / NEQ ) gt )
     / (( NOTIN_CIS / IN_CIS / NOTIN / IN ) inOperand)
