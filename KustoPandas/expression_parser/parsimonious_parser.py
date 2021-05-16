@@ -65,8 +65,11 @@ GE         = ">=" WS?
 LE         = "<=" WS?
 EQ         = "==" WS?
 NEQ        = "!=" WS?
+
 AND        = "and" WS?
 OR         = "or" WS?
+
+EQTILDE    = "=~" WS?
 
 BETWEEN    = "between" WS?
 NOTBETWEEN    = "!between" WS?
@@ -126,7 +129,7 @@ betweenOperand = LPAR posfixExpr DOTDOT posfixExpr RPAR
 stringOp    = sum (( 
                     NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
                     NOTSTARTSWITH_CS / NOTSTARTSWITH / STARTSWITH_CS / STARTSWITH /
-                    NOTHAS_CS / NOTHAS / HAS_CS / HAS
+                    NOTHAS_CS / NOTHAS / HAS_CS / HAS / EQTILDE
                     ) sum )?
 
 list        = LPAR expressionList RPAR
