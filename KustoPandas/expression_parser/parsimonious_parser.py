@@ -120,13 +120,14 @@ factor      = ( PLUS / MINUS )? dot
 prod        = factor ((MUL / DIV / MOD) factor )*
 sum         = prod ((PLUS / MINUS) prod)*
 
-between     = sum ( BETWEEN LPAR sum DOTDOT sum RPAR )?
+betweenOperand = LPAR posfixExpr DOTDOT posfixExpr RPAR
+#between     = sum ( BETWEEN betweenOperand )?
 
-stringOp     = between (( 
+stringOp    = sum (( 
                     NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
                     NOTSTARTSWITH_CS / NOTSTARTSWITH / STARTSWITH_CS / STARTSWITH /
                     NOTHAS_CS / NOTHAS / HAS_CS / HAS
-                    ) between )?
+                    ) sum )?
 
 list        = LPAR expressionList RPAR
 # note: allow the in operator to work on arbitrary expression.  This is not allowed in Kusto
@@ -137,6 +138,7 @@ gt          = stringOp (( GE / LE / GT / LT ) stringOp )?
 eq          = gt (
     ( ( EQ / NEQ ) gt )
     / (( NOTIN_CIS / IN_CIS / NOTIN / IN ) inOperand)
+    / ( BETWEEN betweenOperand )?
     )?
 and         = eq ( AND eq )?
 or          = and ( OR and )?
@@ -268,7 +270,6 @@ class Visitor(NodeVisitor):
         self.visit_and = self._visit_binary_op_optional
         self.visit_or = self._visit_binary_op_optional
         self.visit_stringOp = self._visit_binary_op_optional
-        self.visit_inList = self._visit_binary_op_optional
 
         self.visit_dot = self._visit_binary_op_zero_or_more
 
@@ -386,17 +387,10 @@ class Visitor(NodeVisitor):
     def visit_internalAssignment(self, node, children):
         return Assignment(children[0], children[2])
     
-    def visit_between(self, node, children):
-        left, optional = children
-        if optional is None:
-            return left
-
-        # optional:   BETWEEN LPAR or DOTDOT or RPAR
-        _, _, first, _, second, _ = optional
-        
-        # todo: refactor. there is no need for DotDot here
-        dotdot = DotDot(first, second)
-        return Between(left, dotdot)
+    def visit_betweenOperand(self, node, children):
+        # LPAR sum DOTDOT sum RPAR
+        _, first, _, second, _ = children
+        return DotDot(first, second)
 
     def _visit_list_with_at_least_one(self, node, children):
         first, rest = children

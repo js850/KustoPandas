@@ -237,6 +237,9 @@ def test_in():
     assert False == parse_and_visit('"hi" in ("hid", "there")')
     assert True == parse_and_visit('"hi" !in ("hid", "there")')
 
+def test_in_eq():
+    assert True == parse_and_visit('(1 > 0) == ("hi" in ("hi", "there"))')
+
 def test_in_notcs():
     assert True == parse_and_visit('"hi" in~ ("Hi", "there")')
     assert False == parse_and_visit('"hi" in~ ("hid", "there")')
