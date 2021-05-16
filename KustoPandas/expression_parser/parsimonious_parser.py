@@ -70,6 +70,7 @@ AND        = "and" WS?
 OR         = "or" WS?
 
 EQTILDE    = "=~" WS?
+NOTEQTILDE = "!~" WS?
 
 BETWEEN    = "between" WS?
 NOTBETWEEN    = "!between" WS?
@@ -127,9 +128,10 @@ sum         = prod ((PLUS / MINUS) prod)*
 betweenOperand = LPAR posfixExpr DOTDOT posfixExpr RPAR
 
 stringOp    = sum (( 
+                    EQTILDE / NOTEQTILDE /
                     NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
                     NOTSTARTSWITH_CS / NOTSTARTSWITH / STARTSWITH_CS / STARTSWITH /
-                    NOTHAS_CS / NOTHAS / HAS_CS / HAS / EQTILDE
+                    NOTHAS_CS / NOTHAS / HAS_CS / HAS
                     ) sum )?
 
 list        = LPAR expressionList RPAR

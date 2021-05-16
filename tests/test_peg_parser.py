@@ -356,3 +356,7 @@ def test_equaltilde_series2():
     s2 = pd.Series(["hi", "hi", "hiT", "hit", "blah"])
     assert [True, True, True, False, False] == list(parse_and_visit("s =~ s2", dict(s=s, s2=s2)))
 
+def test_notequaltilde_series():
+    assert False == parse_and_visit("'hi' !~ 'HI'")
+    s = pd.Series(["hi", "Hi", "hit", None])
+    assert [False, False, True, True] == list(parse_and_visit("'hi' !~ s", dict(s=s)))

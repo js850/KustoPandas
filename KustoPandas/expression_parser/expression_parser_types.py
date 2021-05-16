@@ -333,6 +333,11 @@ class EqCis(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         return _string_eq_cis(left, right)
 
+class NotEqCis(Opp):
+    op = "!~"
+    def evaluate_internal(self, left, right, **kwargs):
+        return _not(_string_eq_cis(left, right))
+
 class By(Opp):
     op = "by"
     def evaluate_internal(self, left, right, **kwargs):
@@ -442,7 +447,7 @@ class Dot(Opp):
 generic_expression_operators = [
     Add, AmbiguousMinus, AmbiguousStar, Div, Eq, NEq, Gt, Lt, Ge, Le,
     UnaryNot, And, Or,
-    EqCis,
+    EqCis, NotEqCis,
     Contains, NotContains, ContainsCs, NotContainsCs,
     StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
     In, NotIn, InCis, NotInCis, 
