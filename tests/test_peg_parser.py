@@ -264,6 +264,20 @@ def test_square_brackets_extend():
     parsed = parse_expression_tabular_operator("extend D = d['k2']")
     assert parsed is not None
 
+def test_dot_multilevel():
+    d = dict(k1=dict(k2=dict(k3="val")))
+    assert "val" == parse_and_visit("d.k1.k2.k3", dict(d=d))
+
+def test_square_brackets_dot_combine():
+    d = dict(k1=dict(k2=dict(k3="val")))
+    assert "val" == parse_and_visit("d['k1']['k2'].k3", dict(d=d))
+
+def test_dot_square_brackets_combine():
+    d = dict(k1=dict(k2=dict(k3="val")))
+    assert "val" == parse_and_visit("d.k1.k2['k3']", dict(d=d))
+    assert "val" == parse_and_visit("d.k1['k2'].k3", dict(d=d))
+    assert "val" == parse_and_visit("d['k1'].k2['k3']", dict(d=d))
+
 def test_between():
     assert True == parse_and_visit('1 between (0 .. 2)')
     assert True == parse_and_visit('1 between ( 1 .. 2 )')

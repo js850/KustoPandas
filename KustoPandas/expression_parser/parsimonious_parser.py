@@ -112,13 +112,14 @@ primaryExpr = ( datetimeLiteral / dynamicLiteral / timespanLiteral / number / id
 # I use a new named rule STAR rather than re-using MUL because I need the visitor to do something different (drop the WS)
 STAR        = "*" WS?
 methodCall  = identifier LPAR ( STAR / expressionList )? RPAR
-squareBrackets  = identifier (LBRAK expression RBRAK)+
 
 # note: datetimeLiteral is listed here again to avoid ambiguity with methodCall.
 # e.g. for datetime(2014-10-03), the stuff inside the parentheses is not integer subtraction 
-posfixExpr  = datetimeLiteral / methodCall / squareBrackets / primaryExpr
+posfixExpr  = datetimeLiteral / methodCall / primaryExpr
 
-dot         = posfixExpr (DOT posfixExpr)*
+squareBracketsRight = LBRAK expression RBRAK
+dotOperand  = DOT posfixExpr
+dot         = posfixExpr ( dotOperand / squareBracketsRight )*
 
 unaryOp     = ( PLUS / MINUS )? dot
 
@@ -141,10 +142,10 @@ inOperand   = (list / sum)
 
 gt          = sum (( GE / LE / GT / LT ) sum )?
 eq          = gt (
-    ( ( EQ / NEQ ) gt )
-    / (( NOTIN_CIS / IN_CIS / NOTIN / IN ) inOperand)
-    / ( ( NOTBETWEEN / BETWEEN ) betweenOperand )?
-    )?
+                    ( ( EQ / NEQ ) gt ) /
+                    (( NOTIN_CIS / IN_CIS / NOTIN / IN ) inOperand) /
+                    ( ( NOTBETWEEN / BETWEEN ) betweenOperand )?
+                )?
 and         = eq ( AND eq )?
 or          = and ( OR and )?
 
@@ -276,7 +277,7 @@ class Visitor(NodeVisitor):
         self.visit_or = self._visit_binary_op_optional
         self.visit_stringOp = self._visit_binary_op_optional
 
-        self.visit_dot = self._visit_binary_op_zero_or_more
+        # self.visit_dot = self._visit_binary_op_zero_or_more
 
         self.visit_kustoQuery = self.lift_second_of_three_children
         self.visit_kustoTabularOperator = self.lift_second_of_two_children
@@ -419,11 +420,23 @@ class Visitor(NodeVisitor):
         
         return Method(method, args)
     
-    def visit_squareBrackets(self, node, children):
-        left, in_brackets = children
-        for match in in_brackets:
-            _, right, _ = match
-            left = SquareBrackets(left, right)
+    def visit_dotOperand(self, node, children):
+        # LDOT posfixExpr
+        _, expr = children
+        return Dot, expr
+
+    def visit_squareBracketsRight(self, node, children):
+        # LBRAK expression RBRAK
+        _, expr, _ = children
+        return SquareBrackets, expr
+    
+    def visit_dot(self, node, children):
+        left, optional = children
+        if optional is None:
+            return left
+        
+        for op, right in optional:
+            left = op(left, right)
         return left
 
     def visit_list(self, node, children):
