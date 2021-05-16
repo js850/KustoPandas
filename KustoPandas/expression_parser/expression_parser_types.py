@@ -340,18 +340,26 @@ class DotDot(Opp):
     def evaluate_internal(self, left, right, **kwargs):
         raise NotImplementedError("DotDot does not have an implementation")
 
+def _between(left, right, vals):
+    if not isinstance(right, DotDot):
+        raise Exception("Between operator must act on DotDot")
+    left = left.evaluate(vals)
+    lower = right.left.evaluate(vals)
+    upper = right.right.evaluate(vals)
+
+    if are_all_series(left):
+        return (lower <= left) & (left <= upper)
+    return lower <= left and left <= upper
+
 class Between(Opp):
     op = "between"
     def evaluate(self, vals):
-        if not isinstance(self.right, DotDot):
-            raise Exception("Between operator must act on DotDot")
-        left = self.left.evaluate(vals)
-        lower = self.right.left.evaluate(vals)
-        upper = self.right.right.evaluate(vals)
+        return _between(self.left, self.right, vals)
 
-        if are_all_series(left):
-            return (lower <= left) & (left <= upper)
-        return lower <= left and left <= upper
+class NotBetween(Opp):
+    op = "!between"
+    def evaluate(self, vals):
+        return _not(_between(self.left, self.right, vals))
 
 class Star(Expression):
     op = "*"
@@ -422,7 +430,7 @@ generic_expression_operators = [
     StartsWith, NotStartsWith, StartsWithCs, NotStartsWithCs,
     In, NotIn, InCis, NotInCis, 
     Has, NotHas, HasCs, NotHasCs,
-    Between, DotDot,
+    Between, NotBetween, DotDot,
     Comma, Dot, Mod
     ]
 

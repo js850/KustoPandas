@@ -69,6 +69,7 @@ AND        = "and" WS?
 OR         = "or" WS?
 
 BETWEEN    = "between" WS?
+NOTBETWEEN    = "!between" WS?
 DOTDOT     = ".." WS?
 
 CONTAINS         = "contains" WS?
@@ -121,7 +122,6 @@ prod        = factor ((MUL / DIV / MOD) factor )*
 sum         = prod ((PLUS / MINUS) prod)*
 
 betweenOperand = LPAR posfixExpr DOTDOT posfixExpr RPAR
-#between     = sum ( BETWEEN betweenOperand )?
 
 stringOp    = sum (( 
                     NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
@@ -138,7 +138,7 @@ gt          = stringOp (( GE / LE / GT / LT ) stringOp )?
 eq          = gt (
     ( ( EQ / NEQ ) gt )
     / (( NOTIN_CIS / IN_CIS / NOTIN / IN ) inOperand)
-    / ( BETWEEN betweenOperand )?
+    / ( ( NOTBETWEEN / BETWEEN ) betweenOperand )?
     )?
 and         = eq ( AND eq )?
 or          = and ( OR and )?
