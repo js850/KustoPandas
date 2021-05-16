@@ -120,14 +120,14 @@ posfixExpr  = datetimeLiteral / methodCall / squareBrackets / primaryExpr
 
 dot         = posfixExpr (DOT posfixExpr)*
 
-factor      = ( PLUS / MINUS )? dot
+unaryOp     = ( PLUS / MINUS )? dot
 
-stringOp    = factor (( 
+stringOp    = unaryOp (( 
                     EQTILDE / NOTEQTILDE /
                     NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
                     NOTSTARTSWITH_CS / NOTSTARTSWITH / STARTSWITH_CS / STARTSWITH /
                     NOTHAS_CS / NOTHAS / HAS_CS / HAS
-                    ) factor )?
+                    ) unaryOp )?
 
 prod        = stringOp ((MUL / DIV / MOD) stringOp )*
 sum         = prod ((PLUS / MINUS) prod)*
@@ -345,15 +345,15 @@ class Visitor(NodeVisitor):
         unit = text[-1]
         return TimespanLiteral(Int(num), unit)
 
-    def visit_factor(self, node, children):
-        if children[0] is None:
-            return children[-1]
-        (unary_op, _), right = children
+    def visit_unaryOp(self, node, children):
+        # ( PLUS / MINUS )? dot
+        optional, right = children
+        if optional is None:
+            return right
+        unary_op, _ = optional
         if "-" == unary_op:
             return UnaryMinus(right)
-        # if "not" == unary_op:
-        #     return UnaryNot(right)
-        # can be "+"
+        # no need to do anything for unary "+"
         return right
     
     def visit_expressionInParens(self, node, children):
