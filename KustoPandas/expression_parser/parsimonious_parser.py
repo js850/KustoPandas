@@ -14,6 +14,11 @@ from KustoPandas.expression_parser.tabular_operators import *
 # good tutorial https://tomassetti.me/parsing-in-python/
 # Guido van Rossum's PEG blog https://medium.com/@gvanrossum_83706/peg-parsing-series-de5d41b2ed60
 
+# NOTE: The official Kusto grammar is defined here:
+# https://github.com/microsoft/Kusto-Query-Language/blob/master/src/Kusto.Language/Parser/QueryGrammar.cs
+# and the Tokenizer is here: 
+# https://github.com/microsoft/Kusto-Query-Language/blob/master/src/Kusto.Language/Parser/TokenParser.cs
+
 kusto_peg = r"""
 # DEFINE THE TERMINAL rules.
 
@@ -124,10 +129,15 @@ stringOp     = between ((
                     ) between )?
 
 list        = LPAR expressionList RPAR
-inList      = stringOp (( NOTIN_CIS / IN_CIS / NOTIN / IN ) (list / stringOp) )?
+# note: allow the in operator to work on arbitrary expression.  This is not allowed in Kusto
+# for instance it permits the in operator to operate on lists passed in with let.
+inOperand   = (list / stringOp)
 
-gt          = inList (( GE / LE / GT / LT ) inList )?
-eq          = gt (( EQ / NEQ ) gt )?
+gt          = stringOp (( GE / LE / GT / LT ) stringOp )?
+eq          = gt (
+    ( ( EQ / NEQ ) gt )
+    / (( NOTIN_CIS / IN_CIS / NOTIN / IN ) inOperand)
+    )?
 and         = eq ( AND eq )?
 or          = and ( OR and )?
 
