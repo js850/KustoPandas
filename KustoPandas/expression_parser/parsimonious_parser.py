@@ -35,7 +35,12 @@ float       = ((fraction exponent?) / (~'[0-9]+' exponent) ) WS?
 number      = float / int
 identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*' WS?
 columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS?
-stringLiteral = ( ~'"[^"]*"' / ~'\'[^\']*\'' ) WS?
+
+# See this for matching a string literal with regex https://gist.github.com/cellularmitosis/6fd5fc2a65225364f72d3574abd9d5d5
+stringLiteralDoubleQuote = '"' ~'([^"\\\\]|\\\\.)*' '"' WS?
+stringLiteralSingleQuote = "'" ~"([^'\\\\]|\\\\.)*" "'" WS?
+stringLiteral            = stringLiteralDoubleQuote / stringLiteralSingleQuote
+
 timespanLiteral = ~'[1-9]\d*[dhms]' WS?
 
 # this datetime definition can be improved.  Hopefully it is good enough
@@ -335,10 +340,15 @@ class Visitor(NodeVisitor):
     def visit_columnNameOrPattern(self, node, children):
         return ColumnNameOrPattern(node.children[0].text)
 
-    def visit_stringLiteral(self, node, children):
-        # remove whitespace outside the quotes and the enclosing quotes
-        stringLiteral = node.children[0].text
-        return StringLiteral(stringLiteral.strip()[1:-1])
+    def visit_stringLiteralDoubleQuote(self, node, children):
+        stringLiteral = node.children[1].text
+        stringLiteral = stringLiteral.replace('\\"', '"')
+        return StringLiteral(stringLiteral)
+    
+    def visit_stringLiteralSingleQuote(self, node, children):
+        stringLiteral = node.children[1].text
+        stringLiteral = stringLiteral.replace("\\'", "'")
+        return StringLiteral(stringLiteral)
 
     def visit_timespanLiteral(self, node, children):
         text = node.children[0].text

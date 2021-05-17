@@ -374,3 +374,11 @@ def test_notequaltilde_series():
     assert False == parse_and_visit("'hi' !~ 'HI'")
     s = pd.Series(["hi", "Hi", "hit", None])
     assert [False, False, True, True] == list(parse_and_visit("'hi' !~ s", dict(s=s)))
+
+def test_string_literal_with_embedded_string():
+    assert 'he said "hello" ' == parse_and_visit('  "he said \\"hello\\" " ')
+    assert 'he said "hello" \\\\' == parse_and_visit('  "he said \\"hello\\" \\\\" ')
+
+def test_string_literal_with_embedded_string_singleQuote():
+    assert "he said 'hello' " == parse_and_visit("  'he said \\'hello\\' ' ")
+    # assert 'he said "hello" \\\\' == parse_and_visit('  "he said \\"hello\\" \\\\" ')
