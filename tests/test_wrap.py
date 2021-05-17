@@ -183,6 +183,13 @@ class TestWrap(unittest.TestCase):
         self.assertListEqual([0, 1], list(wnew.df["B"]))
         self.assertEqual(5, len(w.df["B"]))
     
+    def test_limit_expression(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.execute("self | limit 1+1")
+        self.assertListEqual([0, 1], list(wnew.df["B"]))
+        self.assertEqual(5, len(w.df["B"]))
+
     def test_sort(self):
         df = create_df()
         df["U"] = [9, 1, 7, 1, 2]
