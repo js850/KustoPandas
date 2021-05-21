@@ -333,6 +333,15 @@ def test_dynamic_literal_list():
 def test_dynamic_literal_bag():
     assert dict(k=1, k2=2, k3="hello", k4=[1, 2]) == parse_and_visit("""dynamic({"k": 1, "k2":2, "k3": "hello", "k4": [1, 2]})""")
 
+def test_dynamic_literal_str():
+    assert [1, 2, 3] == parse_and_visit("""dynamic("[1, 2, 3]")""")
+
+def test_dynamic_literal_str_bag_embedded_str():
+    assert dict(k=1) == parse_and_visit("""dynamic("{\\"k\\": 1}")""")
+
+def test_dynamic_literal_bag_embedded_str():
+    assert dict(k='he said "hi"') == parse_and_visit("""dynamic({"k": "he said \\"hi\\""})""")
+
 def test_comment_int():
     assert 1 == parse_and_visit("1 # comment ")
 

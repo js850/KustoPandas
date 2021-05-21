@@ -49,8 +49,15 @@ datetimeIso6801 = ~'\d\d\d\d-\d\d-\d\d[\da-zA-Z ,\-:\.]*' WS?
 datetimeLiteral = "datetime" WS? LPAR datetimeIso6801 RPAR
 
 # dynamic literal
-# todo: support dynamic primitives, e.g. dynamic(4).  How would I do that in python?
-dynamicInternal = ( stringLiteral / number / ~"[:\[\],{}]+" / WS )+
+# dynamic and other literal types accept passing the value as a string 
+# dynamic("[1, 2, 3]")
+# or as a raw type
+# dynamic([1, 2, 3])
+# There is no need to try to describe the grammar of what can go inside the dynamic(), so we just match anything inside the parentheses.
+dynamicInternalRaw = ( stringLiteral / ~'[^\'")]+' / WS )+
+# If the first stringLiteral matches then I need to un-escape any internal \".
+# if dynamicInteralRaw matches, then I should not un-escape any internal \"
+dynamicInternal = stringLiteral / dynamicInternalRaw
 dynamicLiteral  = "dynamic" WS? LPAR dynamicInternal RPAR
 
 # OPERATORS
@@ -111,7 +118,7 @@ DOT              = "." WS?
 # operator precedence is defined by how the rules are chained together
 
 expressionInParens = LPAR expression RPAR
-primaryExpr = ( datetimeLiteral / dynamicLiteral / timespanLiteral / number / identifier / stringLiteral / expressionInParens )
+primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
 
 # note: generally * is not allowed, but any(*) is an exception.  
 # I use a new named rule STAR rather than re-using MUL because I need the visitor to do something different (drop the WS)
@@ -120,7 +127,7 @@ methodCall  = identifier LPAR ( STAR / expressionList )? RPAR
 
 # note: datetimeLiteral is listed here again to avoid ambiguity with methodCall.
 # e.g. for datetime(2014-10-03), the stuff inside the parentheses is not integer subtraction 
-posfixExpr  = datetimeLiteral / methodCall / primaryExpr
+posfixExpr  = datetimeLiteral / dynamicLiteral / methodCall / primaryExpr
 
 squareBracketsRight = LBRAK expression RBRAK
 dotOperand  = DOT posfixExpr
@@ -452,13 +459,15 @@ class Visitor(NodeVisitor):
     def visit_list(self, node, children):
         return ListExpression(children[1])
     
-    def visit_dynamicInternal(self, node, children):
-        return node.text
+    def visit_dynamicInternalRaw(self, node, children):
+        return StringLiteral(node.text)
     
     def visit_dynamicLiteral(self, node, children):
         # "dynamic" WS? LPAR dynamicInternal RPAR
         _, _, _, internal, _ = children
-        parsed = json.loads(internal)
+        # internal is a StringLiteral
+        string_val = internal.evaluate(dict())
+        parsed = json.loads(string_val)
         return DynamicLiteral(parsed)
         
     def visit_take(self, node, children):
