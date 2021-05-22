@@ -3,7 +3,7 @@ import pandas as pd
 import base64
 
 from KustoPandas import dynamic_methods
-from KustoPandas.expression_parser.expression_parser_types import _not
+from KustoPandas.expression_parser.expression_parser_types import _not, _todatetime
 from KustoPandas.expression_parser.utils import _is_datetime
 
 from KustoPandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
@@ -11,8 +11,8 @@ from KustoPandas.expression_parser.utils import are_all_series, any_are_series, 
 def iff(condition, a, b):
     return np.where(condition, a, b)
 
-def datetime(val):
-    return pd.to_datetime(val)
+def todatetime(val):
+    return _todatetime(val)
 
 def toint(val):
     return val.astype(int)
@@ -127,7 +127,7 @@ def base64_encode_tostring(series):
     return _encode_base64(series)
 
 
-all_methods = [iff, datetime, bin, floor, ceiling, extract, toint, 
+all_methods = [iff, todatetime, bin, floor, ceiling, extract, toint, 
                todouble, tobool,
                isnull, isnan, isempty,
                isnotnull, isnotnan, isnotempty,
@@ -145,7 +145,6 @@ method_map = dict(((m.__name__, m) for m in all_methods))
 method_map["not"] = _not
 
 # aliases
-method_map["todatetime"] = datetime
 method_map["toreal"] = todouble
 method_map["real"] = todouble
 method_map["double"] = todouble

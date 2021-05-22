@@ -621,6 +621,12 @@ class TimespanLiteral(Expression):
     def evaluate(self, vals):
         return pd.Timedelta(self.count.evaluate(None), unit=self.unit)
 
+def _todynamic(string_value):
+    return json.loads(string_value)
+
+def _todatetime(input_string):
+    return pd.to_datetime(input_string)
+
 class ExplicitLiteral(Expression):
     name = None
     def __init__(self, input_string):
@@ -641,12 +647,12 @@ class ExplicitLiteral(Expression):
 class DateTimeLiteral(ExplicitLiteral):
     name = "datetime"
     def _convert_string_to_value(self, input_string):
-        return pd.to_datetime(input_string)
+        return _todatetime(input_string)
 
 class DynamicLiteral(ExplicitLiteral):
     name = "dynamic"
     def _convert_string_to_value(self, input_string):
-        return json.loads(input_string)
+        return _todynamic(input_string)
 
 _explicit_literals = [DateTimeLiteral, DynamicLiteral]
 explicit_literal_map = dict([(c.name, c) for c in _explicit_literals])

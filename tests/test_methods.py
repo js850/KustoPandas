@@ -38,6 +38,12 @@ class TestMethods(unittest.TestCase):
         self.assertListEqual(["D", "DT1"], list(wnew.df.columns))
         self.assertListEqual(list(wnew.df["D"]), list(wnew.df["DT1"]))
 
+    def test_todatetime_str(self):
+        df = create_df()
+        w = Wrap(df)
+        wnew = w.extend('D=todatetime("2009-01-02")')
+        self.assertListEqual([pd.to_datetime("2009-01-02")]*5, list(wnew.df["D"]))
+
     def test_extract(self):
         df = pd.DataFrame()
         df["A"] = ["Duration = 1;A, Duration=2;B", "Duration=3;C"]

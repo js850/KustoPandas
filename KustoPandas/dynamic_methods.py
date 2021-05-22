@@ -2,9 +2,12 @@ import pandas as pd
 import json
 
 from KustoPandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
+from KustoPandas.expression_parser.expression_parser_types import _todynamic
 
 def todynamic(s):
-    return s.apply(json.loads)
+    if is_series(s):
+        return s.apply(_todynamic)
+    return _todynamic(s)
 
 def parse_json(s):
     return todynamic(s)
