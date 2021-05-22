@@ -43,19 +43,17 @@ stringLiteral            = stringLiteralDoubleQuote / stringLiteralSingleQuote
 
 timespanLiteral = ~'[1-9]\d*[dhms]' WS?
 
-# dynamic literal
+# dynamic literal and other types of explicit literals, e.g. datetime, bool, etc
 # dynamic and other literal types accept passing the value as a string 
 # dynamic("[1, 2, 3]")
 # or as a raw type
 # dynamic([1, 2, 3])
 # There is no need to try to describe the grammar of what can go inside the dynamic(), so we just match anything inside the parentheses.
-dynamicInternalRaw = ( stringLiteral / ~'[^\'")]+' / WS )+
+blobLiteralRaw = ( stringLiteral / ~'[^\'")]+' / WS )+
 # If the first stringLiteral matches then I need to un-escape any internal \".
 # if dynamicInteralRaw matches, then I should not un-escape any internal \"
-blobLiteral = stringLiteral / dynamicInternalRaw
-dynamicLiteral  = "dynamic" WS? LPAR blobLiteral RPAR
-
-datetimeLiteral = "datetime" WS? LPAR blobLiteral RPAR
+blobLiteral = stringLiteral / blobLiteralRaw
+explicitLiteral = ( "datetime" / "dynamic" ) WS? LPAR blobLiteral RPAR
 
 # OPERATORS
 LPAR        = "(" WS?
@@ -124,7 +122,7 @@ methodCall  = identifier LPAR ( STAR / expressionList )? RPAR
 
 # note: datetimeLiteral is listed here again to avoid ambiguity with methodCall.
 # e.g. for datetime(2014-10-03), the stuff inside the parentheses is not integer subtraction 
-posfixExpr  = datetimeLiteral / dynamicLiteral / methodCall / primaryExpr
+posfixExpr  = explicitLiteral / methodCall / primaryExpr
 
 squareBracketsRight = LBRAK expression RBRAK
 dotOperand  = DOT posfixExpr
@@ -335,10 +333,11 @@ class Visitor(NodeVisitor):
     def visit_identifier(self, node, children):
         return Var(node.children[0].text)
     
-    def visit_datetimeLiteral(self, node, children):
+    def visit_explicitLiteral(self, node, children):
         # "datetime" WS? LPAR datetimeIso6801 RPAR
-        _, _, _, dt, _ = children
-        return DateTimeLiteral(dt)
+        literal_type, _, _, string_value, _ = children
+        literal_class = explicit_literal_map[literal_type]
+        return literal_class(string_value)
     
     def visit_columnNameOrPattern(self, node, children):
         return ColumnNameOrPattern(node.children[0].text)
@@ -455,7 +454,7 @@ class Visitor(NodeVisitor):
     def visit_list(self, node, children):
         return ListExpression(children[1])
     
-    def visit_dynamicInternalRaw(self, node, children):
+    def visit_blobLiteralRaw(self, node, children):
         return StringLiteral(node.text)
 
     def visit_blobLiteral(self, node, children):

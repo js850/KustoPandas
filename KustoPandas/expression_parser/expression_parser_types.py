@@ -621,32 +621,35 @@ class TimespanLiteral(Expression):
     def evaluate(self, vals):
         return pd.Timedelta(self.count.evaluate(None), unit=self.unit)
 
-class DateTimeLiteral(Expression):
-    # e.g. 4d resolves to timespan 4 days
+class ExplicitLiteral(Expression):
+    name = None
     def __init__(self, input_string):
         # evaluate the intput string now so we fail early in order to have improved error messages
-        self.datetime = pd.to_datetime(input_string)
+        self.value = self._convert_string_to_value(input_string)
         self.input_string = input_string
         self.descendents = []
     def __str__(self):
-        return "datetime({0})".format(self.input_string)
-    def __repr__(self):
-        return str(self) #"DaysLiteral({0})".format(self.value)
-    def evaluate(self, vals):
-        return self.datetime
-
-class DynamicLiteral(Expression):
-    def __init__(self, input_string):
-        # this should already be a proper json object
-        self.json = json.loads(input_string)
-        self.input_string = input_string
-        self.descendents = []
-    def __str__(self):
-        return "dynamic({0})".format(self.input_string)
+        return "{0}({1})".format(self.name, self.input_string)
     def __repr__(self):
         return str(self)
     def evaluate(self, vals):
-        return self.json
+        return self.value
+    
+    def _convert_string_to_value(self, input_string):
+        raise NotImplementedError()
+
+class DateTimeLiteral(ExplicitLiteral):
+    name = "datetime"
+    def _convert_string_to_value(self, input_string):
+        return pd.to_datetime(input_string)
+
+class DynamicLiteral(ExplicitLiteral):
+    name = "dynamic"
+    def _convert_string_to_value(self, input_string):
+        return json.loads(input_string)
+
+_explicit_literals = [DateTimeLiteral, DynamicLiteral]
+explicit_literal_map = dict([(c.name, c) for c in _explicit_literals])
 
 class ListExpression(Expression):
     def __init__(self, items):
