@@ -295,6 +295,11 @@ def test_datetime_literal():
     assert pd.to_datetime("2014-05-25T08:20:03.123456Z") == parse_and_visit('datetime(2014-05-25T08:20:03.123456Z)')
     assert pd.to_datetime("2014-11-08 15:55") == parse_and_visit('datetime(2014-11-08 15:55)')
 
+def test_datetime_literal_str():
+    assert pd.to_datetime("2014-11-08") == parse_and_visit('datetime("2014-11-08")')
+    assert pd.to_datetime("2014-05-25T08:20:03.123456Z") == parse_and_visit('datetime(\'2014-05-25T08:20:03.123456Z\')')
+    assert pd.to_datetime("2014-11-08 15:55") == parse_and_visit('datetime("2014-11-08 15:55")')
+
 def test_datetime_literal_in_method():
     assert "2014-11-08 00:00:00" == parse_and_visit('str(datetime(2014-11-08))', vars={"str": str})
 

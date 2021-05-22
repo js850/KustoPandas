@@ -43,11 +43,6 @@ stringLiteral            = stringLiteralDoubleQuote / stringLiteralSingleQuote
 
 timespanLiteral = ~'[1-9]\d*[dhms]' WS?
 
-# this datetime definition can be improved.  Hopefully it is good enough
-# todo: support other datetime formats
-datetimeIso6801 = ~'\d\d\d\d-\d\d-\d\d[\da-zA-Z ,\-:\.]*' WS?
-datetimeLiteral = "datetime" WS? LPAR datetimeIso6801 RPAR
-
 # dynamic literal
 # dynamic and other literal types accept passing the value as a string 
 # dynamic("[1, 2, 3]")
@@ -57,8 +52,10 @@ datetimeLiteral = "datetime" WS? LPAR datetimeIso6801 RPAR
 dynamicInternalRaw = ( stringLiteral / ~'[^\'")]+' / WS )+
 # If the first stringLiteral matches then I need to un-escape any internal \".
 # if dynamicInteralRaw matches, then I should not un-escape any internal \"
-dynamicInternal = stringLiteral / dynamicInternalRaw
-dynamicLiteral  = "dynamic" WS? LPAR dynamicInternal RPAR
+blobLiteral = stringLiteral / dynamicInternalRaw
+dynamicLiteral  = "dynamic" WS? LPAR blobLiteral RPAR
+
+datetimeLiteral = "datetime" WS? LPAR blobLiteral RPAR
 
 # OPERATORS
 LPAR        = "(" WS?
@@ -340,9 +337,8 @@ class Visitor(NodeVisitor):
     
     def visit_datetimeLiteral(self, node, children):
         # "datetime" WS? LPAR datetimeIso6801 RPAR
-        _, _, _, (dt, _), _ = children
-        datetime = pd.to_datetime(dt)
-        return DateTimeLiteral(datetime)
+        _, _, _, dt, _ = children
+        return DateTimeLiteral(dt)
     
     def visit_columnNameOrPattern(self, node, children):
         return ColumnNameOrPattern(node.children[0].text)
@@ -461,14 +457,16 @@ class Visitor(NodeVisitor):
     
     def visit_dynamicInternalRaw(self, node, children):
         return StringLiteral(node.text)
+
+    def visit_blobLiteral(self, node, children):
+        # children[0] is a StringLiteral
+        string_val = children[0].evaluate(dict())
+        return string_val
     
     def visit_dynamicLiteral(self, node, children):
-        # "dynamic" WS? LPAR dynamicInternal RPAR
+        # "dynamic" WS? LPAR blobLiteral RPAR
         _, _, _, internal, _ = children
-        # internal is a StringLiteral
-        string_val = internal.evaluate(dict())
-        parsed = json.loads(string_val)
-        return DynamicLiteral(parsed)
+        return DynamicLiteral(internal)
         
     def visit_take(self, node, children):
         return Take(children[2])

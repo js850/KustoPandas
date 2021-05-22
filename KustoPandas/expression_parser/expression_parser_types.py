@@ -1,9 +1,9 @@
 import numpy as np
 import re
 import fnmatch
+import json
 
 import pandas as pd
-import inspect 
 
 from .utils import _is_datetime, are_all_series, get_apply_elementwise_method, is_series
 
@@ -623,24 +623,26 @@ class TimespanLiteral(Expression):
 
 class DateTimeLiteral(Expression):
     # e.g. 4d resolves to timespan 4 days
-    def __init__(self, datetime):
-        # this should already be a proper datetime objects
-        self.datetime = datetime
+    def __init__(self, input_string):
+        # evaluate the intput string now so we fail early in order to have improved error messages
+        self.datetime = pd.to_datetime(input_string)
+        self.input_string = input_string
         self.descendents = []
     def __str__(self):
-        return "datetime({0})".format(self.datetime)
+        return "datetime({0})".format(self.input_string)
     def __repr__(self):
         return str(self) #"DaysLiteral({0})".format(self.value)
     def evaluate(self, vals):
         return self.datetime
 
 class DynamicLiteral(Expression):
-    def __init__(self, json):
+    def __init__(self, input_string):
         # this should already be a proper json object
-        self.json = json
+        self.json = json.loads(input_string)
+        self.input_string = input_string
         self.descendents = []
     def __str__(self):
-        return "dynamic({0})".format(self.json)
+        return "dynamic({0})".format(self.input_string)
     def __repr__(self):
         return str(self)
     def evaluate(self, vals):

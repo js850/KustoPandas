@@ -22,7 +22,7 @@ class TestMethods(unittest.TestCase):
         self.assertGreater(len(df.columns), 2)
         print(df.columns)
         w = Wrap(df)
-        wnew = w.project("D", "DT1=datetime(D1)")
+        wnew = w.project("D", "DT1=todatetime(D1)")
         self.assertListEqual(["D", "DT1"], list(wnew.df.columns))
         self.assertListEqual(list(wnew.df["D"]), list(wnew.df["DT1"]))
 

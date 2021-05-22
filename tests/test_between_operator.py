@@ -53,7 +53,7 @@ class TestBetweenOperator(unittest.TestCase):
     def test_between_series_datetime(self):
         x = 'A between (datetime("2020-01-01") .. datetime("2020-02-01"))'
         parsed = parse_expression(x)
-        self.assertEqual(str(parsed), '(A between (datetime("2020-01-01") .. datetime("2020-02-01")))')
+        self.assertEqual(str(parsed), '(A between (datetime(2020-01-01) .. datetime(2020-02-01)))')
         vars = MultiDict([method_map, {
             "A": pd.Series([
                 pd.to_datetime("2019-01-10"),
