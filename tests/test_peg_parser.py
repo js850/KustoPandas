@@ -396,3 +396,6 @@ def test_string_literal_with_embedded_string():
 def test_string_literal_with_embedded_string_singleQuote():
     assert "he said 'hello' " == parse_and_visit("  'he said \\'hello\\' ' ")
     # assert 'he said "hello" \\\\' == parse_and_visit('  "he said \\"hello\\" \\\\" ')
+
+def test_int_explicit_literal():
+    assert 4 == parse_and_visit("int(4)")

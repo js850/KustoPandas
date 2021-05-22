@@ -13,6 +13,15 @@ def op_is_not_special_chars(op):
     # e.g. contains, or, and
     return match_az.search(op) is not None
 
+def _todynamic(string_value):
+    return json.loads(string_value)
+
+def _todatetime(input_string):
+    return pd.to_datetime(input_string)
+
+def _toint(input_string):
+    return int(input_string)
+
 class Expression:
     pass
 
@@ -479,16 +488,33 @@ def get_non_symbol_operators():
 class NumOrVar(Expression):
     pass
 
-class Int(NumOrVar):
-    def __init__(self, value):
-        self.value = value.strip()
+class ExplicitLiteral(NumOrVar):
+    name = None
+    def __init__(self, input_string, is_explicit=False):
+        # evaluate the intput string now so we fail early in order to have improved error messages
+        self.value = self._convert_string_to_value(input_string)
+        self.input_string = input_string
+        self.is_explicit = is_explicit
         self.descendents = []
     def __str__(self):
-        return self.value
+        if self.is_explicit:
+            return self.__repr__()
+        else:
+            return self.input_string
+
     def __repr__(self):
-        return "Int({})".format(self.value)
+        return "{0}({1})".format(self.name, self.input_string)
+
     def evaluate(self, vals):
-        return int(self.value)
+        return self.value
+    
+    def _convert_string_to_value(self, input_string):
+        raise NotImplementedError()
+
+class Int(ExplicitLiteral):
+    name = "int"
+    def _convert_string_to_value(self, input_string):
+        return _toint(input_string)
     
 class Float(NumOrVar):
     def __init__(self, value):
@@ -501,6 +527,19 @@ class Float(NumOrVar):
     def evaluate(self, vals):
         return float(self.value)
 
+class DateTimeLiteral(ExplicitLiteral):
+    name = "datetime"
+    def _convert_string_to_value(self, input_string):
+        return _todatetime(input_string)
+
+class DynamicLiteral(ExplicitLiteral):
+    name = "dynamic"
+    def _convert_string_to_value(self, input_string):
+        return _todynamic(input_string)
+
+_explicit_literals = [DateTimeLiteral, DynamicLiteral, Int]
+explicit_literal_map = dict([(c.name, c) for c in _explicit_literals])
+
 class Var(NumOrVar):
     def __init__(self, value):
         self.value = value.strip()
@@ -511,7 +550,7 @@ class Var(NumOrVar):
         return "Var({})".format(self.value)
     def evaluate(self, vals):
         return vals[self.value]
-
+    
 class ColumnNameOrPattern(Var):
     def get_matching_columns(self, df):
         pattern = self.value
@@ -620,42 +659,6 @@ class TimespanLiteral(Expression):
         return str(self) #"DaysLiteral({0})".format(self.value)
     def evaluate(self, vals):
         return pd.Timedelta(self.count.evaluate(None), unit=self.unit)
-
-def _todynamic(string_value):
-    return json.loads(string_value)
-
-def _todatetime(input_string):
-    return pd.to_datetime(input_string)
-
-class ExplicitLiteral(Expression):
-    name = None
-    def __init__(self, input_string):
-        # evaluate the intput string now so we fail early in order to have improved error messages
-        self.value = self._convert_string_to_value(input_string)
-        self.input_string = input_string
-        self.descendents = []
-    def __str__(self):
-        return "{0}({1})".format(self.name, self.input_string)
-    def __repr__(self):
-        return str(self)
-    def evaluate(self, vals):
-        return self.value
-    
-    def _convert_string_to_value(self, input_string):
-        raise NotImplementedError()
-
-class DateTimeLiteral(ExplicitLiteral):
-    name = "datetime"
-    def _convert_string_to_value(self, input_string):
-        return _todatetime(input_string)
-
-class DynamicLiteral(ExplicitLiteral):
-    name = "dynamic"
-    def _convert_string_to_value(self, input_string):
-        return _todynamic(input_string)
-
-_explicit_literals = [DateTimeLiteral, DynamicLiteral]
-explicit_literal_map = dict([(c.name, c) for c in _explicit_literals])
 
 class ListExpression(Expression):
     def __init__(self, items):

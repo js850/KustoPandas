@@ -3,7 +3,7 @@ import pandas as pd
 import base64
 
 from KustoPandas import dynamic_methods
-from KustoPandas.expression_parser.expression_parser_types import _not, _todatetime
+from KustoPandas.expression_parser.expression_parser_types import _not, _todatetime, _toint
 from KustoPandas.expression_parser.utils import _is_datetime
 
 from KustoPandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
@@ -15,7 +15,9 @@ def todatetime(val):
     return _todatetime(val)
 
 def toint(val):
-    return val.astype(int)
+    if is_series(val):
+        return val.astype(int)
+    return _toint(val)
 
 def todouble(val):
     return pd.to_numeric(val)

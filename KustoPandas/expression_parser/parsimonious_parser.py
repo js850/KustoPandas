@@ -53,7 +53,7 @@ blobLiteralRaw = ( stringLiteral / ~'[^\'")]+' / WS )+
 # If the first stringLiteral matches then I need to un-escape any internal \".
 # if dynamicInteralRaw matches, then I should not un-escape any internal \"
 blobLiteral = stringLiteral / blobLiteralRaw
-explicitLiteral = ( "datetime" / "dynamic" ) WS? LPAR blobLiteral RPAR
+explicitLiteral = ( "datetime" / "dynamic" / "int" ) WS? LPAR blobLiteral RPAR
 
 # OPERATORS
 LPAR        = "(" WS?
@@ -337,7 +337,7 @@ class Visitor(NodeVisitor):
         # "datetime" WS? LPAR datetimeIso6801 RPAR
         literal_type, _, _, string_value, _ = children
         literal_class = explicit_literal_map[literal_type]
-        return literal_class(string_value)
+        return literal_class(string_value, is_explicit=True)
     
     def visit_columnNameOrPattern(self, node, children):
         return ColumnNameOrPattern(node.children[0].text)
