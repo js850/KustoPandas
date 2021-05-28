@@ -409,3 +409,6 @@ def test_real_explicit_literal():
 
 def test_long_explicit_literal():
     assert 4 == parse_and_visit("long(4)")
+
+def test_timespaneLiteral_explicit():
+    assert pd.to_timedelta("1d") == parse_and_visit("time(1d)")

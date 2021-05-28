@@ -148,9 +148,7 @@ class Visitor(NodeVisitor):
 
     def visit_timespanLiteral(self, node, children):
         text = node.children[0].text
-        num = text[:-1]
-        unit = text[-1]
-        return TimespanLiteral(Int(num), unit)
+        return TimespanLiteral(text)
 
     def visit_unaryOp(self, node, children):
         # ( PLUS / MINUS )? dot

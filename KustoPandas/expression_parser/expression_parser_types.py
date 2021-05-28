@@ -25,6 +25,9 @@ def _toint(input_string):
 def _toreal(input_string):
     return float(input_string)
 
+def _totimespan(input_string):
+    return pd.to_timedelta(input_string)
+
 class Expression:
     pass
 
@@ -534,7 +537,12 @@ class DynamicLiteral(ExplicitLiteral):
     def _convert_string_to_value(self, input_string):
         return _todynamic(input_string)
 
-_explicit_literals = [DateTimeLiteral, DynamicLiteral, Int, Float]
+class TimespanLiteral(ExplicitLiteral):
+    name = "time"
+    def _convert_string_to_value(self, input_string):
+        return _totimespan(input_string)
+
+_explicit_literals = [DateTimeLiteral, DynamicLiteral, Int, Float, TimespanLiteral]
 explicit_literal_map = dict([(c.name, c) for c in _explicit_literals])
 
 # add explicit type long as an alias for Int 
@@ -646,19 +654,6 @@ class SquareBrackets(Expression):
         variable = self.variable.evaluate(vals)
         value = self.value.evaluate(vals)
         return _square_brackets_evaluate(variable, value)
-
-class TimespanLiteral(Expression):
-    # e.g. 4d resolves to timespan 4 days
-    def __init__(self, count, unit):
-        self.count = count
-        self.unit = unit
-        self.descendents = []
-    def __str__(self):
-        return "{0}{1}".format(str(self.count), self.unit)
-    def __repr__(self):
-        return str(self) #"DaysLiteral({0})".format(self.value)
-    def evaluate(self, vals):
-        return pd.Timedelta(self.count.evaluate(None), unit=self.unit)
 
 class ListExpression(Expression):
     def __init__(self, items):

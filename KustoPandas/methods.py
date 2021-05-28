@@ -3,7 +3,7 @@ import pandas as pd
 import base64
 
 from KustoPandas import dynamic_methods
-from KustoPandas.expression_parser.expression_parser_types import _not, _todatetime, _toint, _toreal
+from KustoPandas.expression_parser.expression_parser_types import _not, _todatetime, _toint, _toreal, _totimespan
 from KustoPandas.expression_parser.utils import _is_datetime
 
 from KustoPandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
@@ -23,6 +23,9 @@ def todouble(val):
     if is_series(val):
         return val.astype(float)
     return _toreal(val)
+
+def totimespan(val):
+    return _totimespan(val)
 
 def tobool(series):
     raise NotImplementedError("tobool is not implemented because series.astype(bool) converts all strings to bools.  Doing it properly will take some effort")
@@ -132,7 +135,7 @@ def base64_encode_tostring(series):
 
 
 all_methods = [iff, todatetime, bin, floor, ceiling, extract, toint, 
-               todouble, tobool,
+               todouble, tobool, totimespan,
                isnull, isnan, isempty,
                isnotnull, isnotnan, isnotempty,
                isfinite, isinf,

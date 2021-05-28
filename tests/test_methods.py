@@ -366,3 +366,13 @@ def test_base64_encode_tostring():
     
     w = w.let(h=h).extend("B = A == base64_encode_tostring(h)")
     assert [True, False] == list(w.df["B"])
+
+def test_totimespan():
+    df = pd.DataFrame()
+    df["A"] = ["1m", "1d"]
+    w = Wrap(df)
+    
+    w = w.extend("B = totimespan(A), C = totimespan('1d'), D = totimespan(1d)")
+    assert [pd.to_timedelta("1m"), pd.to_timedelta("1d")] == list(w.df["B"])
+    assert [pd.to_timedelta("1d")]*2 == list(w.df["C"])
+    assert [pd.to_timedelta("1d")]*2 == list(w.df["D"])
