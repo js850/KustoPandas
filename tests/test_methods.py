@@ -76,9 +76,10 @@ class TestMethods(unittest.TestCase):
         df["A"] = [1.2, "1", 2.0, 4, 5]
 
         w = Wrap(df)
-        w = w.extend("D = toint(A)")
+        w = w.extend("D = toint(A), D2 = tolong(A)")
 
         self.assertListEqual([1, 1, 2, 4, 5], list(w.df["D"]))
+        self.assertListEqual([1, 1, 2, 4, 5], list(w.df["D2"]))
 
     def test_toint_str(self):
         df = create_df()
@@ -87,7 +88,7 @@ class TestMethods(unittest.TestCase):
         w = w.extend("D = toint('5')")
 
         self.assertListEqual([5]*5, list(w.df["D"]))
-
+    
     def test_todouble(self):
         df = create_df()
         df["A"] = [1.2, "1", "2.7", 4, 5]

@@ -32,7 +32,7 @@ blobLiteralRaw = ( stringLiteral / ~'[^\'")]+' / WS )+
 # If the first stringLiteral matches then I need to un-escape any internal \".
 # if dynamicInteralRaw matches, then I should not un-escape any internal \"
 blobLiteral = stringLiteral / blobLiteralRaw
-explicitLiteral = ( "datetime" / "dynamic" / "int" / "real" ) WS? LPAR blobLiteral RPAR
+explicitLiteral = ( "datetime" / "dynamic" / "int" / "real" / "long" ) WS? LPAR blobLiteral RPAR
 
 # OPERATORS
 LPAR        = "(" WS?

@@ -537,6 +537,9 @@ class DynamicLiteral(ExplicitLiteral):
 _explicit_literals = [DateTimeLiteral, DynamicLiteral, Int, Float]
 explicit_literal_map = dict([(c.name, c) for c in _explicit_literals])
 
+# add explicit type long as an alias for Int 
+explicit_literal_map["long"] = Int
+
 class Var(NumOrVar):
     def __init__(self, value):
         self.value = value.strip()

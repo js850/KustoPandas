@@ -406,3 +406,6 @@ def test_int_explicit_literal_repr():
 
 def test_real_explicit_literal():
     assert 4.1 == parse_and_visit("real(4.1)")
+
+def test_long_explicit_literal():
+    assert 4 == parse_and_visit("long(4)")

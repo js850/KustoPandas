@@ -150,6 +150,7 @@ method_map["not"] = _not
 
 # aliases
 method_map["toreal"] = todouble
+method_map["tolong"] = toint
 
 method_map.update(dynamic_methods._method_map)
 
