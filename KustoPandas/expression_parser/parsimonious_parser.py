@@ -124,9 +124,18 @@ class Visitor(NodeVisitor):
     def visit_float(self, node, children):
         return Float(node.children[0].text)
 
-    def visit_identifier(self, node, children):
-        return Var(node.children[0].text)
+    def visit_quotedIdentifierDq(self, node, children):
+        return Var(node.children[1].text, is_quoted=True)
     
+    def visit_quotedIdentifierSq(self, node, children):
+        return Var(node.children[1].text, is_quoted=True)
+
+    def visit_identifierUnquoted(self, node, children):
+        return Var(node.text)
+    
+    def visit_identifier(self, node, children):
+        return children[0]
+
     def visit_explicitLiteral(self, node, children):
         # "datetime" WS? LPAR datetimeIso6801 RPAR
         literal_type, _, _, string_value, _ = children

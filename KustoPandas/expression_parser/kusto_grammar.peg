@@ -12,7 +12,14 @@ exponent    =  ~'[eE][+\-]?[0-9]+'
 fraction    = (~'\d+\.\d*' /  ~'\d*\.\d+')
 float       = ((fraction exponent?) / (~'[0-9]+' exponent) ) WS?
 number      = float / int
-identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*' WS?
+
+quotedIdentifierDqInternal = !'"]' ~"."
+quotedIdentifierDq = '["'  quotedIdentifierDqInternal+  '"]'
+quotedIdentifierSqInternal = !"']" ~"."
+quotedIdentifierSq = "['"  quotedIdentifierSqInternal+  "']"
+identifierUnquoted  = ~'[a-zA-Z_][a-zA-Z0-9_]*'
+identifier  = ( quotedIdentifierSq / quotedIdentifierDq / identifierUnquoted ) WS?
+
 columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS?
 
 # See this for matching a string literal with regex https://gist.github.com/cellularmitosis/6fd5fc2a65225364f72d3574abd9d5d5

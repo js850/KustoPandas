@@ -549,11 +549,15 @@ explicit_literal_map = dict([(c.name, c) for c in _explicit_literals])
 explicit_literal_map["long"] = Int
 
 class Var(NumOrVar):
-    def __init__(self, value):
+    def __init__(self, value, is_quoted=False):
         self.value = value.strip()
+        self.is_quoted = is_quoted
         self.descendents = []
     def __str__(self):
-        return self.value
+        if self.is_quoted:
+            return self.__repr__()
+        else:
+            return self.value
     def __repr__(self):
         return "Var({})".format(self.value)
     def evaluate(self, vals):

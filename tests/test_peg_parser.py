@@ -412,3 +412,14 @@ def test_long_explicit_literal():
 
 def test_timespaneLiteral_explicit():
     assert pd.to_timedelta("1d") == parse_and_visit("time(1d)")
+
+def test_identifier_quoted():
+    assert 13 == parse_and_visit('["my id"]', vars={"my id": 13})
+    assert 20 == parse_and_visit('["my id"] + ["my id2"]', vars={"my id": 13, "my id2": 7})
+    assert 'Var(my id)' == str(parse_expression('["my id"]'))
+
+def test_identifier_quoted_sq():
+    assert 13 == parse_and_visit("['my id']", vars={"my id": 13})
+    assert 20 == parse_and_visit("['my id'] + ['my id2']", vars={"my id": 13, "my id2": 7})
+    assert 20 == parse_and_visit("['my id'] + [\"my id2\"]", vars={"my id": 13, "my id2": 7})
+    assert 'Var(my id)' == str(parse_expression("['my id']"))
