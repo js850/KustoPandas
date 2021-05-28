@@ -1,0 +1,206 @@
+
+# DEFINE THE TERMINAL rules.
+
+# white space
+whitespace  = ~'[ \n\r\t]+'
+COMMENT     = ~"#.*(\n|\r\n|$)"
+WS          = (COMMENT / whitespace)+
+
+# The core terminal rules
+int         = ~'\d\d*' WS?
+exponent    =  ~'[eE][+\-]?[0-9]+'
+fraction    = (~'\d+\.\d*' /  ~'\d*\.\d+')
+float       = ((fraction exponent?) / (~'[0-9]+' exponent) ) WS?
+number      = float / int
+identifier  = ~'[a-zA-Z_][a-zA-Z0-9_]*' WS?
+columnNameOrPattern  = ~'[a-zA-Z0-9_*]*' WS?
+
+# See this for matching a string literal with regex https://gist.github.com/cellularmitosis/6fd5fc2a65225364f72d3574abd9d5d5
+stringLiteralDoubleQuote = '"' ~'([^"\\\\]|\\\\.)*' '"' WS?
+stringLiteralSingleQuote = "'" ~"([^'\\\\]|\\\\.)*" "'" WS?
+stringLiteral            = stringLiteralDoubleQuote / stringLiteralSingleQuote
+
+timespanLiteral = ~'[1-9]\d*[dhms]' WS?
+
+# dynamic literal and other types of explicit literals, e.g. datetime, bool, etc
+# dynamic and other literal types accept passing the value as a string 
+# dynamic("[1, 2, 3]")
+# or as a raw type
+# dynamic([1, 2, 3])
+# There is no need to try to describe the grammar of what can go inside the dynamic(), so we just match anything inside the parentheses.
+blobLiteralRaw = ( stringLiteral / ~'[^\'")]+' / WS )+
+# If the first stringLiteral matches then I need to un-escape any internal \".
+# if dynamicInteralRaw matches, then I should not un-escape any internal \"
+blobLiteral = stringLiteral / blobLiteralRaw
+explicitLiteral = ( "datetime" / "dynamic" / "int" ) WS? LPAR blobLiteral RPAR
+
+# OPERATORS
+LPAR        = "(" WS?
+RPAR        = ")" WS?
+LBRAK       = "[" WS?
+RBRAK       = "]" WS?
+PLUS        = "+" WS?
+MINUS       = "-" WS?
+MUL         = "*" WS?
+DIV         = "/" WS?
+MOD         = "%" WS?
+
+GT         = ">" WS?
+LT         = "<" WS?
+GE         = ">=" WS?
+LE         = "<=" WS?
+EQ         = "==" WS?
+NEQ        = "!=" WS?
+
+AND        = "and" WS?
+OR         = "or" WS?
+
+EQTILDE    = "=~" WS?
+NOTEQTILDE = "!~" WS?
+
+BETWEEN    = "between" WS?
+NOTBETWEEN    = "!between" WS?
+DOTDOT     = ".." WS?
+
+CONTAINS         = "contains" WS?
+CONTAINS_CS      = "contains_cs" WS?
+NOTCONTAINS      = "!contains" WS?
+NOTCONTAINS_CS   = "!contains_cs" WS?
+
+STARTSWITH       = "startswith" WS?
+STARTSWITH_CS    = "startswith_cs" WS?
+NOTSTARTSWITH    = "!startswith" WS?
+NOTSTARTSWITH_CS = "!startswith_cs" WS?
+
+HAS              = "has" WS?
+HAS_CS           = "has_cs" WS?
+NOTHAS           = "!has" WS?
+NOTHAS_CS        = "!has_cs" WS?
+
+IN               = "in" WS?
+IN_CIS           = "in~" WS?
+NOTIN            = "!in" WS?
+NOTIN_CIS        = "!in~" WS?
+
+ASSIGNMENT       = "=" WS?
+
+COMMA            = "," WS?
+
+DOT              = "." WS?
+
+# DEFINE THE GRAMAR OF OPERATORS AND ALGEBREIC EXPRESSIONS
+# operator precedence is defined by how the rules are chained together
+
+expressionInParens = LPAR expression RPAR
+primaryExpr = ( timespanLiteral / number / identifier / stringLiteral / expressionInParens )
+
+# note: generally * is not allowed, but any(*) is an exception.  
+# I use a new named rule STAR rather than re-using MUL because I need the visitor to do something different (drop the WS)
+STAR        = "*" WS?
+methodCall  = identifier LPAR ( STAR / expressionList )? RPAR
+
+# note: datetimeLiteral is listed here again to avoid ambiguity with methodCall.
+# e.g. for datetime(2014-10-03), the stuff inside the parentheses is not integer subtraction 
+posfixExpr  = explicitLiteral / methodCall / primaryExpr
+
+squareBracketsRight = LBRAK expression RBRAK
+dotOperand  = DOT posfixExpr
+dot         = posfixExpr ( dotOperand / squareBracketsRight )*
+
+unaryOp     = ( PLUS / MINUS )? dot
+
+stringOp    = unaryOp (( 
+                    EQTILDE / NOTEQTILDE /
+                    NOTCONTAINS_CS / CONTAINS_CS / NOTCONTAINS /  CONTAINS /
+                    NOTSTARTSWITH_CS / NOTSTARTSWITH / STARTSWITH_CS / STARTSWITH /
+                    NOTHAS_CS / NOTHAS / HAS_CS / HAS
+                    ) unaryOp )?
+
+prod        = stringOp ((MUL / DIV / MOD) stringOp )*
+sum         = prod ((PLUS / MINUS) prod)*
+
+betweenOperand = LPAR posfixExpr DOTDOT posfixExpr RPAR
+
+list        = LPAR expressionList RPAR
+# note: allow the in operator to work on arbitrary expression.  This is not allowed in Kusto
+# for instance it permits the in operator to operate on lists passed in with let.
+inOperand   = (list / sum)
+
+gt          = sum (( GE / LE / GT / LT ) sum )?
+eq          = gt (
+                    ( ( EQ / NEQ ) gt ) /
+                    (( NOTIN_CIS / IN_CIS / NOTIN / IN ) inOperand) /
+                    ( ( NOTBETWEEN / BETWEEN ) betweenOperand )?
+                )?
+and         = eq ( AND eq )?
+or          = and ( OR and )?
+
+expression          = or
+expressionList      = expression (COMMA expression)*
+
+internalAssignment  = identifier ASSIGNMENT expression
+assignment          = internalAssignment / expression
+assignmentList      = assignment (COMMA assignment)*
+
+# Use this root rule if you just want to parse a simple expression
+kustoStatement      = WS? assignment
+
+# DEFINE THE KUSTO TABULAR OPERATORS 
+
+BY          = "by" WS
+ASC         = ("asc" / "desc") WS?
+
+# todo: top supports nulls first / nulls last
+sortColumn  = expression ASC?
+sortColumnList = sortColumn (COMMA sortColumn)*
+simpleAssignment = identifier ASSIGNMENT identifier
+simpleAssignmentList = simpleAssignment (COMMA simpleAssignment)*
+columnNameOrPatternList = columnNameOrPattern (COMMA columnNameOrPattern)*
+
+table       = pipe / identifier
+joinParameters = "kind" WS? ASSIGNMENT identifier
+LEFT        = "$left."
+RIGHT       = "$right."
+joinAttribute  = (LEFT identifier EQ RIGHT identifier) / (RIGHT identifier EQ LEFT identifier)  / identifier
+joinAttributes = joinAttribute (COMMA joinAttribute)*
+
+# tabular operators
+take        = ("take" / "limit") WS expression
+where       = "where" WS expression
+extend      = "extend" WS assignmentList
+summarize   = "summarize" WS assignmentList ( BY assignmentList )?
+sort        = ("sort" / "order") WS BY sortColumnList
+top         = "top" WS int BY sortColumnList
+project     = "project" WS assignmentList
+projectAway = "project-away" WS columnNameOrPatternList
+projectKeep = "project-keep" WS columnNameOrPatternList
+projectReorder = "project-reorder" WS columnNameOrPatternList
+projectRename = "project-rename" WS simpleAssignmentList
+distinct    = "distinct" WS (STAR / assignmentList)
+count       = "count" WS?
+getschema   = "getschema" WS?
+as          = "as" WS identifier
+join        = "join" WS joinParameters? LPAR table RPAR "on" WS joinAttributes
+# TODO: union should support withSource and isFuzzy
+union       = "union" WS joinParameters? table (COMMA table)*
+
+tabularOperator = take / where / extend / summarize / sort / top / projectAway / projectKeep / projectReorder / projectRename / project / distinct / count / getschema / as / join / union
+
+# use this root rule if you want to parse a single kusto tabular operator
+kustoTabularOperator  = WS? tabularOperator
+
+# DEFINE KUSTO FULL QUERIES
+
+PIPE        = "|" WS?
+SEMICOLON   = ";" WS?
+LET         = "let" WS
+
+pipe        = identifier (PIPE tabularOperator)+
+let         = LET identifier ASSIGNMENT expression
+letTable    = LET identifier ASSIGNMENT table
+
+
+queryStatement = letTable / let / pipe
+queryStatements = queryStatement (SEMICOLON queryStatement)* 
+
+kustoQuery  = WS? queryStatements SEMICOLON?
