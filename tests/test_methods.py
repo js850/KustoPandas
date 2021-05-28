@@ -93,13 +93,12 @@ class TestMethods(unittest.TestCase):
         df["A"] = [1.2, "1", "2.7", 4, 5]
 
         w = Wrap(df)
-        w = w.extend("D = todouble(A), D1 = toreal(A), D2 = double(A), D3 = real(A)")
+        w = w.extend("D = todouble(A), D1 = toreal(A), D4 = todouble('1.3')")
 
         expected = [float(x) for x in df["A"]]
         self.assertListEqual(expected, list(w.df["D"]))
         self.assertListEqual(expected, list(w.df["D1"]))
-        self.assertListEqual(expected, list(w.df["D2"]))
-        self.assertListEqual(expected, list(w.df["D3"]))
+        self.assertListEqual([1.3]*5, list(w.df["D4"]))
 
     def test_isnull(self):
         df = create_df()

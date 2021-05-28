@@ -3,7 +3,7 @@ import pandas as pd
 import base64
 
 from KustoPandas import dynamic_methods
-from KustoPandas.expression_parser.expression_parser_types import _not, _todatetime, _toint
+from KustoPandas.expression_parser.expression_parser_types import _not, _todatetime, _toint, _toreal
 from KustoPandas.expression_parser.utils import _is_datetime
 
 from KustoPandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
@@ -20,7 +20,9 @@ def toint(val):
     return _toint(val)
 
 def todouble(val):
-    return pd.to_numeric(val)
+    if is_series(val):
+        return val.astype(float)
+    return _toreal(val)
 
 def tobool(series):
     raise NotImplementedError("tobool is not implemented because series.astype(bool) converts all strings to bools.  Doing it properly will take some effort")
@@ -148,8 +150,6 @@ method_map["not"] = _not
 
 # aliases
 method_map["toreal"] = todouble
-method_map["real"] = todouble
-method_map["double"] = todouble
 
 method_map.update(dynamic_methods._method_map)
 

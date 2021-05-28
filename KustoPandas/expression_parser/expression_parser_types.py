@@ -22,6 +22,9 @@ def _todatetime(input_string):
 def _toint(input_string):
     return int(input_string)
 
+def _toreal(input_string):
+    return float(input_string)
+
 class Expression:
     pass
 
@@ -516,16 +519,10 @@ class Int(ExplicitLiteral):
     def _convert_string_to_value(self, input_string):
         return _toint(input_string)
     
-class Float(NumOrVar):
-    def __init__(self, value):
-        self.value = value.strip()
-        self.descendents = []
-    def __str__(self):
-        return self.value
-    def __repr__(self):
-        return "Float({})".format(self.value)
-    def evaluate(self, vals):
-        return float(self.value)
+class Float(ExplicitLiteral):
+    name = "real"
+    def _convert_string_to_value(self, input_string):
+        return _toreal(input_string)
 
 class DateTimeLiteral(ExplicitLiteral):
     name = "datetime"
@@ -537,7 +534,7 @@ class DynamicLiteral(ExplicitLiteral):
     def _convert_string_to_value(self, input_string):
         return _todynamic(input_string)
 
-_explicit_literals = [DateTimeLiteral, DynamicLiteral, Int]
+_explicit_literals = [DateTimeLiteral, DynamicLiteral, Int, Float]
 explicit_literal_map = dict([(c.name, c) for c in _explicit_literals])
 
 class Var(NumOrVar):

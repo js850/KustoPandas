@@ -399,3 +399,10 @@ def test_string_literal_with_embedded_string_singleQuote():
 
 def test_int_explicit_literal():
     assert 4 == parse_and_visit("int(4)")
+
+def test_int_explicit_literal_repr():
+    assert "int(4)" == str(parse_expression("int(4)", debug=True))
+    assert "4" == str(parse_expression("(4)", debug=True))
+
+def test_real_explicit_literal():
+    assert 4.1 == parse_and_visit("real(4.1)")
