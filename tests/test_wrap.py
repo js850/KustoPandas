@@ -605,6 +605,24 @@ def test_execute_join_right_in_parens():
     assert ["A", "G"] == list(wnew.df.columns)
     assert ["G1"] * 9 == list(wnew.df["G"])
 
+def test_execute_join_special_characters():
+    df = create_df()
+    df["b:G"] = df["G"]
+
+    w = Wrap(df)
+    wnew = w.execute("""
+    self 
+    | join kind=inner ( 
+        self 
+        | where ["b:G"] == 'G1' 
+        | project ["b:G"] ) 
+        on ["b:G"] 
+    | project A, ["b:G"]
+    """)
+    
+    assert ["A", "b:G"] == list(wnew.df.columns)
+    assert ["G1"] * 9 == list(wnew.df["b:G"])
+
 def test_execute_join_nokind():
     df = create_df()
 

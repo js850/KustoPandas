@@ -555,7 +555,11 @@ class Var(NumOrVar):
         self.descendents = []
     def __str__(self):
         if self.is_quoted:
-            return self.__repr__()
+            # note: there are two uses to call str
+            # 1. to get the column name. Here it must be the raw string
+            # 2. to pretty print for debugging.  Here it idealy would be Var(<string string>)
+            # To support 1. we must just return self.value, but we should figure out a way to get pretty printing also.
+            return self.value
         else:
             return self.value
     def __repr__(self):
