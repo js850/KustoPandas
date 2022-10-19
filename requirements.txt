@@ -1,0 +1,6 @@
+# With more recent versions I see the following error.
+#>           raise VisitationError(exc, exc_class, node) from exc
+#E           parsimonious.exceptions.VisitationError: TypeError: isinstance() arg 2 must be a type or tuple of types
+parsimonious==0.8.1
+pandas
+numpy
