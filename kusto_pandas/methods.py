@@ -7,7 +7,7 @@ from kusto_pandas.expression_parser.expression_parser_types import _not, _todate
 from kusto_pandas.expression_parser.utils import _is_datetime
 
 from kusto_pandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
-kusto_pandas
+
 def iff(condition, a, b):
     return np.where(condition, a, b)
 
