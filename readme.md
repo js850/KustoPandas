@@ -12,7 +12,7 @@ Here are some very basic usage examples.  Please see the walkthrough above for m
 
 ```python
 import pandas as pd
-from KustoPandas import Wrap
+from kusto_pandas import Wrap
 dataframe = pd.read_csv("data.csv")
 w = Wrap(dataframe)
 
