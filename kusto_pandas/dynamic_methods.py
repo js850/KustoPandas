@@ -1,8 +1,8 @@
 import pandas as pd
 import json
 
-from KustoPandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
-from KustoPandas.expression_parser.expression_parser_types import _todynamic
+from kusto_pandas.expression_parser.utils import are_all_series, any_are_series, get_apply_elementwise_method, is_series
+from kusto_pandas.expression_parser.expression_parser_types import _todynamic
 
 def todynamic(s):
     if is_series(s):

@@ -3,9 +3,9 @@ import pandas as pd
 import numpy as np
 from context import expression_parser as ep
 
-from KustoPandas.expression_parser import parse_expression
-from KustoPandas.methods import method_map
-from KustoPandas.kusto_pandas import MultiDict
+from kusto_pandas.expression_parser import parse_expression
+from kusto_pandas.methods import method_map
+from kusto_pandas.kusto_pandas import MultiDict
 
 class TestBetweenOperator(unittest.TestCase):
     def test_between(self):

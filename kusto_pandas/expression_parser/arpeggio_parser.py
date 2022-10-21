@@ -2,9 +2,9 @@ import arpeggio
 from arpeggio.peg import ParserPEG
 
 
-from KustoPandas.expression_parser.expression_parser_types import *
+from kusto_pandas.expression_parser.expression_parser_types import *
 
-from KustoPandas.expression_parser.tabular_operators import *
+from kusto_pandas.expression_parser.tabular_operators import *
 
 
 kusto_peg = r"""

@@ -4,10 +4,10 @@ from context import Wrap
 import pandas as pd
 
 # hack to avoid having to add the dependency to the package until it's ready
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../KustoPandas/expression_parser')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../kusto_pandas/expression_parser')))
 
 from parsimonious_parser import parse_expression, parse_expression_tabular_operator
-import KustoPandas.expression_parser.expression_parser_types as ept
+import kusto_pandas.expression_parser.expression_parser_types as ept
 
 def parse_and_visit(input, vars=None):
     expression_tree = parse_expression(input, debug=True)

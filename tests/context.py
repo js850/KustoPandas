@@ -2,6 +2,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from KustoPandas import Wrap
+from kusto_pandas import Wrap
 
-from KustoPandas import expression_parser
+from kusto_pandas import expression_parser
