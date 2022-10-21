@@ -30,4 +30,7 @@ setup(name='kusto_pandas',
       url='https://github.com/js850/KustoPandas',
       packages=find_packages(),
       install_requires=required_list,
+      package_data = {
+        '': ['*.peg' ],
+      }
      )
