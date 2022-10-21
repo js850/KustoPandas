@@ -122,7 +122,7 @@ def convert_to_method_args(parsed):
     return Args([parsed])
 
 def find_matching_parentheses(line, left="(", right=")"):
-    matches = np.zeros(len(line), dtype=np.int)
+    matches = np.zeros(len(line), dtype=int)
     stack = []
     for i, c in enumerate(line):
         #print(c)
