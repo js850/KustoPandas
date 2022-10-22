@@ -1,10 +1,10 @@
 KustoPandas is a wrapper around a Pandas DataFrame which allows you to use the syntax of the 
 [Kusto Query Language](https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/) to transform the data frame.  Under the hood the commands are converted to the corresponding Pandas method, so you get all the performance of Pandas, but with the nice syntax of Kusto.
 
-For installation use pip
+For installation use [kusto-pandas](https://pypi.org/project/kusto-pandas/) on pypi
 
 ```python
-python -m pip install kusto_pandas
+pip install kusto-pandas
 ```
 
 See the following jupyter notebooks for example usage
