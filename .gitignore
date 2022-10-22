@@ -4,3 +4,7 @@ __pycache__/
 .ropeproject
 
 *.pyc
+
+venv
+dist
+build
