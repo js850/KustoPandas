@@ -120,6 +120,32 @@ class TestAggregates(unittest.TestCase):
         self.assertListEqual([2.0, 3.5], list(w.df["percentiles_B_75"]))
         assert ["G", "G2", "percentiles_B_50", "percentiles_B_75"] == list(w.df.columns)
 
+    def test_summarize_percentile_2by_special_characters(self):
+        df = create_df()
+        df["G2"] = df["G"]
+        df["m:G"] = df["G"]
+        df["m:G2"] = df["G"]
+        w = Wrap(df)
+        w = w.summarize("percentiles(B, 50, 75) by ['m:G'], ['m:G2']")
+
+        print(w.df)
+
+        self.assertListEqual([1.0, 3.0], list(w.df["percentiles_B_50"]))
+        self.assertListEqual([2.0, 3.5], list(w.df["percentiles_B_75"]))
+        assert ["m:G", "m:G2", "percentiles_B_50", "percentiles_B_75"] == list(w.df.columns)
+
+    def test_summarize_count_2by_special_characters(self):
+        df = create_df()
+        df["G2"] = df["G"]
+        df["m:G"] = df["G"]
+        df["m:G2"] = df["G"]
+        w = Wrap(df)
+        w = w.summarize("count() by ['m:G'], ['m:G2']")
+
+        print(w.df)
+
+        assert ["m:G", "m:G2", "count_"] == list(w.df.columns)
+        self.assertListEqual([3, 2], list(w.df["count_"]))
 
     def test_summarize_percentile_one_arg(self):
         df = create_df()

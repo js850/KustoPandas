@@ -5,9 +5,9 @@ import parsimonious
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
-from KustoPandas.expression_parser.expression_parser_types import *
+from kusto_pandas.expression_parser.expression_parser_types import *
 
-from KustoPandas.expression_parser.tabular_operators import *
+from kusto_pandas.expression_parser.tabular_operators import *
 
 
 # Define the grammar of the Kusto language using the PEG format.

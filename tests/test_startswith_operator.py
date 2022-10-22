@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 from context import expression_parser as ep
 
-from KustoPandas.expression_parser import parse_expression
-from KustoPandas.expression_parser.expression_tree import find_matching_parentheses
+from kusto_pandas.expression_parser import parse_expression
+from kusto_pandas.expression_parser.expression_tree import find_matching_parentheses
 
 class TestStartsWithOperator(unittest.TestCase):
     def test_startswith(self):

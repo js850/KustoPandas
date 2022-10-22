@@ -2,7 +2,7 @@ import pandas as pd
 
 from IPython.core.magic import register_line_cell_magic, needs_local_scope
 
-from KustoPandas import Wrap
+from kusto_pandas import Wrap
 
 def _is_table(t):
     return isinstance(t, pd.DataFrame) or isinstance(t, Wrap)

@@ -1,6 +1,12 @@
 KustoPandas is a wrapper around a Pandas DataFrame which allows you to use the syntax of the 
 [Kusto Query Language](https://docs.microsoft.com/en-us/azure/data-explorer/kusto/query/) to transform the data frame.  Under the hood the commands are converted to the corresponding Pandas method, so you get all the performance of Pandas, but with the nice syntax of Kusto.
 
+For installation use pip
+
+```python
+python -m pip install kusto_pandas
+```
+
 See the following jupyter notebooks for example usage
 
 [KustoPandas walkthrough](https://github.com/js850/KustoPandas/blob/master/examples/kusto_pandas_walkthrough.ipynb)
@@ -12,7 +18,7 @@ Here are some very basic usage examples.  Please see the walkthrough above for m
 
 ```python
 import pandas as pd
-from KustoPandas import Wrap
+from kusto_pandas import Wrap
 dataframe = pd.read_csv("data.csv")
 w = Wrap(dataframe)
 
@@ -32,17 +38,6 @@ w
 
 If you are working in a Jupyter notebook, then you may find it more convenient to use an IPython magic
 
-![Kusto magic impage](KustoMagic.png)
-
-Dependencies
-------------
-KustoPandas depends on Pandas (obviously) but it also depends on the package [parsimonious](https://github.com/erikrose/parsimonious) to do the parsing of the Kusto language. You can install parsimonious using pip
-
-`pip install parsimonious`
-
-Installation
-------------
-KustoPandas is not yet pip installable.  If you want to use KustoPandas, then download the package to some location on your computer and add that location to your PYTHONPATH.
+![Kusto magic impage](https://github.com/js850/KustoPandas/raw/master/KustoMagic.png)
 
 
-(This package is still a work in progress.  Some kusto commands are not yet mapped to the corresponding Pandas command.  I will add more and more functionality as time goes on.  Please feel free to contribute.)
