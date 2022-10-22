@@ -22,7 +22,7 @@ with open(HERE / "requirements.txt") as f:
     required_list = versions_in_requirements(f)
 
 setup(name='kusto_pandas',
-      version='0.1.1',
+      version='0.1.0',
       description='A wrapper around a Pandas DataFrame which allows you to use the syntax of the Kusto Query Language to transform the DataFrame',
       long_description = long_description,
       long_description_content_type='text/markdown',
